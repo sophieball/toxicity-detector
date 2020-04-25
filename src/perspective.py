@@ -3,7 +3,6 @@ import time
 import config
 
 API_KEY = config.perspective_api_key
-# 
 '''
 code from the perspective wrapper: https://github.com/Conway/perspective
 '''
@@ -16,11 +15,6 @@ import markdown
 import logging
 from retrying import retry
 
-#from get_data import *
-try:
-    from html.parser import HTMLParser
-except ImportError:
-    from HTMLParser import HTMLParser
 def validate_language(language):
     # ISO 639-1 code validation
     # language source: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
@@ -44,25 +38,6 @@ def validate_language(language):
     return language.lower() in codes
 
 
-def remove_html(text, md=False):
-    if md:
-        text = markdown.markdown(text)
-    # credit: stackoverflow
-    class MLStripper(HTMLParser):
-        def __init__(self):
-            super().__init__()
-            self.reset()
-            self.strict = False
-            self.convert_charrefs= True
-            self.fed = []
-        def handle_data(self, d):
-            self.fed.append(d)
-        def get_data(self):
-            return ''.join(self.fed)
-
-    s = MLStripper()
-    s.feed(text)
-    return s.get_data()
 # allowed test types
 allowed = ["TOXICITY",
            "SEVERE_TOXICITY",
@@ -145,107 +120,102 @@ class Perspective(object):
         data = response.json()
         if "error" in data.keys():
             raise PerspectiveAPIException(data["error"]["message"])
-        c = Comment(text, [], token)
-        base = data["attributeScores"]
-        for test in tests.keys():
-            score = base[test]["summaryScore"]["value"]
-            score_type = base[test]["summaryScore"]["type"]
-            a = Attribute(test, [], score, score_type)
-            for span in base[test]["spanScores"]:
-                beginning = span["begin"]
-                end = span["end"]
-                score = span["score"]["value"]
-                score_type = span["score"]["type"]
-                s = Span(beginning, end, score, score_type, c)
-                a.spans.append(s)
-            c.attributes.append(a)
+        return data
+        # print(data)
+        # c = Comment(text, [], token)
+        # base = data["attributeScores"]
+        # for test in tests.keys():
+        #     score = base[test]["summaryScore"]["value"]
+        #     score_type = base[test]["summaryScore"]["type"]
+        #     a = Attribute(test, [], score, score_type)
+        #     for span in base[test]["spanScores"]:
+        #         beginning = span["begin"]
+        #         end = span["end"]
+        #         score = span["score"]["value"]
+        #         score_type = span["score"]["type"]
+        #         s = Span(beginning, end, score, score_type, c)
+        #         a.spans.append(s)
+        #     c.attributes.append(a)
         # print("perspective call: ",text,base)
-        return c
+        # return c
 
-class Comment(object):
-    def __init__(self, text, attributes, token):
-        self.text = text
-        self.attributes = attributes
-        self.token = token
+# class Comment(object):
+#     def __init__(self, text, attributes, token):
+#         self.text = text
+#         self.attributes = attributes
+#         self.token = token
 
-    def __getitem__(self, key):
-        if key.upper() not in allowed:
-            raise ValueError("value {0} does not exist".format(key))
-        for attr in self.attributes:
-            if attr.name.lower() == key.lower():
-                return attr
-        raise ValueError("value {0} not found".format(key))
+#     def __getitem__(self, key):
+#         if key.upper() not in allowed:
+#             raise ValueError("value {0} does not exist".format(key))
+#         for attr in self.attributes:
+#             if attr.name.lower() == key.lower():
+#                 return attr
+#         raise ValueError("value {0} not found".format(key))
 
-    def __str__(self):
-        return self.text
+#     def __str__(self):
+#         return self.text
 
-    def __repr__(self):
-        count = 0
-        num = 0
-        for attr in self.attributes:
-            count += attr.score
-            num += 1
-        return "<({0}) {1}>".format(str(count/num), self.text)
+#     def __repr__(self):
+#         count = 0
+#         num = 0
+#         for attr in self.attributes:
+#             count += attr.score
+#             num += 1
+#         return "<({0}) {1}>".format(str(count/num), self.text)
 
-    def __iter__(self):
-        return iter(self.attributes)
+#     def __iter__(self):
+#         return iter(self.attributes)
 
-    def __len__(self):
-        return len(self.text)
+#     def __len__(self):
+#         return len(self.text)
 
-class Attribute(object):
-    def __init__(self, name, spans, score, score_type):
-        self.name = name
-        self.spans = spans
-        self.score = score
-        self.score_type = score_type
+# class Attribute(object):
+#     def __init__(self, name, spans, score, score_type):
+#         self.name = name
+#         self.spans = spans
+#         self.score = score
+#         self.score_type = score_type
 
-    def __getitem__(self, index):
-        return self.spans[index]
+#     def __getitem__(self, index):
+#         return self.spans[index]
 
-    def __iter__(self):
-        return iter(self.spans)
+#     def __iter__(self):
+#         return iter(self.spans)
 
-class Span(object):
-    def __init__(self, begin, end, score, score_type, comment):
-        self.begin = begin
-        self.end = end
-        self.score = score
-        self.score_type = score_type
-        self.comment = comment
+# class Span(object):
+#     def __init__(self, begin, end, score, score_type, comment):
+#         self.begin = begin
+#         self.end = end
+#         self.score = score
+#         self.score_type = score_type
+#         self.comment = comment
 
-    def __str__(self):
-        return self.comment.text[self.begin:self.end]
+#     def __str__(self):
+#         return self.comment.text[self.begin:self.end]
 
-    def __repr__(self):
-        return "<({0}) {1}>".format(self.score, self.comment.text[self.begin:self.end])
+#     def __repr__(self):
+#         return "<({0}) {1}>".format(self.score, self.comment.text[self.begin:self.end])
 
 class PerspectiveAPIException(Exception):
     pass
 p = Perspective(API_KEY)
-import nltk
-words = set(nltk.corpus.words.words())
 
 
-def remove_non_english(text):
-    text = text.replace('"','').replace("'",'')
-    text = (w for w in nltk.wordpunct_tokenize(text) \
-         if w.lower() in words and w.isalpha())
 
-    return " ".join(text)
+def get_perspective_score(text):
+    return get_perspective_score_raw(text)[0]
 
 #retry, up to 1h delay, never give up waiting
 @retry(wait_exponential_multiplier=10000, wait_exponential_max=3600000)
-def get_perspective_score(text):
-    # time.sleep(0.02)
-
+def get_perspective_score_raw(text):
     if len(text.strip()) == 0:
-        return 0
+        return [0, None]
 
     try:
-        comment = p.score(text,tests=["TOXICITY"])
-        score = comment["TOXICITY"].score
-        return score
+        raw = p.score(text,tests=["TOXICITY","INFLAMMATORY"])
+        score = raw["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
+        return [score, raw]
     except Exception as e:
         print(e)
         raise e

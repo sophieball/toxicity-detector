@@ -6,18 +6,16 @@ import logging
 
 import config
 
-VERSION = "v1"
+VERSION = "v2"
 TABLE_PREFIX = "christian_toxic_"
 
 logging.info("loading")
 import pickle
 import pymongo
 import time
+import toxicity_report
 
 
-logging.info("loading model")
-model = pickle.load(open("pretrained_model.p","rb"))
-import suite
 
 
 logging.info("connecting to database")
@@ -71,34 +69,6 @@ def update_db(table, id, new_data):
 	db[TABLE_PREFIX+table].update({"_id": id},{ "$set": new_data })
 	return time.time() - start
 
-def compute_prediction_report(text):
-	start = time.time()
-	# score the issue's text
-	score = suite.score_toxicity(text, model)
-	result = { 
-			"score": score[0].item(), 
-			"orig" : {"score": score[0].item(), "persp": score[1], "polite": score[2]},			
-			}
-
-	# if toxic, look at alternatives
-	if score[0]==1:
-		alt_text = suite.clean_text(text)
-		if len(alt_text)==0:
-			print(" == found toxic issue, no alternatives")
-		else:
-			print(" == found toxic issue, exploring "+str(len(alt_text))+" alternatives")
-			isToxic = True
-			for a in alt_text:
-				if isToxic:
-					score = suite.score_toxicity(text, model)
-					if score[0] == 0:
-						print(" === found nontoxic alternative")
-						isToxic=False
-						result["score"]=0
-						result["alt"]={"text":a,"score": score[0].item(), "persp": score[1], "polite": score[2]}
-			if not isToxic:
-				result["alt_tried"]=len(alt_text)
-	return [result, time.time() - start]
 
 def process_one_item(table):
 	# grab the most recent issue to process
@@ -109,7 +79,7 @@ def process_one_item(table):
 	[text, t2] = get_text(table, issue_id)
 
 	# score the text
-	[score_report, t3] = compute_prediction_report(text)
+	[score_report, t3] = toxicity_report.compute_prediction_report(text)
 	result = {"toxicity."+VERSION: score_report}
 
 	# write results to db
@@ -120,11 +90,13 @@ def process_100_items(table):
 	for x in range(0, 99):
 		process_one_item(table)
 
-while True:
-	next_i = get_next_date("issues")
-	next_ic = get_next_date("issue_comments")
-	if (next_i > next_ic):
-		process_100_items("issues")
-	else:
-		process_100_items("issue_comments")
+
+if __name__ == '__main__': 
+	while True:
+		next_i = get_next_date("issues")
+		next_ic = get_next_date("issue_comments")
+		if (next_i > next_ic):
+			process_100_items("issues")
+		else:
+			process_100_items("issue_comments")
 	
