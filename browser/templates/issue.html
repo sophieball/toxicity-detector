@@ -1,0 +1,48 @@
+<html>
+    <head>
+        <title>Issues {{ issue["owner"] }}/{{ issue["repo"] }}, #{{ issue["number"] }}</title>
+        <style>
+.content { background-color: linen; padding: 4px }
+.comment { background-color: linen; padding: 4px }
+.toxic { border: red 4px solid }
+.classification { font-size:small; }
+.feedback { font-size:small; }
+</style>
+    </head>
+    <body>
+        <p>Issue 
+            <a href="https://github.com/{{issue["owner"]}}/{{ issue["repo"] }}">{{ issue["owner"] }}/{{ issue["repo"] }}</a>, 
+            <a href="{{issue["html_url"]}}">#{{ issue["number"] }}</a> 
+            by <a href="{{issue["user"]["html_url"]}}">{{issue["user"]["login"]}}</a>
+        </p>
+        <div  class="content {{ "toxic" if is_toxic(tissue) else "nontoxic" }}">
+        <h2>{{ issue["title"]}}</h2>
+        <pre>
+            {{issue["body"]}}
+        </pre>
+        </div>
+        <p class="classification">{{ "toxic" if is_toxic(tissue) else "nontoxic" }},
+        details: {{ tissue["toxicity"] }}</p>
+        <p class="feedback">Feedback: [Confirm toxic] [Not toxic -- Non english] [Not toxic -- Selfdirected] [Not toxic -- Other]</p>
+
+
+        {% for comment in comments: %}
+        <hr>
+        <a name="{{comment["id"]}}" />
+        <p>            <a href="{{comment["html_url"]}}">Comment {{comment["id"]}}</a>, 
+            {{comment["updated_at"]}}, 
+            by <a href="{{comment["user"]["html_url"]}}">{{comment["user"]["login"]}}</a>
+        </p>
+        <div class="comment {{ "toxic" if is_toxic(comment) else "nontoxic" }}">
+            <pre>
+                {{comment["body"]}}
+            </pre>
+        </div>
+        <p class="classification">{{ "toxic" if is_toxic(comment) else "nontoxic" }},
+        details: {{ comment["toxicity"] }}</p>
+        <p class="feedback">Feedback: [Confirm toxic] [Not toxic -- Non english] [Not toxic -- Selfdirected] [Not toxic -- Other]</p>
+
+        {% endfor %}
+
+    </body>
+</html>

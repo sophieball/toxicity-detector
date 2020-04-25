@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <title>Toxic Issues</title>
+    </head>
+    <body>
+        <h1>Toxic issues</h1>
+        <ul>
+        {% for tissue in tissues: %}
+        <li><a href="/{{link}}/{{ tissue["_id"] }}">{{tissue["updated_at"]}}</a></li>
+	    {% endfor %}
+	</ul>
+    </body>
+</html>
