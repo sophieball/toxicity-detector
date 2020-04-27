@@ -1,12 +1,12 @@
 <html>
     <head>
-        <title>Toxic Issues</title>
+        <title>Toxic {{what}}</title>
     </head>
     <body>
-        <h1>Toxic issues</h1>
+        <h1>Toxic {{what}}</h1>
         <ul>
         {% for tissue in tissues: %}
-        <li><a href="/{{link}}/{{ tissue["_id"] }}">{{tissue["updated_at"]}}</a></li>
+        <li><a href="/{{link}}/{{ tissue["_id"] }}">{{tissue["updated_at"]}}</a> {{deep_get(tissue, "toxicity.manual.reason","")}}</li>
 	    {% endfor %}
 	</ul>
     </body>

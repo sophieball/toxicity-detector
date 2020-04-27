@@ -7,6 +7,7 @@
 .toxic { border: red 4px solid }
 .classification { font-size:small; }
 .feedback { font-size:small; }
+.labelbtn_True { font-weight: bold; }
 </style>
     </head>
     <body>
@@ -23,7 +24,7 @@
         </div>
         <p class="classification">{{ "toxic" if is_toxic(tissue) else "nontoxic" }},
         details: {{ tissue["toxicity"] }}</p>
-        <p class="feedback">Feedback: [Confirm toxic] [Not toxic -- Non english] [Not toxic -- Selfdirected] [Not toxic -- Other]</p>
+        <p class="feedback">Feedback: {{ render_label_buttons(tissue["labels"]) | safe }}</p>
 
 
         {% for comment in comments: %}
@@ -40,7 +41,7 @@
         </div>
         <p class="classification">{{ "toxic" if is_toxic(comment) else "nontoxic" }},
         details: {{ comment["toxicity"] }}</p>
-        <p class="feedback">Feedback: [Confirm toxic] [Not toxic -- Non english] [Not toxic -- Selfdirected] [Not toxic -- Other]</p>
+        <p class="feedback">Feedback: {{ render_label_buttons(comment["labels"]) | safe }}</p>
 
         {% endfor %}
 
