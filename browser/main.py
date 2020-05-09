@@ -116,11 +116,13 @@ def label_entry(table, eid, label):
 
 
 labels = [["Confirm toxic","toxic"], 
+          ["Potentially problematic", "maybe"],
           ["Not toxic -- Non english", "not-english"], 
           ["Not toxic -- Selfdirected", "self-directed"],
           ["Not toxic -- Owner", "owner"],
           ["Not toxic -- Mild/colloquial", "mild"],
-          ["Not toxic -- Other", "other"]]
+          ["Not toxic -- Other", "other"],
+          ["Other, maybe, revisit", "revisit"]]
 # gets data for buttons
 # [url, label_text, is_selected]
 def label_buttons(link, titem):
