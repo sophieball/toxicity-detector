@@ -1,9 +1,10 @@
-from pymongo import MongoClient
+#from pymongo import MongoClient
 import pandas as pd
 import random
 from copy import deepcopy
 #import mysql.connector
 
+"""
 def connect_to_database():
     global db
     mongo_name = "NAME"
@@ -20,6 +21,7 @@ def connect_to_mysql():
     global mydb
     mydb = mysql.connector.connect(user = "NAME", passwd = "PASSWORD",host = "HOST",database="DATABASE")
     cursor = mydb.cursor()
+"""
 
 def find_language(repo):
     statement = "SELECT language FROM projects WHERE url='{}' LIMIT 1;".format(repo)
@@ -28,11 +30,13 @@ def find_language(repo):
     for x in cursor:
         return x[0]
 
+"""
 try:
     connect_to_database()
 except:
     print("Couldn't connect to Mongo")
 #connect_to_mysql()
+"""
 
 def get_labeled_collection():
     a= {'issues':db.naveen_issues,'comments':db.naveen_labeled_stanford_comments,'name':'labeled'}
