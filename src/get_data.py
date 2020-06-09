@@ -1,4 +1,4 @@
-from pymongo import MongoClient
+#from pymongo import MongoClient
 import pandas as pd
 import random
 from copy import deepcopy
@@ -30,11 +30,13 @@ def find_language(repo):
     for x in cursor:
         return x[0]
 
+"""
 try:
     connect_to_database()
 except:
     print("Couldn't connect to Mongo")
 #connect_to_mysql()
+"""
 
 def get_labeled_collection():
     a= {'issues':db.naveen_issues,'comments':db.naveen_labeled_stanford_comments,'name':'labeled'}
