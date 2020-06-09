@@ -41,12 +41,20 @@ def get_perspective_score(text, det_lang):
           "TOXICITY": {}
       }
   }
-  response = requests.post(url=url, data=json.dumps(data_dict))
-  response_dict = json.loads(response.content.decode("utf-8"))
+
   try:
+    response = requests.post(url=url, data=json.dumps(data_dict))
+    response_dict = json.loads(response.content.decode("utf-8"))
     return response_dict["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
   except:
-    return 0
+    print("retry")
+    time.sleep(10)
+    response = requests.post(url=url, data=json.dumps(data_dict))
+    response_dict = json.loads(response.content.decode("utf-8"))
+    try:
+      return response_dict["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
+    except:
+      return -1
 
 
 def cleanup_text(text):
@@ -117,14 +125,18 @@ def extract_features(total_comment_info):
   #print("text 8: %s" % text)
 
   text = text_cleaning.remove_html(text, True)
-  #print("text 3: %s" % text)
 
+  # Not very reliable
   #text = text_cleaning.remove_non_english(text)
 
   # infer the language of the comment
+  # det_lang = detect(text)
   #if TextParser.contain_non_english(text): # if the text contains non-english, we terminate early
   #    text = remove_non_english(text)
-  perspective_score = get_perspective_score(text, "en")
+  if text == "":
+    perspective_score = -1
+  else:
+    perspective_score = get_perspective_score(text, "en")#det_lang
 
   # remove stop words and lemmatization
   text = cleanup_text(text)
@@ -149,11 +161,12 @@ def create_features(comments_df):
   print("Total number of training data: {}.".format(len(comments_df)))
 
   # get politeness scores for all comments
-  comments_df = get_politeness_score(comments_df)
-  #comments_df = comments_df.join(all_stanford_polite.set_index("_id"), on="_id")
+  all_stanford_polite = get_politeness_score(comments_df)
+  comments_df = comments_df.join(all_stanford_polite.set_index("_id"), on="_id")
 
   # remove comments longer than 300 characters (perspective limit)
-  remove_large_comments(comments_df)
+  comments_df = remove_large_comments(comments_df)
+
   # convert it to a list of dictionaries
   comments = comments_df.T.to_dict().values()
 
@@ -162,6 +175,8 @@ def create_features(comments_df):
   features = pool.map(extract_features, comments)
   pool.close()
   features_df = pd.DataFrame(features)
+  features_df = features_df.loc[features_df["perspective_score"] >= 0]
+  print("Total number of training data: {}.".format(len(comments_df)))
 
   features_df.to_csv("training_data_label_cleaned.csv", index=False)
   return features_df
