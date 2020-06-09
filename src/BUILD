@@ -1,8 +1,6 @@
 load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_python//python:defs.bzl", "py_test")
-#load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@deps//:requirements.bzl", "requirement")
-#load("@py_model//:requirements.bzl", requirement_model = "requirement")
 
 py_library(
     name = "config",
@@ -49,7 +47,6 @@ py_library(
         requirement("pandas"),
         requirement("spacy"),
         requirement("numpy"),
-        #requirement("en-core-web-sm-abd")
     ],
     visibility = ["//visibility:public"],
 )
@@ -60,8 +57,6 @@ py_library(
     deps = [
         requirement("convokit"),
         requirement("pandas"),
-        #"@en_core_web_md"
-        #requirement("en-core-web-sm-abd"),
         requirement("spacy"),
         requirement("en_core_web_sm")
     ],
