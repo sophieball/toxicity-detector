@@ -4,7 +4,7 @@ import logging
 from text_modifier import *
 from util import *
 import itertools
-import cross_validate
+#import cross_validate
 from statistics import *
 from classifiers import *
 from collections import Counter
@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 from multiprocessing import Pool
 from lexicon import *
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, fbeta_score
 from convo_politeness import *
 from create_features import *
 
@@ -454,16 +454,17 @@ class Suite:
     return test_issues
 
   def classify_test(self):
-    print(self.features)
     return classify(self.model, self.train_data, self.test_data, self.features)
 
   def classify_test_statistics(self):
     return classify_statistics(self.model, self.train_data, self.test_data,
                                self.features)
 
+  """
   def cross_validate(self):
     return cross_validate.cross_validate(self.all_train_data, self.features,
                                          self.model)
+  """
 
   def cross_validate_classify(self):
     kfold = KFold(10)
@@ -481,8 +482,8 @@ class Suite:
     print("Removing angry words towards oneself and SE words.")
     data = self.remove_I(data)
     data = self.remove_SE(data)
-    print(len(data["toxic"] == 1))
 
+    """
     # use comment labels to label issues
     test_issues = pd.read_csv("data/labeled_issues.csv")#get_issues(get_labeled_collection())
     predicted = []
@@ -501,8 +502,9 @@ class Suite:
     test_issues = map_toxicity(test_issues)
     print("Issue crossvalidate Score is \n{}".format(classification_report(test_issues["prediction"].tolist(),
                                                     test_issues["toxic"].tolist())))
+    """
 
-    print("Crossvalidate score is \n{}".format(
+    print("Crossvalidation score is \n{}".format(
         classification_report(data["prediction"].tolist(),
                              data["toxic"].tolist())))
 
@@ -521,16 +523,18 @@ class Suite:
 
   def issue_classifications_from_comments(self):
     t = time.time()
-    test_issues = pd.read_csv("data/test_issues.csv")#get_issues(self.test_collection)
     self.test_data = self.classify_test()
     self.test_data = self.remove_I(self.test_data)
     self.test_data = self.remove_SE(self.test_data)
+    return self.test_data
 
+    """
     predicted = []
     values = []
 
     print("Looping through test_issues")
 
+    test_issues = pd.read_csv("data/test_issues.csv")#get_issues(self.test_collection)
     predicted_toxic = list(
         self.test_data[self.test_data["prediction"] == 1]["_id"])
     predicted_toxic = ["/".join(i.split("/")[:-1]) for i in predicted_toxic]
@@ -545,6 +549,7 @@ class Suite:
     test_issues = test_issues.sort_values("prediction")
 
     return test_issues
+    """
 
   def self_issue_classification_from_comments(self):
     self.train_data = self.cross_validate_classify()
@@ -572,176 +577,8 @@ class Suite:
 
     #return test_issues
 
-  def train_test_validate(self):
-    global model
-
-    # This essentially performs nested Cross Validation
-    # To test how well a particular set of features is doing
-
-    print("Train test validating")
-
-    # train test split
-    kfold = KFold(10)
-    data = self.all_train_data.sample(frac=1)
-
-    all_issues = pd.read_csv("data/labeled_issues.csv")  #get_issues(get_labeled_collection())
-    all_comments = list(data["_id"])
-
-    all_issues = all_issues.sample(frac=1)
-
-    for train, test in kfold.split(all_issues):
-      train = all_issues.iloc[train].copy().sample(frac=1)
-      test = all_issues.iloc[test].copy()
-
-      train_issues = list(train["_id"])
-      test_issues = list(test["_id"])
-
-      train_comments_list = [
-          i for i in all_comments if "/".join(i.split("/")[:-1]) in train_issues
-      ]
-      test_comments_list = [
-          i for i in all_comments if "/".join(i.split("/")[:-1]) in test_issues
-      ]
-
-      train_comments = data[data["_id"].isin(train_comments_list)]
-      test_comments = data[data["_id"].isin(test_comments_list)]
-
-      kfold_validation = KFold(10)
-      train_comments = train_comments.sample(frac=1)
-
-      predicted_train_data = {}  # type: Dict[str, Df]
-
-      # Find the best combo
-      for ratio in self.ratios:
-        for combination in itertools.product(*self.hyper_parameters_lists):
-          self.combination_dict = {}
-          for i in range(len(combination)):
-            self.combination_dict[self.parameter_names[i]] = combination[i]
-          predicted_train_data["{}_{}".format(
-              ratio, self.combination_dict)] = deepcopy(train_comments)
-
-      for real_train, validation in kfold_validation.split(train):
-        real_train = train.iloc[real_train].copy()
-        validation = train.iloc[validation].copy()
-
-        real_train_issues = list(real_train["_id"])
-        validation_issues = list(validation["_id"])
-
-        real_train_comments = [
-            i for i in train_comments_list
-            if "/".join(i.split("/")[:-1]) in real_train_issues
-        ]
-        validation_comments = [
-            i for i in train_comments_list
-            if "/".join(i.split("/")[:-1]) in validation_issues
-        ]
-
-        for ratio in self.ratios:
-          self.ratio = ratio
-
-          real_train = data[data["_id"].isin(real_train_comments)].copy()
-          validation = data[data["_id"].isin(validation_comments)].copy()
-
-          real_train = select_ratio(real_train, self.ratio)
-
-          for combination in itertools.product(*self.hyper_parameters_lists):
-            self.combination_dict = {}
-            for i in range(len(combination)):
-              self.combination_dict[self.parameter_names[i]] = combination[i]
-
-            self.model = self.model_function(**self.combination_dict)
-            model = self.model
-
-            parameter_train = deepcopy(predicted_train_data["{}_{}".format(
-                ratio, self.combination_dict)])
-
-            validation_predicted = classify(self.model, real_train, validation,
-                                            self.features)
-            # Add our predictions to train
-            for i, row in validation_predicted.iterrows():
-              parameter_train.loc[parameter_train["_id"] == row["_id"],
-                                  "prediction"] = row["prediction"]
-
-            predicted_train_data["{}_{}".format(
-                ratio, self.combination_dict)] = deepcopy(parameter_train)
-
-      included_ids = list(
-          set([
-              "/".join(row["_id"].split("/")[:-1])
-              for i, row in train_comments.iterrows()
-          ]))
-
-      test_issues = pd.read_csv("data/labeled_issues.csv")  #get_issues(get_labeled_collection())
-      test_issues = test_issues[test_issues["_id"].isin(included_ids)]
-
-      score_dict = {}
-
-      # Now we evaluate each of the hyperparameter combinations
-      for combo in predicted_train_data:
-        real_train = predicted_train_data[combo]
-        temp_test_issues = map_toxicity(deepcopy(test_issues))
-        predicted = []
-        for i, row in temp_test_issues.iterrows():
-          matching_comments = real_train[real_train["_id"].str.contains(
-              row["_id"])]
-          if (len(matching_comments) > 0):
-            if (len(matching_comments[matching_comments["prediction"] == 1]) >
-                0):
-              predicted.append(1)
-            else:
-              predicted.append(0)
-          else:
-            predicted.append(0)
-
-        temp_test_issues["prediction"] = predicted
-        score = calculate_statistics(
-            temp_test_issues["prediction"].tolist(),
-            temp_test_issues["toxic"].tolist())["f_0.5"]
-
-        score_dict[combo] = score
-
-      max_pair = max(score_dict, key=score_dict.get).split("_")
-      ratio = float(max_pair[0])
-
-      combo_dict = eval("_".join(max_pair[1:]))
-
-      self.ratio = ratio
-      self.model = self.model_function(**combo_dict)
-
-      train_comments = select_ratio(train_comments, ratio)
-
-      test_predicted = classify(self.model, train_comments.copy(),
-                                test_comments.copy(), self.features).copy()
-      # Add our predictions to train
-      for i, row in test_predicted.iterrows():
-        data.loc[data["_id"] == row["_id"], "prediction"] = row["prediction"]
-
-    if self.use_filters:
-      data = self.remove_SE(data)
-
-    test_issues = pd.read_csv("data/labeled_issues.csv")  #get_issues(get_labeled_collection())
-    predicted = []
-
-    for i, row in test_issues.iterrows():
-      matching_comments = data[data["_id"].str.contains(row["_id"])]
-      if (len(matching_comments) > 0):
-        if (len(matching_comments[matching_comments["prediction"] == 1]) > 0):
-          predicted.append(1)
-        else:
-          predicted.append(0)
-      else:
-        predicted.append(0)
-
-    test_issues["prediction"] = predicted
-    test_issues = map_toxicity(test_issues)
-    test_issues = test_issues.sort_values("prediction")
-
-    score = calculate_statistics(test_issues["prediction"].tolist(),
-                                 test_issues["toxic"].tolist())
-    return score
-
   def all_combinations(self, function, matched_pairs=False):
-    print("trying all combinations of hyper parameters.")
+    print("Trying all combinations of hyper parameters.")
     global model
 
     scores = {}
@@ -767,37 +604,44 @@ class Suite:
 
     return max(scores.items(), key=operator.itemgetter(1))
 
+  # training the model
   def self_issue_classification_all(self, matched_pairs=False):
 
     def self_issue_classification_statistics_per():
       # self.train_data
       self.self_issue_classification_from_comments()
-      score = calculate_statistics(self.train_data["prediction"].tolist(),
-                                   self.train_data["toxic"].tolist())
+      score = fbeta_score(self.train_data["prediction"].tolist(),
+                          self.train_data["toxic"].tolist(),
+                          average="weighted",
+                          beta=0.5)
 
+      """
       print("{}\t{}\t ratio: {}\t precision: {}\t recall: {}\t f0.5: {}".format(
           ",".join(self.nice_features),
           "{} {} ".format(self.model_function.__doc__, self.combination_dict),
           self.ratio, score["precision"], score["recall"], score["f_0.5"]))
+      """
 
-      return score["f_0.5"]
+      return score#score["f_0.5"]
 
     best_score = self.all_combinations(
         self_issue_classification_statistics_per, matched_pairs=matched_pairs)
-    print("Best score {}".format(best_score))
+    print("Best f0.5 score: {}".format(best_score))
 
+  # applying the model to the test data
   def test_issue_classifications_from_comments_all(self, matched_pairs=False):
 
     def test_issue_classifications_from_comments_statistics_per():
       t = time.time()
-      test_issues = self.issue_classifications_from_comments()
-      test_issues = map_toxicity(test_issues)
+      return self.issue_classifications_from_comments()
+      #test_issues = map_toxicity(test_issues)
 
-      test_issues.to_csv("classification_results.csv", index=False)
-
-    self.all_combinations(
-        test_issue_classifications_from_comments_statistics_per,
-        matched_pairs=matched_pairs)
+    test_result = test_issue_classifications_from_comments_statistics_per()
+    return test_result
+    # SQ: Why do we want to do all_combinations() again
+    #self.all_combinations(
+    #    test_issue_classifications_from_comments_statistics_per,
+    #    matched_pairs=matched_pairs)
 
   def self_comment_classification_all(self, matched_pairs=False):
 

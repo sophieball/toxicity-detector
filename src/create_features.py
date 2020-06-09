@@ -153,12 +153,11 @@ def extract_features(total_comment_info):
   #print(ret)
   return total_comment_info
 
-
+# input: pd.DataFrame
+# output: pd.DataFrame
 def create_features(comments_df):
   # remove invalide toxicity scores or empty comments
   comments_df = comments_df.dropna()
-
-  print("Total number of training data: {}.".format(len(comments_df)))
 
   # get politeness scores for all comments
   all_stanford_polite = get_politeness_score(comments_df)
@@ -178,5 +177,5 @@ def create_features(comments_df):
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
   print("Total number of training data: {}.".format(len(comments_df)))
 
-  features_df.to_csv("training_data_label_cleaned.csv", index=False)
+  #features_df.to_csv("training_data_label_cleaned.csv", index=False)
   return features_df
