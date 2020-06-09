@@ -16,11 +16,11 @@ load("@rules_python//python:pip.bzl", "pip3_import")
 # Create a central repo that knows about the dependencies needed for
 # requirements.txt.
 pip3_import(   # or pip3_import
-   name = "my_deps",
+   name = "deps",
    requirements = "//src:requirements.txt",
 )
 
 # Load the central repo's install function from its `//:requirements.bzl` file,
 # and call it.
-load("@my_deps//:requirements.bzl", "pip_install")
+load("@deps//:requirements.bzl", "pip_install")
 pip_install()

@@ -8,7 +8,9 @@ numpy
 pandas
 scipy
 sklearn
-spacy
+spacy==2.2.4
 textblob
 wordfreq
 requests
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.2.0/en_core_web_sm-2.2.0.tar.gz#egg=en_core_web_sm==2.2.0
+https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.2.0/en_core_web_md-2.2.0.tar.gz#egg=en_core_web_md==2.2.0

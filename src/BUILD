@@ -1,7 +1,7 @@
 load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_python//python:defs.bzl", "py_test")
 #load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@my_deps//:requirements.bzl", "requirement")
+load("@deps//:requirements.bzl", "requirement")
 #load("@py_model//:requirements.bzl", requirement_model = "requirement")
 
 py_library(
@@ -63,7 +63,7 @@ py_library(
         #"@en_core_web_md"
         #requirement("en-core-web-sm-abd"),
         requirement("spacy"),
-        #requirement_model("en_core_web_sm")
+        requirement("en_core_web_sm")
     ],
     visibility = ["//visibility:public"],
 )
