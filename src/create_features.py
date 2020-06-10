@@ -90,12 +90,10 @@ def extract_features(total_comment_info):
   num_plus_one = text_parser.count_plus_one(text)
   text = text_parser.sub_PlusOne(text)
 
-  text = text_cleaning.remove_html(text, True)
-
   if text == "":
     perspective_score = -1
   else:
-    perspective_score = get_perspective_score(text, "en")#det_lang
+    perspective_score = get_perspective_score(text, "en")
 
   # remove stop words and lemmatization
   text = cleanup_text(text)
