@@ -7,7 +7,6 @@ import numpy as np
 import nltk
 import re
 import nltk
-#from get_data import *
 from lexicon import *
 import time
 

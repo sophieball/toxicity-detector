@@ -3,19 +3,11 @@
 Use ConvoKit to get politeness score
 """
 
-from spacy.lang.en import English
 from convokit import Corpus, Speaker, Utterance
 from collections import defaultdict
 from convokit.text_processing import TextParser
 from convokit import PolitenessStrategies
 import pandas as pd
-
-# predict politeness (don't need it for now?)
-#import random
-#from sklearn import svm
-#from scipy.sparse import csr_matrix
-#from convokit import Classifier
-#from sklearn.metrics import classification_report
 
 # Creating corpus from the list of utterances
 def prepare_corpus(comments):
@@ -56,13 +48,3 @@ def get_politeness_score(comments):
           sum(corpus.get_utterance(x).meta["politeness_strategies"].values()) / num_features
   } for x in corpus.get_utterance_ids()]
   return pd.DataFrame(scores)
-
-"""
-# Bazel doesn't work with convokit yet
-# So when running with Bazel, I comment out the code above to test the rest of
-# the code
-def get_politeness_score(comments):
-  comments["stanford_polite"] = 1
-  return comments#[["_id", "stanford_polite"]]
-  #return pd.DataFrame({"_id": comments["_id"], "stanford_polite": 1}
-"""

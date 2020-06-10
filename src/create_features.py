@@ -1,23 +1,22 @@
 # input: a pandas dataframe
 # output: a pandas dataframe
 
-import re
+import convo_politeness
 from nltk.stem import WordNetLemmatizer
-wordnet_lemmatizer = WordNetLemmatizer()
-from convo_politeness import get_politeness_score
-from functools import partial
-import text_parser
-import text_cleaning
-from text_modifier import percent_uppercase, is_ascii
-from util import remove_large_comments
 import config
 import json
 import multiprocessing as mp
 import pandas as pd
 import pickle
+import re
 import requests
-import sys
 import spacy
+import sys
+import text_cleaning
+import text_modifier
+import text_parser
+import util
+wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_md",disable=["parser","ner"])
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
@@ -59,7 +58,7 @@ def cleanup_text(text):
   text = [
       w.replace("#", "").replace("&", "").replace("  ", " ")
       for w in text
-      if is_ascii(w)
+      if text_modifier.is_ascii(w)
   ]
   return " ".join(text)
 
@@ -71,7 +70,7 @@ def extract_features(total_comment_info):
   if not isinstance(text, (str, list, dict)) or text is None:
     text = ""
 
-  uppercase = percent_uppercase(text)
+  uppercase = text_modifier.percent_uppercase(text)
   c_length = len(text)
 
   num_reference = text_parser.count_reference_line(text)
@@ -116,11 +115,11 @@ def create_features(comments_df):
   comments_df = comments_df.dropna()
 
   # get politeness scores for all comments
-  all_stanford_polite = get_politeness_score(comments_df)
+  all_stanford_polite = convo_politeness.get_politeness_score(comments_df)
   comments_df = comments_df.join(all_stanford_polite.set_index("_id"), on="_id")
 
   # remove comments longer than 300 characters (perspective limit)
-  comments_df = remove_large_comments(comments_df)
+  comments_df = util.remove_large_comments(comments_df)
 
   # convert it to a list of dictionaries
   comments = comments_df.T.to_dict().values()

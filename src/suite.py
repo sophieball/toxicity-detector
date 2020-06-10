@@ -1,45 +1,38 @@
-#from get_data import *
-import logging
-
-from text_modifier import *
-from util import *
-import itertools
-#import cross_validate
-from statistics import *
-from classifiers import *
+import classifiers
 from collections import Counter
-import nltk
-import time
-import pandas as pd
-import operator
-import textblob
-import pickle
-from wordfreq import word_frequency
-from nltk.corpus import wordnet
-import numpy as np
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.classify.scikitlearn import SklearnClassifier
-from sklearn.svm import LinearSVC
-#from perspective import get_perspective_score
-from copy import copy, deepcopy
-from sklearn.model_selection import KFold
-from gensim.models.keyedvectors import KeyedVectors
-from nltk.tokenize import RegexpTokenizer
-import warnings
 from collections import defaultdict
-warnings.filterwarnings("ignore")
+import convo_politeness
+from copy import copy, deepcopy
+import create_features
+from gensim.models.keyedvectors import KeyedVectors
+import lexicon
 from multiprocessing import Pool
-from lexicon import *
+from nltk.classify.scikitlearn import SklearnClassifier
+from nltk.corpus import wordnet
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk.tokenize import RegexpTokenizer
+from nltk.tokenize import word_tokenize
 from sklearn.metrics import classification_report, fbeta_score
-from convo_politeness import *
-from create_features import *
+from sklearn.model_selection import KFold
+from sklearn.svm import LinearSVC
+import text_modifier
+import util
+from wordfreq import word_frequency
+import itertools
+import nltk
+import nltk
+import numpy as np
+import operator
+import pandas as pd
+import pickle
+import textblob
+import time
+import warnings
+warnings.filterwarnings("ignore")
 
 import sys
 sys.path.insert(0, "politeness3")
-import politeness3.model
-logging.info("import done")
+#import politeness3.model
 
 model = 0
 
@@ -51,36 +44,28 @@ def rescore(new_sentence, features, tf_idf_counter):
     new_features_dict["length"] = len(new_sentence)
 
   if "perspective_score" in features:
-    persp_score = get_perspective_score(new_sentence, "en")
+    persp_score = create_features.get_perspective_score(new_sentence, "en")
     new_features_dict["perspective_score"] = persp_score
 
   if "stanford_polite" in features:
-    """sentences = nltk.sent_tokenize(new_sentence) stanford_polite = politeness3.model.score({
-
-        "sentences": sentences,
-        "text": new_sentence
-    })["polite"]
-
-    new_features_dict["stanford_polite"] = stanford_polite
-    """
-    polite_df = get_politeness_score(pd.DataFrame([{"_id": "1", "text": new_sentence}]))
+    polite_df = convo_politeness.get_politeness_score(pd.DataFrame([{"_id": "1", "text": new_sentence}]))
     new_features_dict["stanford_polite"] = polite_df.iloc[0]["stanford_polite"]
 
   if "word2vec_0" in features:
     # Calcualte word2vec
     df = pd.DataFrame([{"text": new_sentence}])
-    df = add_word2vec(df).iloc[0]
+    df = text_modifier.add_word2vec(df).iloc[0]
     word2vec_values = [df["word2vec_{}".format(i)] for i in range(300)]
 
     for i in range(300):
       new_features_dict["word2vec_{}".format(i)] = word2vec_values[i]
 
   if "LIWC_anger" in features:
-    s = score(open_lexicons(), new_sentence)
+    s = lexicon.score(lexicon.open_lexicons(), new_sentence)
     new_features_dict["LIWC_anger"] = s["LIWC_anger"]
 
   if "negative_lexicon" in features:
-    s = score(open_lexicons(), new_sentence)
+    s = lexicon.score(lexicon.open_lexicons(), new_sentence)
     new_features_dict["negative_lexicon"] = s["negative_lexicon"]
 
   if "nltk_score" in features:
@@ -108,22 +93,16 @@ def rescore(new_sentence, features, tf_idf_counter):
   return new_features
 
 
-counter = pickle.load(open("pickles/github_words.p", "rb"))
+counter = pickle.load(open("src/pickles/github_words.p", "rb"))
 our_words = dict([(i, word_frequency(i, "en") * 10**9) for i in counter])
-different_words = log_odds(
+different_words = util.log_odds(
     defaultdict(int, counter), defaultdict(int, our_words))
 
-# logging.info("different_words"+str(different_words))
-
-
-# returns [isToxic, perspective_score, stanford_polite_score]
 def score_toxicity(text, model):
-  logging.info("get_prediction " + text)
   features = ["perspective_score", "stanford_polite"]
 
   val = rescore(text, features, 0)
   predict = model.predict([val])[0]
-  logging.info("predicted " + str(predict) + " from " + str(val))
 
   return [predict, val[0], val[1]]
 
@@ -150,7 +129,6 @@ def clean_text(text):
 
   tokenizer = RegexpTokenizer(r"\w+")
   all_words = tokenizer.tokenize(text)
-  # logging.info("all_words "+str(all_words))
   # Try removing all unknown words
   for word in set(all_words):
     if word.lower() not in counter and word_frequency(
@@ -162,12 +140,10 @@ def clean_text(text):
 
 
 def get_prediction(text, model):
-  logging.info("get_prediction " + text)
   features = ["perspective_score", "stanford_polite"]
 
   val = rescore(text, features, 0)
   predict = model.predict([val])[0]
-  logging.info("predicted " + str(predict) + " from " + str(val))
 
   if predict == 0:
     return 0
@@ -182,7 +158,6 @@ def get_prediction(text, model):
       if not word.isalpha() or word.lower() in different_words
   ]
 
-  logging.info("words " + str(words))
 
   for word in set(words):
     # Maybe unkify?
@@ -191,7 +166,6 @@ def get_prediction(text, model):
         text.lower())
     new_features = rescore(new_sentence, features, 0)
     prediction = model.predict([new_features])[0]
-    logging.info("try with potato replacement for " + word + ": " +
                  new_sentence + " = " + str(prediction))
 
     if prediction == 0:
@@ -199,7 +173,6 @@ def get_prediction(text, model):
 
   tokenizer = RegexpTokenizer(r"\w+")
   all_words = tokenizer.tokenize(text)
-  # logging.info("all_words "+str(all_words))
   # Try removing all unknown words
   for word in set(all_words):
     if word.lower() not in counter and word_frequency(
@@ -208,7 +181,6 @@ def get_prediction(text, model):
 
   new_features = rescore(text, features, 0)
   prediction = model.predict([new_features])[0]
-  logging.info(text + " = " + str(prediction))
   if prediction == 0:
     return 0
 
@@ -279,7 +251,7 @@ class Suite:
     self.last_time = time.time()
     self.tf_idf_counter = 0
     self.use_filters = True
-    self.counter = pickle.load(open("pickles/github_words.p", "rb"))
+    self.counter = pickle.load(open("src/pickles/github_words.p", "rb"))
     counter = self.counter
     self.our_words = dict([
         (i, word_frequency(i, "en") * 10**9) for i in self.counter
@@ -287,8 +259,8 @@ class Suite:
     self.different_words = log_odds(
         defaultdict(int, self.counter), defaultdict(int, self.our_words))
     different_words = self.different_words
-    self.anger_classifier = pickle.load(open("pickles/anger.p", "rb"))
-    self.all_words = pickle.load(open("pickles/all_words.p", "rb"))
+    self.anger_classifier = pickle.load(open("src/pickles/anger.p", "rb"))
+    self.all_words = pickle.load(open("src/pickles/all_words.p", "rb"))
     self.m = sum(self.counter.values())
     self.all_false = {word: False for word in self.all_words}
 
@@ -331,7 +303,7 @@ class Suite:
       smallest_index = 0
 
       for j in range(1, len(potential_train_list)):
-        if dist(potential_train_list[j][:-1], row_score) < dist(
+        if util.dist(potential_train_list[j][:-1], row_score) < util.dist(
             potential_train_list[smallest_index][:-1], row_score):
           smallest_index = j
 
@@ -362,25 +334,21 @@ class Suite:
 
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
-    #self.all_train_data = get_all_comments(self.train_collection)
-    #self.all_train_data = prepare_dataset(self.all_train_data)
-    self.all_train_data = map_toxicity(create_features(train_collection))
+    self.all_train_data = map_toxicity(create_features.create_features(train_collection))
     print("Prepared training dataset, it took {} seconds".format(time.time() -
                                                               self.last_time))
     self.last_time = time.time()
 
   def set_test_set(self, test_collection):
     self.test_collection = test_collection
-    #self.test_data = get_all_comments(self.test_collection)
-    #self.test_data = prepare_dataset(self.test_data)
-    self.test_data = create_features(test_collection)
+    self.test_data = create_features.create_features(test_collection)
     print("Prepared testing dataset, it took {} seconds".format(time.time() -
                                                              self.last_time))
 
     self.last_time = time.time()
 
   def select_subset(self, ratio):
-    self.train_data = select_ratio(self.all_train_data, ratio)
+    self.train_data = util.select_ratio(self.all_train_data, ratio)
 
   def create_counter(self):
     body = random_issues()
@@ -441,12 +409,6 @@ class Suite:
     test_issues.loc[test_issues.prediction != 1, "is_SE"] = 0
     original_text = test_issues[test_issues["prediction"] == 1]["original_text"]
     original_text = p.starmap(remove_SE_comment, [(x, model, features, tf_idf_counter) for x in original_text]) 
-    """
-    [
-        remove_SE_comment(x, model, features, tf_idf_counter)
-        for x in original_text
-    ]
-    """
     test_issues.loc[test_issues.prediction == 1, "is_SE"] = original_text
     #test_issues.loc[test_issues.prediction == 1, "is_SE"] = test_issues[test_issues["prediction"] == 1]["original_text"].map(lambda x: self.remove_SE_comment(x))
     test_issues.loc[test_issues.is_SE == 1, "prediction"] = 0
@@ -454,17 +416,11 @@ class Suite:
     return test_issues
 
   def classify_test(self):
-    return classify(self.model, self.train_data, self.test_data, self.features)
+    return classifiers.classify(self.model, self.train_data, self.test_data, self.features)
 
   def classify_test_statistics(self):
     return classify_statistics(self.model, self.train_data, self.test_data,
                                self.features)
-
-  """
-  def cross_validate(self):
-    return cross_validate.cross_validate(self.all_train_data, self.features,
-                                         self.model)
-  """
 
   def cross_validate_classify(self):
     kfold = KFold(10)
@@ -472,9 +428,9 @@ class Suite:
     for train, test in kfold.split(data):
       train_data = data.iloc[train].copy()
       test_data = data.iloc[test].copy()
-      train_data = select_ratio(train_data, self.ratio)
+      train_data = util.select_ratio(train_data, self.ratio)
 
-      test_data = classify(self.model, train_data, test_data, self.features)
+      test_data = classifiers.classify(self.model, train_data, test_data, self.features)
 
       for i, row in test_data.iterrows():
         data.loc[data["_id"] == row["_id"], "prediction"] = row["prediction"]
@@ -482,28 +438,6 @@ class Suite:
     print("Removing angry words towards oneself and SE words.")
     data = self.remove_I(data)
     data = self.remove_SE(data)
-
-    """
-    # use comment labels to label issues
-    test_issues = pd.read_csv("data/labeled_issues.csv")#get_issues(get_labeled_collection())
-    predicted = []
-    for i, row in test_issues.iterrows():
-        matching_comments = data[data["_id"].str.contains(row["_id"])]
-        if (len(matching_comments) > 0):
-            if (len(matching_comments[matching_comments["prediction"] == 1])
-            > 0):
-                predicted.append(1)
-            else:
-                predicted.append(0)
-        else:
-            predicted.append(0)
-
-    test_issues["prediction"] = predicted
-    test_issues = map_toxicity(test_issues)
-    print("Issue crossvalidate Score is \n{}".format(classification_report(test_issues["prediction"].tolist(),
-                                                    test_issues["toxic"].tolist())))
-    """
-
     print("Crossvalidation score is \n{}".format(
         classification_report(data["prediction"].tolist(),
                              data["toxic"].tolist())))
@@ -528,54 +462,8 @@ class Suite:
     self.test_data = self.remove_SE(self.test_data)
     return self.test_data
 
-    """
-    predicted = []
-    values = []
-
-    print("Looping through test_issues")
-
-    test_issues = pd.read_csv("data/test_issues.csv")#get_issues(self.test_collection)
-    predicted_toxic = list(
-        self.test_data[self.test_data["prediction"] == 1]["_id"])
-    predicted_toxic = ["/".join(i.split("/")[:-1]) for i in predicted_toxic]
-
-    for i, row in test_issues.iterrows():
-      if row["_id"] in predicted_toxic:
-        predicted.append(1)
-      else:
-        predicted.append(0)
-
-    test_issues["prediction"] = predicted
-    test_issues = test_issues.sort_values("prediction")
-
-    return test_issues
-    """
-
   def self_issue_classification_from_comments(self):
     self.train_data = self.cross_validate_classify()
-    #self.train_data = self.remove_I(self.train_data)
-    #self.train_data = self.remove_SE(self.train_data)
-
-    """
-    test_issues = pd.read_csv("data/training_issues.csv")#get_issues(self.train_collection)
-    predicted = []
-    for i, row in test_issues.iterrows():
-      matching_comments = self.train_data[self.train_data["_id"].str.contains(
-          row["_id"])]
-      if (len(matching_comments) > 0):
-        if (len(matching_comments[matching_comments["prediction"] == 1]) > 0):
-          predicted.append(1)
-        else:
-          predicted.append(0)
-      else:
-        predicted.append(0)
-
-    test_issues["prediction"] = predicted
-    test_issues = map_toxicity(test_issues)
-    test_issues = test_issues.sort_values("prediction")
-    """
-
-    #return test_issues
 
   def all_combinations(self, function, matched_pairs=False):
     print("Trying all combinations of hyper parameters.")
@@ -615,13 +503,6 @@ class Suite:
                           average="weighted",
                           beta=0.5)
 
-      """
-      print("{}\t{}\t ratio: {}\t precision: {}\t recall: {}\t f0.5: {}".format(
-          ",".join(self.nice_features),
-          "{} {} ".format(self.model_function.__doc__, self.combination_dict),
-          self.ratio, score["precision"], score["recall"], score["f_0.5"]))
-      """
-
       return score#score["f_0.5"]
 
     best_score = self.all_combinations(
@@ -638,10 +519,6 @@ class Suite:
 
     test_result = test_issue_classifications_from_comments_statistics_per()
     return test_result
-    # SQ: Why do we want to do all_combinations() again
-    #self.all_combinations(
-    #    test_issue_classifications_from_comments_statistics_per,
-    #    matched_pairs=matched_pairs)
 
   def self_comment_classification_all(self, matched_pairs=False):
 
