@@ -17,7 +17,10 @@ import text_modifier
 import text_parser
 import util
 wordnet_lemmatizer = WordNetLemmatizer()
-nlp = spacy.load("en_core_web_md",disable=["parser","ner"])
+nlp = spacy.load("en_core_web_md", disable = ["parser", "ner"])
+
+# number of multiprocess
+num_proc = 10
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
       "?key=" + config.perspective_api_key)
@@ -47,9 +50,11 @@ def get_perspective_score(text, det_lang):
       return -1
 
 def cleanup_text(text):
+  if len(text) == 0: return ""
+
   text = nlp(text.lower().strip())
   # Stem Non-Urls/non-Stop Words/Non Punctuation/symbol/numbers
-  text = [token.lemma_ for token in text]  
+  text = [token.lemma_ for token in text]
   # Remove ampersands
   text = [re.sub(r"&[^\w]+", "", i) for i in text]
   # Lower case
@@ -125,7 +130,7 @@ def create_features(comments_df):
   comments = comments_df.T.to_dict().values()
 
   # iterate through my collection to preprocess
-  pool = mp.Pool(processes=10)
+  pool = mp.Pool(processes=num_proc)
   features = pool.map(extract_features, comments)
   pool.close()
   features_df = pd.DataFrame(features)
