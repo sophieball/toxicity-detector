@@ -69,7 +69,7 @@ py_library(
     deps = [
         ":get_data",
         ":convo_politeness",
-        ":TextParser",
+        ":text_parser",
         ":text_cleaning",
         ":text_modifier",
         ":util",
@@ -88,8 +88,8 @@ py_library(
 )
 
 py_library(
-    name = "TextParser",
-    srcs = ["TextParser.py"],
+    name = "text_parser",
+    srcs = ["text_parser.py"],
     deps = [
         requirement("nltk"),
         requirement("markdown")

@@ -1,32 +1,26 @@
 # input: a pandas dataframe
-# output: pickle
+# output: a pandas dataframe 
 
 import time
 start = time.time()
-#from classifiers import *
 from get_data import *
 from nltk.stem import WordNetLemmatizer
 wordnet_lemmatizer = WordNetLemmatizer()
-#from stanford_polite import *
 from convo_politeness import *
 from functools import partial
-import TextParser
+import text_parser
 import text_cleaning
 import text_modifier
 from util import *
 import argparse
 import config
 import json
-import logging
 import multiprocessing as mp
 import pandas as pd
 import pickle
 import requests
 import sys
 nlp = spacy.load("en_core_web_md",disable=["parser","ner"])
-
-# load some pretrained models
-#anger_classifier = pickle.load(open("pickles/anger.p","rb"))
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
       "?key=" + config.perspective_api_key)
@@ -60,12 +54,7 @@ def get_perspective_score(text, det_lang):
 def cleanup_text(text):
   text = nlp(text.lower().strip())
   # Stem Non-Urls/non-Stop Words/Non Punctuation/symbol/numbers
-  text = [token.lemma_ for token in text]  # if token.pos_ not in \
-  #["PUNCT", "SYM", "NUM"] and token.text in nlp.vocab]
-  #text = [wordnet_lemmatizer.lemmatize(re.sub(r'^https?:\/\/.*[\r\n]*', '',
-  #        token.text, flags=re.MULTILINE), pos="v") \
-  #        for token in text \
-  #        if token.pos_ not in ["PUNCT","SYM","NUM"] and token.text in nlp.vocab]
+  text = [token.lemma_ for token in text]  
   # Remove ampersands
   text = [re.sub(r"&[^\w]+", "", i) for i in text]
   # Lower case
@@ -89,50 +78,24 @@ def extract_features(total_comment_info):
   uppercase = percent_uppercase(text)
   c_length = len(text)
 
-  #print(text)
-  num_reference = TextParser.count_reference_line(text)
-  #print("num_reference: %d" % num_reference)
-  text = TextParser.remove_reference(text)
-  #print("text 0: %s" % text)
+  num_reference = text_parser.count_reference_line(text)
+  text = text_parser.remove_reference(text)
 
-  #text = TextParser.transform_markdown(text)    # use mistune to transform markdown into html for removal later.
-  #print("text 1: %s" % text)
+  num_url = text_parser.count_url(text)
+  text = text_parser.remove_url(text)
 
-  #text = TextParser.remove_inline_code(text)    # used place-holder: InlineCode
-  #print("text 2: %s" % text)
-
-  num_url = TextParser.count_url(text)
-  #print("num_url: %d" % num_url)
-  text = TextParser.remove_url(text)
-  #print("text 4: %s" % text)
-
-  num_emoji = TextParser.count_emoji(text)
-  #print("num_emoji: %d" % num_emoji)
-  text = TextParser.remove_emoji_marker(
+  num_emoji = text_parser.count_emoji(text)
+  text = text_parser.remove_emoji_marker(
       text)  # remove the two semi-colons on two sides of emoji
-  #print("text 5: %s" % text)
-  text = TextParser.remove_newline(text)
-  #print("text 6: %s" % text)
+  text = text_parser.remove_newline(text)
 
-  num_mention = TextParser.count_mention(text)
-  #print("num_mention: %d" % num_mention)
-  text = TextParser.replace_mention(text)
-  #print("text 7: %s" % text)
-  # sub all "+1" to "plus one"
-  num_plus_one = TextParser.count_plus_one(text)
-  #print("num_plus_one: %d" % num_plus_one)
-  text = TextParser.sub_PlusOne(text)
-  #print("text 8: %s" % text)
+  num_mention = text_parser.count_mention(text)
+  text = text_parser.replace_mention(text)
+  num_plus_one = text_parser.count_plus_one(text)
+  text = text_parser.sub_PlusOne(text)
 
   text = text_cleaning.remove_html(text, True)
 
-  # Not very reliable
-  #text = text_cleaning.remove_non_english(text)
-
-  # infer the language of the comment
-  # det_lang = detect(text)
-  #if TextParser.contain_non_english(text): # if the text contains non-english, we terminate early
-  #    text = remove_non_english(text)
   if text == "":
     perspective_score = -1
   else:
@@ -150,7 +113,6 @@ def extract_features(total_comment_info):
   total_comment_info["perspective_score"] = perspective_score
   total_comment_info["text"] = text
 
-  #print(ret)
   return total_comment_info
 
 # input: pd.DataFrame
