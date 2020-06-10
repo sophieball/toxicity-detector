@@ -1,26 +1,26 @@
 # input: a pandas dataframe
-# output: a pandas dataframe 
+# output: a pandas dataframe
 
-import time
-start = time.time()
-from get_data import *
+import convo_politeness
 from nltk.stem import WordNetLemmatizer
-wordnet_lemmatizer = WordNetLemmatizer()
-from convo_politeness import *
-from functools import partial
-import text_parser
-import text_cleaning
-import text_modifier
-from util import *
-import argparse
 import config
 import json
 import multiprocessing as mp
 import pandas as pd
 import pickle
+import re
 import requests
+import spacy
 import sys
-nlp = spacy.load("en_core_web_md",disable=["parser","ner"])
+import text_cleaning
+import text_modifier
+import text_parser
+import util
+wordnet_lemmatizer = WordNetLemmatizer()
+nlp = spacy.load("en_core_web_md", disable = ["parser", "ner"])
+
+# number of multiprocess
+num_proc = 10
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
       "?key=" + config.perspective_api_key)
@@ -41,7 +41,6 @@ def get_perspective_score(text, det_lang):
     response_dict = json.loads(response.content.decode("utf-8"))
     return response_dict["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
   except:
-    print("retry")
     time.sleep(10)
     response = requests.post(url=url, data=json.dumps(data_dict))
     response_dict = json.loads(response.content.decode("utf-8"))
@@ -50,11 +49,12 @@ def get_perspective_score(text, det_lang):
     except:
       return -1
 
-
 def cleanup_text(text):
+  if len(text) == 0: return ""
+
   text = nlp(text.lower().strip())
   # Stem Non-Urls/non-Stop Words/Non Punctuation/symbol/numbers
-  text = [token.lemma_ for token in text]  
+  text = [token.lemma_ for token in text]
   # Remove ampersands
   text = [re.sub(r"&[^\w]+", "", i) for i in text]
   # Lower case
@@ -63,7 +63,7 @@ def cleanup_text(text):
   text = [
       w.replace("#", "").replace("&", "").replace("  ", " ")
       for w in text
-      if is_ascii(w)
+      if text_modifier.is_ascii(w)
   ]
   return " ".join(text)
 
@@ -75,7 +75,7 @@ def extract_features(total_comment_info):
   if not isinstance(text, (str, list, dict)) or text is None:
     text = ""
 
-  uppercase = percent_uppercase(text)
+  uppercase = text_modifier.percent_uppercase(text)
   c_length = len(text)
 
   num_reference = text_parser.count_reference_line(text)
@@ -94,12 +94,10 @@ def extract_features(total_comment_info):
   num_plus_one = text_parser.count_plus_one(text)
   text = text_parser.sub_PlusOne(text)
 
-  text = text_cleaning.remove_html(text, True)
-
   if text == "":
     perspective_score = -1
   else:
-    perspective_score = get_perspective_score(text, "en")#det_lang
+    perspective_score = get_perspective_score(text, "en")
 
   # remove stop words and lemmatization
   text = cleanup_text(text)
@@ -122,17 +120,17 @@ def create_features(comments_df):
   comments_df = comments_df.dropna()
 
   # get politeness scores for all comments
-  all_stanford_polite = get_politeness_score(comments_df)
+  all_stanford_polite = convo_politeness.get_politeness_score(comments_df)
   comments_df = comments_df.join(all_stanford_polite.set_index("_id"), on="_id")
 
   # remove comments longer than 300 characters (perspective limit)
-  comments_df = remove_large_comments(comments_df)
+  comments_df = util.remove_large_comments(comments_df)
 
   # convert it to a list of dictionaries
   comments = comments_df.T.to_dict().values()
 
   # iterate through my collection to preprocess
-  pool = mp.Pool(processes=10)
+  pool = mp.Pool(processes=num_proc)
   features = pool.map(extract_features, comments)
   pool.close()
   features_df = pd.DataFrame(features)
