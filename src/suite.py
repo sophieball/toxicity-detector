@@ -1,11 +1,7 @@
-import classifiers
 from collections import Counter
 from collections import defaultdict
-import convo_politeness
 from copy import copy, deepcopy
-import create_features
 from gensim.models.keyedvectors import KeyedVectors
-import lexicon
 from multiprocessing import Pool
 from nltk.classify.scikitlearn import SklearnClassifier
 from nltk.corpus import wordnet
@@ -15,18 +11,23 @@ from nltk.tokenize import word_tokenize
 from sklearn.metrics import classification_report, fbeta_score
 from sklearn.model_selection import KFold
 from sklearn.svm import LinearSVC
-import text_modifier
-import util
 from wordfreq import word_frequency
+import classifiers
+import convo_politeness
+import create_features
+import get_data
 import itertools
-import nltk
+import lexicon
 import nltk
 import numpy as np
 import operator
 import pandas as pd
 import pickle
+import re
+import text_modifier
 import textblob
 import time
+import util
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -166,7 +167,6 @@ def get_prediction(text, model):
         text.lower())
     new_features = rescore(new_sentence, features, 0)
     prediction = model.predict([new_features])[0]
-                 new_sentence + " = " + str(prediction))
 
     if prediction == 0:
       return 0
@@ -256,7 +256,7 @@ class Suite:
     self.our_words = dict([
         (i, word_frequency(i, "en") * 10**9) for i in self.counter
     ])
-    self.different_words = log_odds(
+    self.different_words = util.log_odds(
         defaultdict(int, self.counter), defaultdict(int, self.our_words))
     different_words = self.different_words
     self.anger_classifier = pickle.load(open("src/pickles/anger.p", "rb"))
@@ -334,7 +334,7 @@ class Suite:
 
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
-    self.all_train_data = map_toxicity(create_features.create_features(train_collection))
+    self.all_train_data = get_data.map_toxicity(create_features.create_features(train_collection))
     print("Prepared training dataset, it took {} seconds".format(time.time() -
                                                               self.last_time))
     self.last_time = time.time()
