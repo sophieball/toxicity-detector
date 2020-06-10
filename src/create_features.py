@@ -1,18 +1,15 @@
 # input: a pandas dataframe
-# output: a pandas dataframe 
+# output: a pandas dataframe
 
-import time
-start = time.time()
-from get_data import *
+import re
 from nltk.stem import WordNetLemmatizer
 wordnet_lemmatizer = WordNetLemmatizer()
-from convo_politeness import *
+from convo_politeness import get_politeness_score
 from functools import partial
 import text_parser
 import text_cleaning
-import text_modifier
-from util import *
-import argparse
+from text_modifier import percent_uppercase, is_ascii
+from util import remove_large_comments
 import config
 import json
 import multiprocessing as mp
@@ -20,6 +17,7 @@ import pandas as pd
 import pickle
 import requests
 import sys
+import spacy
 nlp = spacy.load("en_core_web_md",disable=["parser","ner"])
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
@@ -41,7 +39,6 @@ def get_perspective_score(text, det_lang):
     response_dict = json.loads(response.content.decode("utf-8"))
     return response_dict["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
   except:
-    print("retry")
     time.sleep(10)
     response = requests.post(url=url, data=json.dumps(data_dict))
     response_dict = json.loads(response.content.decode("utf-8"))
@@ -49,7 +46,6 @@ def get_perspective_score(text, det_lang):
       return response_dict["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
     except:
       return -1
-
 
 def cleanup_text(text):
   text = nlp(text.lower().strip())
