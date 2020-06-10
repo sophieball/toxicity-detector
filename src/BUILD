@@ -47,6 +47,7 @@ py_library(
         requirement("pandas"),
         requirement("spacy"),
         requirement("numpy"),
+        requirement("en_core_web_md")
     ],
     visibility = ["//visibility:public"],
 )
@@ -58,7 +59,23 @@ py_library(
         requirement("convokit"),
         requirement("pandas"),
         requirement("spacy"),
-        requirement("en_core_web_sm")
+        requirement("en_core_web_sm"),
+        requirement("pytz"),
+        requirement("cycler"),
+        requirement("kiwisolver"),
+        requirement("thinc"),
+        requirement("catalogue"),
+        requirement("importlib_metadata"),
+        requirement("zipp"),
+        requirement("srsly"),
+        requirement("cymem"),
+        requirement("preshed"),
+        requirement("murmurhash"),
+        requirement("blis"),
+        requirement("wasabi"),
+        requirement("plac"),
+        requirement("ftfy"),
+        requirement("threadpoolctl"),
     ],
     visibility = ["//visibility:public"],
 )
@@ -130,7 +147,9 @@ py_library(
         requirement("pandas"),
         requirement("textblob"),
         requirement("sklearn"),
-        requirement("gensim")
+        requirement("gensim"),
+        requirement("smart_open"),
+        requirement("wordfreq")
     ]
 )
 
