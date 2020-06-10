@@ -10,9 +10,9 @@ def train_model():
   s = Suite()
 
   print("Loading training data.")
-  train_dat = pd.read_csv(join(path, "data/training_data_label.csv"))
+  train_dat = pd.read_csv(join(path, "src/data/training_data.csv"))
   s.set_train_set(train_dat)
-  test_dat = pd.read_csv(join(path, "data/test_comments.csv"))
+  test_dat = pd.read_csv(join(path, "src/data/test_data.csv"))
   s.set_test_set(test_dat)
   s.set_model(svm_model)
 
@@ -27,6 +27,6 @@ def train_model():
   s.self_issue_classification_all()
   # fit the model on test data
   result = s.test_issue_classifications_from_comments_all()
-  result.to_csv("classification_results.csv", index=False)
+  result.to_csv("src/classification_results.csv", index=False)
 
 train_model()
