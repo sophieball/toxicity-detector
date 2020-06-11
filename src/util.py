@@ -50,26 +50,26 @@ def select_ratio(df,ratio):
     """ In a dataframe (df) with comments, select a subset, so that
         The ratio of toxic to non-toxic is 1:ratio """
 
-    all_toxic = df[df["toxic"] == 1]
-    non_toxic = df[df["toxic"] == 0]
+    all_toxic = df[df["label"] == 1]
+    non_toxic = df[df["label"] == 0]
     non_toxic = non_toxic.sample(min(len(non_toxic),int(ratio*len(all_toxic))))
     return pd.concat([all_toxic,non_toxic])
 
 def select_ratio_SMOTE(df,ratio,features=["stanford_polite","perspective_score"]):
     sm = SMOTE(sampling_strategy={0: int(len(df)), 1: int(len(df) // ratio)})
-    labels = list(df["toxic"])
+    labels = list(df["label"])
     df, new_labels = sm.fit_resample(df[features], labels)
     df = pd.DataFrame(df, columns=features)
-    df['toxic'] = new_labels
+    df['label'] = new_labels
 
     return df
 
 def select_ratio_ADASYN(df,ratio,features=["stanford_polite","perspective_score"]):
     sm = ADASYN(sampling_strategy={0: int(len(df)), 1: int(len(df) // ratio)})
-    labels = list(df["toxic"])
+    labels = list(df["label"])
     df, new_labels = sm.fit_resample(df[features], labels)
     df = pd.DataFrame(df, columns=features)
-    df['toxic'] = new_labels
+    df['label'] = new_labels
 
     return df
 
@@ -141,14 +141,14 @@ def prepare_dataset(train_data,map_toxic=True):
 
     train_data["text"] = train_data["text"].map(str)
     train_data["original_text"] = train_data["text"]
-    train_data["uppercase"] = train_data["text"].map(percent_uppercase)
+    train_data["uppercase"] = train_data["text"].map(text_modifier.percent_uppercase)
     train_data["length"] = train_data["text"].map(len)
     #train_data["text"] = train_data["text"].map(cleanup_text)
 
     # Change toxicity from y/n to 1/0
     if 'toxic' in train_data:
         train_data = map_toxicity(train_data)
-        train_data = train_data[train_data["toxic"] >= 0]
+        train_data = train_data[train_data["label"] >= 0]
 
     return train_data
 

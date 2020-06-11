@@ -12,7 +12,7 @@ def df_to_list(df):
 
 def fit_model(model,train,test,features_used):
     train_tuples = [tuple(x) for x in train[features_used].values]
-    train_label = train['toxic'].tolist()
+    train_label = train["label"].tolist()
 
     model.fit(train_tuples,train_label)
 
@@ -44,7 +44,7 @@ def classify_proba(model,train,test,features_used):
 
 def classify_statistics(model,train,test,features):
     predicted = classify(model,train,test,features)['prediction'].tolist()
-    test_label = test['toxic'].tolist()
+    test_label = test["label"].tolist()
     return calculate_statistics(predicted,test_label)
 
 def bayes_model():
