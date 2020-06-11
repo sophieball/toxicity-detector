@@ -1,3 +1,8 @@
+# main program for training a classifier and applies it to new data
+
+import download_data
+download_data.download_data()
+
 from suite import Suite
 import pandas as pd
 from classifiers import *
@@ -6,16 +11,23 @@ from os.path import join
 import os
 path = Path(os.path.abspath("."))
 
+""" connect to SQL 
+
+"""
 def train_model():
   s = Suite()
 
   print("Loading training data.")
-  train_dat = pd.read_csv(join(path, "src/data/training_data.csv"))
+  # executes a SQL query and returns a pd.DataFrame
+  # 3 columns: _id, text, label(0/1)
+  train_dat = pd.read_sql_query("SQL_QUERY_FOR_TRANING_DATA")
   s.set_train_set(train_dat)
-  test_dat = pd.read_csv(join(path, "src/data/test_data.csv"))
+  # 2 columns: _id, text
+  test_dat = pd.read_sql_query("SQL_QUERY_FOR_TEST_DATA")
   s.set_test_set(test_dat)
   s.set_model(svm_model)
 
+  # list the set of parameters you want to try out
   s.set_ratios([2])
   s.add_parameter("C", [.05])
   s.add_parameter("gamma", [2])
@@ -27,6 +39,9 @@ def train_model():
   s.self_issue_classification_all()
   # fit the model on test data
   result = s.test_issue_classifications_from_comments_all()
-  result.to_csv("src/classification_results.csv", index=False)
+
+  # only write the id and label to file
+  result = result[["_id", "prediction"]]
+  result.to_csv("PATH_TO_OUTPUT_FILE", index=False)
 
 train_model()

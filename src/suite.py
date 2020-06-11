@@ -287,13 +287,13 @@ class Suite:
     for i in range(len(potential_train_list)):
       potential_train_list.loc[i, "index1"] = i
 
-    potential_train_list = potential_train_list[potential_train_list["toxic"] ==
+    potential_train_list = potential_train_list[potential_train_list["label"] ==
                                                 0]
     potential_train_list = potential_train_list[matching_features + ["index1"]]
 
     potential_train_list = [tuple(x) for x in potential_train_list.values]
 
-    toxic_data = self.all_train_data[self.all_train_data["toxic"] ==
+    toxic_data = self.all_train_data[self.all_train_data["label"] ==
                                      1][matching_features]
 
     indexes_we_want = []
@@ -317,11 +317,11 @@ class Suite:
       non_matched = list(
           set(range(len(self.all_train_data))) - set(indexes_we_want))
       non_toxic_random = self.all_train_data.iloc[non_matched]
-      non_toxic_random = non_toxic_random[non_toxic_random["toxic"] == 0]
+      non_toxic_random = non_toxic_random[non_toxic_random["label"] == 0]
       non_toxic_random = non_toxic_random.sample(
           int((ratio - 1) * len(toxic_data)))
 
-    toxic_data = self.all_train_data[self.all_train_data["toxic"] == 1]
+    toxic_data = self.all_train_data[self.all_train_data["label"] == 1]
     total = toxic_data
     total = total.append([non_toxic_random, non_toxic_matched])
 
@@ -334,7 +334,7 @@ class Suite:
 
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
-    self.all_train_data = get_data.map_toxicity(create_features.create_features(train_collection))
+    self.all_train_data = create_features.create_features(train_collection)
     print("Prepared training dataset, it took {} seconds".format(time.time() -
                                                               self.last_time))
     self.last_time = time.time()
@@ -440,7 +440,7 @@ class Suite:
     data = self.remove_SE(data)
     print("Crossvalidation score is \n{}".format(
         classification_report(data["prediction"].tolist(),
-                             data["toxic"].tolist())))
+                             data["label"].tolist())))
 
     return data
 
@@ -499,7 +499,7 @@ class Suite:
       # self.train_data
       self.self_issue_classification_from_comments()
       score = fbeta_score(self.train_data["prediction"].tolist(),
-                          self.train_data["toxic"].tolist(),
+                          self.train_data["label"].tolist(),
                           average="weighted",
                           beta=0.5)
 

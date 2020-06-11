@@ -3,6 +3,11 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("@deps//:requirements.bzl", "requirement")
 
 py_library(
+    name = "download_data",
+    srcs = ["download_data.py"]
+)
+
+py_library(
     name = "config",
     srcs = ["config.py"]
 )
@@ -169,6 +174,7 @@ py_binary(
     name = "train_classifier_g",
     srcs = ["train_classifier_g.py"],
     deps = [
+        ":download_data",
         ":suite",
         ":classifiers",
         requirement("pandas")
