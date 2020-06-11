@@ -1,6 +1,5 @@
 import pandas as pd
 from text_modifier import *
-from get_data import *
 from sklearn.preprocessing import StandardScaler
 from imblearn.over_sampling import SMOTE, ADASYN
 from collections import defaultdict
