@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import tree
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
-from statistics import calculate_statistics
+from src import statistics
 import time
 
 def df_to_list(df):
@@ -45,7 +45,7 @@ def classify_proba(model,train,test,features_used):
 def classify_statistics(model,train,test,features):
     predicted = classify(model,train,test,features)['prediction'].tolist()
     test_label = test["label"].tolist()
-    return calculate_statistics(predicted,test_label)
+    return statistics.calculate_statistics(predicted,test_label)
 
 def bayes_model():
     """Bayes"""
