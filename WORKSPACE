@@ -17,7 +17,7 @@ load("@rules_python//python:pip.bzl", "pip3_import")
 # requirements.txt.
 pip3_import(   # or pip3_import
    name = "deps",
-   requirements = "//src:requirements.txt",
+   requirements = "//:requirements.txt",
 )
 
 # Load the central repo's install function from its `//:requirements.bzl` file,
