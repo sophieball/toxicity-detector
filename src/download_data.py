@@ -18,7 +18,7 @@ def download_data():
     nltk.download("words")
 
   try:
-    spacy.load("en_core_web_sm")
+    spacy.load("en")
   except IOError:
     spacy.cli.download("en")
 
