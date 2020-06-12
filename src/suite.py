@@ -15,7 +15,6 @@ from wordfreq import word_frequency
 import classifiers
 import convo_politeness
 import create_features
-import get_data
 import itertools
 import lexicon
 import nltk
