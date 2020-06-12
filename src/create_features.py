@@ -1,9 +1,13 @@
 # input: a pandas dataframe
 # output: a pandas dataframe
 
-import convo_politeness
 from nltk.stem import WordNetLemmatizer
-import config
+from src import convo_politeness
+from src import text_cleaning
+from src import text_modifier
+from src import text_parser
+from src import util
+from src import config
 import json
 import multiprocessing as mp
 import pandas as pd
@@ -12,10 +16,6 @@ import re
 import requests
 import spacy
 import sys
-import text_cleaning
-import text_modifier
-import text_parser
-import util
 wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_md", disable = ["parser", "ner"])
 
