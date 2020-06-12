@@ -1,10 +1,9 @@
-import pandas as pd
-from text_modifier import *
-from get_data import *
-from sklearn.preprocessing import StandardScaler
-from imblearn.over_sampling import SMOTE, ADASYN
 from collections import defaultdict
+from imblearn.over_sampling import SMOTE, ADASYN
+from sklearn.preprocessing import StandardScaler
+from src import text_modifier
 import math
+import pandas as pd
 
 def log_odds(counts1,counts2):
     prior = counts2

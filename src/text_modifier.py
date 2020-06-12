@@ -1,13 +1,11 @@
-import logging
-from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
 from nltk.stem import PorterStemmer
-import pandas as pd
-import spacy
+from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
+import nltk
+import nltk
 import numpy as np
-import nltk
+import pandas as pd
 import re
-import nltk
-from lexicon import *
+import spacy
 import time
 
 nlp = spacy.load("en_core_web_md",disable=["parser","ner"])
@@ -161,16 +159,6 @@ def add_word2vec_suite(s):
     s.all_train_data = add_word2vec(s.all_train_data)
     s.features+=append_to_str("word2vec_",300)
     s.nice_features += ["word2vec"]
-
-    return s
-
-def add_lexicons_suite(s):
-    """ Add lexicons to a suite """
-
-    s.all_train_data = add_lexicons_comment(s.all_train_data)
-
-    if type(s.test_data) != type(None):
-        s.test_data = add_lexicons_comment(s.test_data)
 
     return s
 

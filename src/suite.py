@@ -11,22 +11,21 @@ from nltk.tokenize import word_tokenize
 from sklearn.metrics import classification_report, fbeta_score
 from sklearn.model_selection import KFold
 from sklearn.svm import LinearSVC
+from src import classifiers
+from src import convo_politeness
+from src import create_features
+from src import text_modifier
+from src import util
 from wordfreq import word_frequency
-import classifiers
-import convo_politeness
-import create_features
 import itertools
-import lexicon
 import nltk
 import numpy as np
 import operator
 import pandas as pd
 import pickle
 import re
-import text_modifier
 import textblob
 import time
-import util
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -36,6 +35,21 @@ sys.path.insert(0, "politeness3")
 
 model = 0
 
+def score(lexicon_dataframe,text):
+    """Need to do stemming later"""
+
+    all_specific = lexicon_dataframe["specific"].unique()
+
+    text = nltk.word_tokenize(text)
+    text = [i.lower() for i in text]
+
+    score_dict = {}
+    for category in all_specific:
+        score_dict[category] = 0
+        category_words = set(lexicon_dataframe[lexicon_dataframe["specific"] == category]["word"].tolist())
+        score_dict[category] = len(category_words.intersection(text))
+
+    return score_dict
 
 def rescore(new_sentence, features, tf_idf_counter):
   new_features_dict = {}
@@ -61,11 +75,13 @@ def rescore(new_sentence, features, tf_idf_counter):
       new_features_dict["word2vec_{}".format(i)] = word2vec_values[i]
 
   if "LIWC_anger" in features:
-    s = lexicon.score(lexicon.open_lexicons(), new_sentence)
+    lexicon_df = pd.read_csv("src/data/lexicons.txt")
+    s = score(lexicon_df, new_sentence)
     new_features_dict["LIWC_anger"] = s["LIWC_anger"]
 
   if "negative_lexicon" in features:
-    s = lexicon.score(lexicon.open_lexicons(), new_sentence)
+    lexicon_df = pd.read_csv("src/data/lexicons.txt")
+    s = score(lexicon_df, new_sentence)
     new_features_dict["negative_lexicon"] = s["negative_lexicon"]
 
   if "nltk_score" in features:
@@ -274,6 +290,9 @@ class Suite:
   def set_model(self, model_function):
     self.model_function = model_function
 
+  def set_trained_model(self, trained_model):
+    self.model = trained_model
+
   def add_parameter(self, name, l):
     self.parameter_names.append(name)
     self.hyper_parameters_lists.append(l)
@@ -338,7 +357,7 @@ class Suite:
                                                               self.last_time))
     self.last_time = time.time()
 
-  def set_test_set(self, test_collection):
+  def set_unlabeled_set(self, test_collection):
     self.test_collection = test_collection
     self.test_data = create_features.create_features(test_collection)
     print("Prepared testing dataset, it took {} seconds".format(time.time() -
@@ -507,6 +526,7 @@ class Suite:
     best_score = self.all_combinations(
         self_issue_classification_statistics_per, matched_pairs=matched_pairs)
     print("Best f0.5 score: {}".format(best_score))
+    return self.model
 
   # applying the model to the test data
   def test_issue_classifications_from_comments_all(self, matched_pairs=False):
@@ -516,8 +536,11 @@ class Suite:
       return self.issue_classifications_from_comments()
       #test_issues = map_toxicity(test_issues)
 
-    test_result = test_issue_classifications_from_comments_statistics_per()
-    return test_result
+    test_list = [list(x) for x in self.test_data[self.features].values]
+
+    self.test_data["prediction"] = self.model.predict(test_list)
+    #test_result = test_issue_classifications_from_comments_statistics_per()
+    return self.test_data#test_result
 
   def self_comment_classification_all(self, matched_pairs=False):
 
