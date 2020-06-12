@@ -31,16 +31,6 @@ py_library(
 )
 
 py_library(
-    name = "lexicon",
-    srcs = ["lexicon.py"],
-    deps = [
-        requirement("nltk"),
-        requirement("pandas"),
-        ":text_modifier"
-    ],
-)
-
-py_library(
     name = "text_modifier",
     srcs = ["text_modifier.py"],
     deps = [
@@ -49,7 +39,6 @@ py_library(
         requirement("pandas"),
         requirement("spacy"),
         requirement("numpy"),
-        requirement("en_core_web_md")
     ],
 )
 
@@ -60,7 +49,6 @@ py_library(
         requirement("convokit"),
         requirement("pandas"),
         requirement("spacy"),
-        requirement("en_core_web_sm"),
         requirement("pytz"),
         requirement("cycler"),
         requirement("kiwisolver"),
@@ -131,7 +119,6 @@ py_library(
         ":convo_politeness",
         ":create_features",
         ":cross_validate",
-        ":lexicon",
         ":text_modifier",
         ":util",
         requirement("gensim"),
@@ -153,19 +140,4 @@ py_library(
         ":statistics"
     ],
     visibility = ["//visibility:public"]
-)
-
-# in progress
-py_test(
-    name = "test_requirements",
-    srcs = ["tests/test_requirements.py"]
-)
-
-py_test(
-    name = "test_create_features",
-    srcs = ["test_create_features.py"],
-    deps = [
-        ":text_parser",
-        ":text_modifier"
-    ]
 )
