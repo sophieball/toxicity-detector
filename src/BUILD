@@ -3,18 +3,21 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("@deps//:requirements.bzl", "requirement")
 
 py_library(
-    name = "config",
-    srcs = ["config.py"]
+    name = "download_data",
+    srcs = ["download_data.py"],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
-    name = "perspective",
-    srcs = ["perspective.py"],
-    deps = [
-        ":config",
-        requirement("requests"),
-        requirement("markdown"),
-    ]
+    name = "statistics",
+    srcs = ["statistics.py"],
+    visibility = ["//visibility:public"]
+)
+
+py_library(
+    name = "config",
+    srcs = ["config.py"],
+    visibility = ["//visibility:public"],
 )
 
 py_library(
@@ -22,10 +25,9 @@ py_library(
     srcs = ["util.py"],
     deps = [
         requirement("pandas"),
-        ":get_data",
         requirement("sklearn"),
         requirement("imblearn")
-    ]
+    ],
 )
 
 py_library(
@@ -35,7 +37,7 @@ py_library(
         requirement("nltk"),
         requirement("pandas"),
         ":text_modifier"
-    ]
+    ],
 )
 
 py_library(
@@ -49,7 +51,6 @@ py_library(
         requirement("numpy"),
         requirement("en_core_web_md")
     ],
-    visibility = ["//visibility:public"],
 )
 
 py_library(
@@ -77,14 +78,13 @@ py_library(
         requirement("ftfy"),
         requirement("threadpoolctl"),
     ],
-    visibility = ["//visibility:public"],
 )
 
 py_library(
     name = "create_features",
     srcs = ["create_features.py"],
     deps = [
-        ":get_data",
+        ":config",
         ":convo_politeness",
         ":text_parser",
         ":text_cleaning",
@@ -92,7 +92,7 @@ py_library(
         ":util",
         requirement("pandas"),
         requirement("nltk")
-    ]
+    ],
 )
 
 py_library(
@@ -101,7 +101,7 @@ py_library(
     deps = [
         requirement("nltk"),
         requirement("markdown")
-    ]
+    ],
 )
 
 py_library(
@@ -110,7 +110,7 @@ py_library(
     deps = [
         requirement("nltk"),
         requirement("markdown")
-    ]
+    ],
 )
 
 py_library(
@@ -118,59 +118,54 @@ py_library(
     srcs = ["cross_validate.py"],
     deps = [
         requirement("sklearn"),
-        ":get_data",
         ":classifiers",
         ":text_modifier"
-    ]
-)
-
-py_library(
-    name = "get_data",
-    srcs = ["get_data.py"],
-    deps = [
-        requirement("pandas")
-    ]
+    ],
 )
 
 py_library(
     name = "suite",
     srcs = ["suite.py"],
     deps = [
-        ":text_modifier",
+        ":classifiers",
         ":convo_politeness",
         ":create_features",
-        ":util",
         ":cross_validate",
-        ":classifiers",
-        ":perspective",
+        ":lexicon",
+        ":text_modifier",
+        ":util",
+        requirement("gensim"),
         requirement("nltk"),
         requirement("pandas"),
-        requirement("textblob"),
         requirement("sklearn"),
-        requirement("gensim"),
         requirement("smart_open"),
+        requirement("textblob"),
         requirement("wordfreq")
-    ]
+    ],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
     name = "classifiers",
     srcs = ["classifiers.py"],
-    deps = [requirement("sklearn")]
+    deps = [
+        requirement("sklearn"),
+        ":statistics"
+    ],
+    visibility = ["//visibility:public"]
 )
 
 # in progress
 py_test(
     name = "test_requirements",
-    srcs = ["test_requirements.py"]
+    srcs = ["tests/test_requirements.py"]
 )
 
-py_binary(
-    name = "train_classifier_g",
-    srcs = ["train_classifier_g.py"],
+py_test(
+    name = "test_create_features",
+    srcs = ["test_create_features.py"],
     deps = [
-        ":suite",
-        ":classifiers",
-        requirement("pandas")
-    ],
+        ":text_parser",
+        ":text_modifier"
+    ]
 )
