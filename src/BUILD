@@ -40,6 +40,7 @@ py_library(
         requirement("spacy"),
         requirement("numpy"),
     ],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
@@ -90,6 +91,7 @@ py_library(
         requirement("nltk"),
         requirement("markdown")
     ],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
@@ -99,6 +101,7 @@ py_library(
         requirement("nltk"),
         requirement("markdown")
     ],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
@@ -129,6 +132,10 @@ py_library(
         requirement("textblob"),
         requirement("wordfreq")
     ],
+    data = glob([
+        "data/*.csv",
+        "pickles/*.p"
+    ]),
     visibility = ["//visibility:public"]
 )
 

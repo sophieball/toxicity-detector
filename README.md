@@ -123,16 +123,5 @@ guide](https://docs.bazel.build/versions/3.2.0/install.html)).
 Bazel will pull pypi libraries automatically, but you need to have pip3
 installed.
 
-To run the script using Bazel, first execute `sh setup.sh`, which will grab pypi
-libraries and build a python binary.
-After running the script, you will have a local version of all pypi libraries
-you declared as dependencies in the `src/BUILD` file.
-
-In addition, Convokit library needs the Spacy English model, which is usually done by executing `python -m spacy download en`.
-However, I could not figure out a way to make a symbolic link between bazel's
-Convokit and bazel's local Spacy.
-Therefore, the `setup.sh` script also checks if the symbolic link exists, if
-not, creates one.
-
-After running `setup.sh`, you can run `bazel-bin/src/train_classifier_g` in the
-project's root directory, which is marked by the presence of `WORKSPACE` file.
+To run the script using Bazel, execute `bazel run //main:train_classifier_g`, which will fetch pypi
+libraries listed in `requirements.txt`, then build and execute the python binary.
