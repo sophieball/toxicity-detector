@@ -123,5 +123,5 @@ guide](https://docs.bazel.build/versions/3.2.0/install.html)).
 Bazel will pull pypi libraries automatically, but you need to have pip3
 installed.
 
-To run the script using Bazel, execute `bazel build //main:train_classifier_g`, which will grab pypi
-libraries and build a python binary.
+To run the script using Bazel, execute `bazel run //main:train_classifier_g`, which will fetch pypi
+libraries listed in `requirements.txt`, then build and execute the python binary.
