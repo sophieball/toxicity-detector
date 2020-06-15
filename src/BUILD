@@ -106,7 +106,8 @@ py_library(
     deps = [
         requirement("nltk"),
         requirement("markdown"),
-        requirement("importlib_metadata")
+        requirement("importlib_metadata"),
+        requirement("zipp")
     ],
     visibility = ["//visibility:public"]
 )
