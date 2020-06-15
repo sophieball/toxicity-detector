@@ -8,6 +8,11 @@ language:
 # https://github.com/lizan/service-control-client-cxx/blob/master/.travis.yml
 sudo: required
 
+branches:
+  only:
+    master
+    G-tests
+
 addons:
   apt:
     sources:
