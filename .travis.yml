@@ -1,6 +1,5 @@
 language:
-  - python
-  - r
+  python
 addons:
   apt:
     sources:
@@ -10,4 +9,3 @@ addons:
       - bazel
 script:
   - bazel build //main:train_classifier_g 
-  - Rscript feed_data.R
