@@ -1,5 +1,4 @@
 # main program for training a classifier and applies it to new data
-
 from src import download_data
 download_data.download_data()
 
@@ -11,18 +10,29 @@ import pickle
 from os.path import join
 import os
 path = Path(os.path.abspath("."))
+import sys
+import io
 
 # train the classifier using the result of a SQL query
-def train_model(train_file, predict_file):
+#def train_model(train_file, predict_file):
+def train_model():
   s = suite.Suite()
+
+  data = pd.read_csv(io.StringIO(sys.stdin.read()), sep=",")
+  data = data.rename(columns={"id": "_id"})
+  data["label"] = data["label"].map({True: 1, False: 0})
+  data["training"] = data["training"].map({True: 1, False: 0})
+  data.to_csv("test_out.csv", index=False)
 
   print("Loading data.")
   # 3 columns: _id, text, label(0/1)
   # this will later be split into train/test data
-  s.set_train_set(pd.read_csv(train_file))
+  #s.set_train_set(pd.read_csv(train_file))
+  s.set_train_set(data.loc[data["training"] == 1])
 
   # 2 columns: _id, text
-  s.set_unlabeled_set(pd.read_csv(predict_file))
+  #s.set_unlabeled_set(pd.read_csv(predict_file))
+  s.set_unlabeled_set(data.loc[data["training"] == 0])
 
   # select model
   s.set_model(classifiers.svm_model)
@@ -46,5 +56,6 @@ def train_model(train_file, predict_file):
   result = result[["_id", "prediction"]]
   result.to_csv("PATH_TO_OUTPUT_FILE", index=False)
 
-train_model("data/training/training_data.csv",
-            "data/testing/test_data.csv")
+train_model()
+#train_model("data/training/training_data.csv",
+#            "data/testing/test_data.csv")
