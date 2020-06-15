@@ -14,7 +14,6 @@ import sys
 import io
 
 # train the classifier using the result of a SQL query
-#def train_model(train_file, predict_file):
 def train_model():
   s = suite.Suite()
 
@@ -22,7 +21,6 @@ def train_model():
   data = data.rename(columns={"id": "_id"})
   data["label"] = data["label"].map({True: 1, False: 0})
   data["training"] = data["training"].map({True: 1, False: 0})
-  data.to_csv("test_out.csv", index=False)
 
   print("Loading data.")
   # 3 columns: _id, text, label(0/1)
@@ -57,5 +55,3 @@ def train_model():
   result.to_csv("PATH_TO_OUTPUT_FILE", index=False)
 
 train_model()
-#train_model("data/training/training_data.csv",
-#            "data/testing/test_data.csv")
