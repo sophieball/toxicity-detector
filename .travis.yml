@@ -1,6 +1,6 @@
 language:
-  python
-  r
+  - python
+  - r
 addons:
   apt:
     sources:
