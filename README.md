@@ -1,4 +1,5 @@
 # Toxicity Detection
+[![Build Status](https://travis-ci.com/sophieball/toxicity-detector.svg?branch=master)](https://travis-ci.com/sophieball/toxicity-detector)
 
 These are installation instructions for the replication package for the ICSE
 NIER 2020 paper "Stress and Burnout in Open Source: Toward Finding,
