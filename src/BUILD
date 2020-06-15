@@ -40,6 +40,7 @@ py_library(
     name = "text_modifier",
     srcs = ["text_modifier.py"],
     deps = [
+        ":download_data",
         requirement("sklearn"),
         requirement("nltk"),
         requirement("pandas"),
