@@ -10,4 +10,4 @@ addons:
       - bazel
 script:
   - bazel build //main:train_classifier_g 
-  - R feed_data.R
+  - Rscript feed_data.R
