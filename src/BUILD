@@ -3,6 +3,12 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("@deps//:requirements.bzl", "requirement")
 
 py_library(
+    name = "receive_data",
+    srcs = ["receive_data.py"],
+    visibility = ["//visibility:public"]
+)
+
+py_library(
     name = "download_data",
     srcs = ["download_data.py"],
     visibility = ["//visibility:public"]
@@ -147,4 +153,14 @@ py_library(
         ":statistics"
     ],
     visibility = ["//visibility:public"]
+)
+
+py_test(
+    name = "test_receive_data",
+    srcs = ["test_receive_data.py"],
+    main = "test_receive_data.py",
+    deps = [
+        ":receive_data",
+        requirement("pandas")
+    ]
 )
