@@ -9,3 +9,4 @@ addons:
       - bazel
 script:
   - bazel build //main:train_classifier_g 
+  - bazel test //tests:main_test
