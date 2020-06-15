@@ -8,4 +8,4 @@ addons:
     packages:
       - bazel
 script:
-  bazel run //main:train_classifier_g
+  bazel build //main:train_classifier_g
