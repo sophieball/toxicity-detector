@@ -1,0 +1,4 @@
+language:
+  python
+script:
+  bazel run //main:train_classifier_g
