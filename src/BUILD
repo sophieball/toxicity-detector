@@ -154,3 +154,13 @@ py_library(
     ],
     visibility = ["//visibility:public"]
 )
+
+py_test(
+    name = "test_receive_data",
+    srcs = ["test_receive_data.py"],
+    main = "test_receive_data.py",
+    deps = [
+        ":receive_data",
+        requirement("pandas")
+    ]
+)

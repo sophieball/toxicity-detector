@@ -1,13 +1,14 @@
 # Lint as: python3
 """
-Receive data from R script
+Receive data from standard input in CSV format
 """
 import io
+import logging
 import pandas as pd
 import sys
 
 def receive_data():
-  print("Reading data.")
+  logging.info("Reading data.")
   data = pd.read_csv(io.StringIO(sys.stdin.read()), sep=",")
   data = data.rename(columns={"id": "_id"})
   data["label"] = data["label"].map({True: 1, False: 0})

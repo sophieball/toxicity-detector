@@ -2,6 +2,9 @@
 from src import download_data
 download_data.download_data()
 
+import logging
+logging.basicConfig(filename='main/train_classifier.log',level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 from src import receive_data
 from src import classifiers
 from src import suite
@@ -12,7 +15,7 @@ import pickle
 def train_model(training_data, testing_data):
   s = suite.Suite()
 
-  print("Loading data.")
+  logging.info("Loading data.")
   # 3 columns: _id, text, label(0/1)
   # this will later be split into train/test data
   #s.set_train_set(pd.read_csv(train_file))
