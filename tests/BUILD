@@ -6,6 +6,7 @@ py_test(
     name = "main_test",
     srcs = ["main_test.py",
             "test_receive_data.py"],
+    size = "small",
     main = "main_test.py",
     deps = [
         "//src:receive_data",
