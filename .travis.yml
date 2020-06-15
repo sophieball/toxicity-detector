@@ -1,5 +1,13 @@
 language:
   python
+ 
+# Adding sudo:required such that Travis doesn't use containers; otherwise
+# Bazel's sandbox execution will fail. The alternative is to disable Bazel's
+# sandbox execution using "--genrule_strategy=standalone",
+# "--spawn_strategy=standalone" and --test_strategy=standalone.
+# https://github.com/lizan/service-control-client-cxx/blob/master/.travis.yml
+sudo: required
+
 addons:
   apt:
     sources:
