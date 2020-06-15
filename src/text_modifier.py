@@ -1,3 +1,5 @@
+from src import download_data
+download_data.download_data()
 from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
 import nltk
@@ -23,22 +25,36 @@ def percent_uppercase(text):
         return 0
     return sum([1 for i in text if i.isupper()])/len(text)
 
-def cleanup_text(text):
-    """ Remove stop words and stem words"""
+# postprocessing (usually only done for toxic comments)
+# returns list of clean text variants
+def clean_text(text):
+  result = []
+  words = text.split(" ")
+  words = [a.strip(",.!?:; ") for a in words]
 
-    text = nlp(text.lower().strip())
-    # Stem Non-Urls/non-Stop Words/Non Punctuation/symbol/numbers
-    text = [ps.stem(re.sub(r'^https?:\/\/.*[\r\n]*', '', token.text, flags=re.MULTILINE))
-            for token in text
-            if not token.is_stop and token.pos_ not in ["PUNCT","SYM","NUM"] and token.text in nlp.vocab]
-    # Remove ampersands
-    text = [re.sub(r'&[^\w]+','',i) for i in text]
-    # Lower case
-    text = [w for w in text if w.lower() in text]
-    # Remove symbols
-    text = [w.replace("#","").replace("&","").replace("  "," ") for w in text if is_ascii(w)]
+  words = list(set(words))
+  words = [
+      word for word in words
+      if not word.isalpha() or word.lower() in different_words
+  ]
 
-    return " ".join(text)
+  for word in set(words):
+    # Maybe unkify?
+    result += [
+        re.sub(r"[^a-zA-Z0-9]" + re.escape(word.lower()) + r"[^a-zA-Z0-9]",
+               " potato ", " " + text.lower() + " ").strip()
+    ]
+
+  tokenizer = RegexpTokenizer(r"\w+")
+  all_words = tokenizer.tokenize(text)
+  # Try removing all unknown words
+  for word in set(all_words):
+    if word.lower() not in counter and word_frequency(
+        word.lower(), "en") == 0 and len(word) > 2:
+      text = text.replace(word, "")
+
+  result += [text]
+  return result
 
 def count_vector(text):
     """ Create count vector for text """
