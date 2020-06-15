@@ -2,35 +2,25 @@
 from src import download_data
 download_data.download_data()
 
+from src import receive_data
 from src import classifiers
 from src import suite
 import pandas as pd
-from pathlib import Path
 import pickle
-from os.path import join
-import os
-path = Path(os.path.abspath("."))
-import sys
-import io
 
 # train the classifier using the result of a SQL query
-def train_model():
+def train_model(training_data, testing_data):
   s = suite.Suite()
-
-  data = pd.read_csv(io.StringIO(sys.stdin.read()), sep=",")
-  data = data.rename(columns={"id": "_id"})
-  data["label"] = data["label"].map({True: 1, False: 0})
-  data["training"] = data["training"].map({True: 1, False: 0})
 
   print("Loading data.")
   # 3 columns: _id, text, label(0/1)
   # this will later be split into train/test data
   #s.set_train_set(pd.read_csv(train_file))
-  s.set_train_set(data.loc[data["training"] == 1])
+  s.set_train_set(training_data)
 
   # 2 columns: _id, text
   #s.set_unlabeled_set(pd.read_csv(predict_file))
-  s.set_unlabeled_set(data.loc[data["training"] == 0])
+  s.set_unlabeled_set(testing_data)
 
   # select model
   s.set_model(classifiers.svm_model)
@@ -54,4 +44,5 @@ def train_model():
   result = result[["_id", "prediction"]]
   result.to_csv("PATH_TO_OUTPUT_FILE", index=False)
 
-train_model()
+[training, testing] = receive_data.receive_data()
+train_model(training, testing)
