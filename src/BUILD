@@ -32,7 +32,7 @@ py_library(
     deps = [
         requirement("pandas"),
         requirement("sklearn"),
-        requirement("imblearn")
+        requirement("imblearn"),
     ],
 )
 
@@ -105,7 +105,8 @@ py_library(
     srcs = ["text_parser.py"],
     deps = [
         requirement("nltk"),
-        requirement("markdown")
+        requirement("markdown"),
+        requirement("importlib_metadata")
     ],
     visibility = ["//visibility:public"]
 )
