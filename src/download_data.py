@@ -9,17 +9,17 @@ import spacy
 nltk.data.path = (["src/nltk_data"])
 def download_data():
   try:
-    nltk.data.find("corpora/words")
+    from nltk.corpus import words
   except LookupError:
     nltk.download("words")
 
   try:
-    nltk.data.find("corpora/wordnet")
+    from nltk.corpus import wordnet
   except LookupError:
     nltk.download("wordnet")
 
   try:
-    nltk.data.find("corpora/stopwords")
+    from nltk.corpus import stopwords 
   except LookupError:
     nltk.download("stopwords")
 
