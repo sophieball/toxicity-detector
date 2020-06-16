@@ -1,0 +1,8 @@
+---
+tasks:
+  ubuntu_build_only:
+    platform: ubuntu1604
+    run_targets:
+            - "//main:train_classifier_g"
+    build_targets:
+            - "..."

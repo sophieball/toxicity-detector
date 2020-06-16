@@ -1,0 +1,23 @@
+language:
+  python
+ 
+# Adding sudo:required such that Travis doesn't use containers; otherwise
+# Bazel's sandbox execution will fail. The alternative is to disable Bazel's
+# sandbox execution using "--genrule_strategy=standalone",
+# "--spawn_strategy=standalone" and --test_strategy=standalone.
+# https://github.com/lizan/service-control-client-cxx/blob/master/.travis.yml
+sudo: required
+
+addons:
+  apt:
+    sources:
+      - sourceline: 'deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8'
+        key_url: 'https://storage.googleapis.com/bazel-apt/doc/apt-key.pub.gpg'
+    packages:
+      - bazel
+script:
+  - bazel build //main:train_classifier_g 
+  - bazel test //tests:main_test
+  
+after_failure:
+  - cat /home/travis/.cache/bazel/_bazel_travis/b780598bdbf255f7df0b39f918df3247/execroot/__main__/bazel-out/k8-fastbuild/testlogs/tests/main_test/test.log
