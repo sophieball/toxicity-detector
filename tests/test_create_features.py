@@ -5,20 +5,19 @@ test TextParsers
 
 import unittest
 from src import text_parser
-from src import text_modifier
 
 class TestCreateFeatures(unittest.TestCase):
   def test_percent_uppercase(self):
     text = "aA"
-    uppercase = text_modifier.percent_uppercase(text)
+    uppercase = text_parser.percent_uppercase(text)
     self.assertEqual(0.5, uppercase)
 
     text = "A"
-    uppercase = text_modifier.percent_uppercase(text)
+    uppercase = text_parser.percent_uppercase(text)
     self.assertEqual(1, uppercase)
 
     text = "a"
-    uppercase = text_modifier.percent_uppercase(text)
+    uppercase = text_parser.percent_uppercase(text)
     self.assertEqual(0, uppercase)
 
   def test_count_ref(self):
@@ -68,11 +67,3 @@ class TestCreateFeatures(unittest.TestCase):
     text = "hello+1world"
     clean = text_parser.sub_PlusOne(text)
     self.assertEqual("helloplus oneworld", clean)
-
-  def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestCreateFeatures("test_percent_uppercase"))
-    suite.addTest(TestCreateFeatures("test_remove_ref"))
-    suite.addTest(TestCreateFeatures("test_count_ref"))
-    suite.addTest(TestCreateFeatures("test_plus_one"))
-    return suite
