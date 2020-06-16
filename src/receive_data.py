@@ -15,5 +15,5 @@ def receive_data():
   data["training"] = data["training"].map({True: 1, False: 0})
 
   training = data.loc[data["training"] == 1]
-  testing = data.loc[data["training"] == 0]
+  testing = data.loc[data["training"] == 0].drop(["label"], axis = 1)
   return [training, testing]

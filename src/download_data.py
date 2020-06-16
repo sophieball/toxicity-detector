@@ -18,6 +18,16 @@ def download_data():
     nltk.download("words")
 
   try:
+    nltk.data.find("corpora/wordnet")
+  except LookupError:
+    nltk.download("wordnet")
+
+  try:
+    nltk.data.find("corpora/stopwords")
+  except LookupError:
+    nltk.download("stopwords")
+
+  try:
     spacy.load("en")
   except IOError:
     spacy.cli.download("en")

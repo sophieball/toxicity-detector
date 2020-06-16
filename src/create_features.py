@@ -4,14 +4,12 @@
 from nltk.stem import WordNetLemmatizer
 from src import convo_politeness
 from src import text_cleaning
-from src import text_modifier
 from src import text_parser
 from src import util
 from src import config
 import json
 import multiprocessing as mp
 import pandas as pd
-import pickle
 import re
 import requests
 import spacy
@@ -57,13 +55,11 @@ def cleanup_text(text):
   text = [token.lemma_ for token in text]
   # Remove ampersands
   text = [re.sub(r"&[^\w]+", "", i) for i in text]
-  # Lower case
-  text = [w for w in text if w.lower() in text]
   # Remove symbols
   text = [
       w.replace("#", "").replace("&", "").replace("  ", " ")
       for w in text
-      if text_modifier.is_ascii(w)
+      if text_parser.is_ascii(w)
   ]
   return " ".join(text)
 
@@ -75,7 +71,7 @@ def extract_features(total_comment_info):
   if not isinstance(text, (str, list, dict)) or text is None:
     text = ""
 
-  uppercase = text_modifier.percent_uppercase(text)
+  uppercase = text_parser.percent_upercase(text)
   c_length = len(text)
 
   num_reference = text_parser.count_reference_line(text)

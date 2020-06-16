@@ -32,7 +32,7 @@ py_library(
     deps = [
         requirement("pandas"),
         requirement("sklearn"),
-        requirement("imblearn")
+        requirement("imblearn"),
     ],
 )
 
@@ -40,6 +40,7 @@ py_library(
     name = "text_modifier",
     srcs = ["text_modifier.py"],
     deps = [
+        ":download_data",
         requirement("sklearn"),
         requirement("nltk"),
         requirement("pandas"),
@@ -105,7 +106,9 @@ py_library(
     srcs = ["text_parser.py"],
     deps = [
         requirement("nltk"),
-        requirement("markdown")
+        requirement("markdown"),
+        requirement("importlib_metadata"),
+        requirement("zipp")
     ],
     visibility = ["//visibility:public"]
 )
