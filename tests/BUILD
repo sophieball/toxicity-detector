@@ -10,7 +10,5 @@ py_test(
     deps = [
         "//src:receive_data",
         "//src:text_parser",
-        "//src:text_modifier",
-        "//src:text_cleaning",
     ]
 )
