@@ -1,8 +1,5 @@
 import re
 import nltk
-from nltk.corpus import words
-from nltk.stem import WordNetLemmatizer
-import markdown
 """preprocess data for input"""
 
 
@@ -20,10 +17,6 @@ def contain_non_english(text):
     return detect(text) != 'en'
   except:
     return True  #if can't detect return true
-
-def transform_markdown(text):
-  return markdown.markdown(text)  #mistune.markdown(text)
-
 
 #replace inline highlighted code with text
 def remove_inline_code(text):
@@ -128,15 +121,6 @@ def count_modal_word(text):
   tag_lst = nltk.pos_tag(text)
   return len([(w, t) for (w, t) in tag_lst if t == 'MD'])
 
-
-# get number of unknown words as compared to dictionary
-def count_unknown_word(text):
-  #text = text.decode("utf-8") #decode to utf-8 to avoid ascii problem
-  text = nltk.word_tokenize(text)
-  unknown_lst = [word for word in text if word not in words.words()]
-  return len(unknown_lst)
-
-
 # get number of insult and hate blacklist words
 # May not be the most relevant source: https://www.cs.cmu.edu/~biglou/resources/bad-words.txt
 # but we could substitute this later if needed
@@ -165,18 +149,6 @@ def count_emoji(text):
   pattern = r""":([a-zA-Z]+?):"""
   return len(
       re.findall(pattern, text, re.MULTILINE | re.IGNORECASE | re.VERBOSE))
-
-
-# count number of markdown lines
-def count_markdown(text):
-  pattern = r"""
-            ^(?:\ {4}.+\n)+(?!)         # Ignore content of all indented text
-            |(^```(?:[^`]+|`(?!``))*```)  # Do not stop at single ` backticks within ```...``` blocks
-            |(```.+?```) # remove inline ```...```
-            """
-  return len(
-      re.findall(pattern, text, re.MULTILINE | re.IGNORECASE | re.VERBOSE))
-
 
 #count number of mentions
 def count_mention(text):
