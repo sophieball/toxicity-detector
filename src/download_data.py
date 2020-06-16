@@ -6,20 +6,24 @@ check if necessary nltk data and spacy models are downloaded
 import nltk
 import spacy
 
-nltk.data.path = (["src/nltk_data"])
 def download_data():
   try:
-    from nltk.corpus import words
+    nltk.data.find("tokenizers/punkt")
+  except LookupError:
+    print("not found")
+
+  try:
+    nltk.data.find("corpora/words")
   except LookupError:
     nltk.download("words")
 
   try:
-    from nltk.corpus import wordnet
+    nltk.data.find("corpora/wordnet")
   except LookupError:
     nltk.download("wordnet")
 
   try:
-    from nltk.corpus import stopwords 
+    nltk.data.find("corpora/stopwords")
   except LookupError:
     nltk.download("stopwords")
 
@@ -27,3 +31,8 @@ def download_data():
     spacy.load("en")
   except IOError:
     spacy.cli.download("en")
+
+  try:
+    spacy.load("en_core_web_md")
+  except IOError:
+    spacy.cli.download("en_core_web_md")
