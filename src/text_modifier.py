@@ -13,10 +13,6 @@ nlp = spacy.load("en_core_web_md",disable=["parser","ner"])
 ps = PorterStemmer()
 words = set(nltk.corpus.words.words())
 
-def is_ascii(s):
-    """ Check if a character is ascii """
-    return all(ord(c) < 128 for c in s)
-
 # postprocessing (usually only done for toxic comments)
 # returns list of clean text variants
 def clean_text(text):
