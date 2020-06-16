@@ -71,7 +71,7 @@ def extract_features(total_comment_info):
   if not isinstance(text, (str, list, dict)) or text is None:
     text = ""
 
-  uppercase = text_parser.percent_upercase(text)
+  uppercase = text_parser.percent_uppercase(text)
   c_length = len(text)
 
   num_reference = text_parser.count_reference_line(text)
