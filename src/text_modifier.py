@@ -3,7 +3,6 @@ download_data.download_data()
 from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import CountVectorizer,TfidfVectorizer
 import nltk
-import nltk
 import numpy as np
 import pandas as pd
 import re
@@ -17,13 +16,6 @@ words = set(nltk.corpus.words.words())
 def is_ascii(s):
     """ Check if a character is ascii """
     return all(ord(c) < 128 for c in s)
-
-def percent_uppercase(text):
-    """ Calculate what percent of the letters are uppercase in some text """
-    text = text.replace(" ","")
-    if len(text) == 0:
-        return 0
-    return sum([1 for i in text if i.isupper()])/len(text)
 
 # postprocessing (usually only done for toxic comments)
 # returns list of clean text variants

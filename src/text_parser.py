@@ -2,6 +2,13 @@ import re
 import nltk
 """preprocess data for input"""
 
+def percent_uppercase(text):
+    """ Calculate what percent of the letters are uppercase in some text """
+    text = text.replace(" ","")
+    if len(text) == 0:
+        return 0
+    return sum([1 for i in text if i.isupper()])/len(text)
+
 
 # remove previously referenced comments
 #remove every line that starts with ">"
