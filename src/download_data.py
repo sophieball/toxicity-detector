@@ -9,11 +9,6 @@ import spacy
 nltk.data.path = (["src/nltk_data"])
 def download_data():
   try:
-    nltk.data.find("tokenizers/punkt")
-  except LookupError:
-    nltk.download("punkt")
-
-  try:
     nltk.data.find("corpora/words")
   except LookupError:
     nltk.download("words")
