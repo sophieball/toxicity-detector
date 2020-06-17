@@ -27,7 +27,11 @@ class TestReceiveData(unittest.TestCase):
                       "training"]).to_csv(index=False).strip("\n").split("\n")
 
     sys.stdin = io.StringIO("\n".join(df))
-    [training, testing] = receive_data.receive_data()
-    self.assertEqual(len(testing), 1)
+    [training, unlabeled] = receive_data.receive_data()
+
+    self.assertTrue("_id" in training.columns)
+    self.assertFalse("label" in unlabeled.columns)
+    self.assertEqual(len(unlabeled), 1)
     self.assertEqual(len(training), 4)
     self.assertEqual(len(training.loc[training["label"] == 1]), 1)
+    self.assertEqual(type(training.iloc[0]["_id"]), str)
