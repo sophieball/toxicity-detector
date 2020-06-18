@@ -3,7 +3,8 @@ from src import download_data
 download_data.download_data()
 
 import logging
-logging.basicConfig(filename="main/train_classifier.log", level=logging.INFO)
+logging.basicConfig(
+    filename="main/train_classifier.log", filemode="w", level=logging.INFO)
 logging.basicConfig(level=logging.INFO)
 from src import receive_data
 from src import classifiers
@@ -13,7 +14,7 @@ import pickle
 
 
 # train the classifier using the result of a SQL query
-def train_model(training_data, testing_data):
+def train_model(training_data, unlabeled_data):
   s = suite.Suite()
 
   logging.info("Loading data.")
@@ -22,7 +23,7 @@ def train_model(training_data, testing_data):
   s.set_train_set(training_data)
 
   # 2 columns: _id, text
-  s.set_unlabeled_set(testing_data)
+  s.set_unlabeled_set(unlabeled_data)
 
   # select model
   s.set_model(classifiers.svm_model)
@@ -47,5 +48,5 @@ def train_model(training_data, testing_data):
   result.to_csv("PATH_TO_OUTPUT_FILE", index=False)
 
 
-[training, testing] = receive_data.receive_data()
-train_model(training, testing)
+[training, unlabeled] = receive_data.receive_data()
+train_model(training, unlabeled)

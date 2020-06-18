@@ -18,6 +18,7 @@ from src import text_modifier
 from src import util
 from wordfreq import word_frequency
 import itertools
+import logging
 import nltk
 import numpy as np
 import operator
@@ -35,21 +36,24 @@ sys.path.insert(0, "politeness3")
 
 model = 0
 
-def score(lexicon_dataframe,text):
-    """Need to do stemming later"""
 
-    all_specific = lexicon_dataframe["specific"].unique()
+def score(lexicon_dataframe, text):
+  """Need to do stemming later"""
 
-    text = nltk.word_tokenize(text)
-    text = [i.lower() for i in text]
+  all_specific = lexicon_dataframe["specific"].unique()
 
-    score_dict = {}
-    for category in all_specific:
-        score_dict[category] = 0
-        category_words = set(lexicon_dataframe[lexicon_dataframe["specific"] == category]["word"].tolist())
-        score_dict[category] = len(category_words.intersection(text))
+  text = nltk.word_tokenize(text)
+  text = [i.lower() for i in text]
 
-    return score_dict
+  score_dict = {}
+  for category in all_specific:
+    score_dict[category] = 0
+    category_words = set(lexicon_dataframe[lexicon_dataframe["specific"] ==\
+                                           category]["word"].tolist())
+    score_dict[category] = len(category_words.intersection(text))
+
+  return score_dict
+
 
 def rescore(new_sentence, features, tf_idf_counter):
   new_features_dict = {}
@@ -62,7 +66,11 @@ def rescore(new_sentence, features, tf_idf_counter):
     new_features_dict["perspective_score"] = persp_score
 
   if "stanford_polite" in features:
-    polite_df = convo_politeness.get_politeness_score(pd.DataFrame([{"_id": "1", "text": new_sentence}]))
+    polite_df = convo_politeness.get_politeness_score(
+        pd.DataFrame([{
+            "_id": "1",
+            "text": new_sentence
+        }]))
     new_features_dict["stanford_polite"] = polite_df.iloc[0]["stanford_polite"]
 
   if "word2vec_0" in features:
@@ -113,6 +121,7 @@ counter = pickle.load(open("src/pickles/github_words.p", "rb"))
 our_words = dict([(i, word_frequency(i, "en") * 10**9) for i in counter])
 different_words = util.log_odds(
     defaultdict(int, counter), defaultdict(int, our_words))
+
 
 def score_toxicity(text, model):
   features = ["perspective_score", "stanford_polite"]
@@ -173,7 +182,6 @@ def get_prediction(text, model):
       word for word in words
       if not word.isalpha() or word.lower() in different_words
   ]
-
 
   for word in set(words):
     # Maybe unkify?
@@ -352,16 +360,18 @@ class Suite:
 
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
-    self.all_train_data = create_features.create_features(train_collection)
-    print("Prepared training dataset, it took {} seconds".format(time.time() -
-                                                              self.last_time))
+    self.all_train_data = create_features.create_features(train_collection, "training")
+    logging.info(
+        "Prepared training dataset, it took {} seconds".format(time.time() - \
+                                                               self.last_time))
     self.last_time = time.time()
 
   def set_unlabeled_set(self, test_collection):
     self.test_collection = test_collection
-    self.test_data = create_features.create_features(test_collection)
-    print("Prepared testing dataset, it took {} seconds".format(time.time() -
-                                                             self.last_time))
+    self.test_data = create_features.create_features(test_collection, "unlabeled")
+    logging.info(
+        "Prepared unlabeled dataset, it took {} seconds".format(time.time() - \
+                                                              self.last_time))
 
     self.last_time = time.time()
 
@@ -426,7 +436,9 @@ class Suite:
     p = Pool(8)
     test_issues.loc[test_issues.prediction != 1, "is_SE"] = 0
     original_text = test_issues[test_issues["prediction"] == 1]["original_text"]
-    original_text = p.starmap(remove_SE_comment, [(x, model, features, tf_idf_counter) for x in original_text]) 
+    original_text = p.starmap(
+        remove_SE_comment,
+        [(x, model, features, tf_idf_counter) for x in original_text])
     test_issues.loc[test_issues.prediction == 1, "is_SE"] = original_text
     #test_issues.loc[test_issues.prediction == 1, "is_SE"] = test_issues[test_issues["prediction"] == 1]["original_text"].map(lambda x: self.remove_SE_comment(x))
     test_issues.loc[test_issues.is_SE == 1, "prediction"] = 0
@@ -434,7 +446,8 @@ class Suite:
     return test_issues
 
   def classify_test(self):
-    return classifiers.classify(self.model, self.train_data, self.test_data, self.features)
+    return classifiers.classify(self.model, self.train_data, self.test_data,
+                                self.features)
 
   def classify_test_statistics(self):
     return classify_statistics(self.model, self.train_data, self.test_data,
@@ -448,17 +461,18 @@ class Suite:
       test_data = data.iloc[test].copy()
       train_data = util.select_ratio(train_data, self.ratio)
 
-      test_data = classifiers.classify(self.model, train_data, test_data, self.features)
+      test_data = classifiers.classify(self.model, train_data, test_data,
+                                       self.features)
 
       for i, row in test_data.iterrows():
         data.loc[data["_id"] == row["_id"], "prediction"] = row["prediction"]
 
-    print("Removing angry words towards oneself and SE words.")
+    logging.info("Removing angry words towards oneself and SE words.")
     data = self.remove_I(data)
     data = self.remove_SE(data)
-    print("Crossvalidation score is \n{}".format(
-        classification_report(data["prediction"].tolist(),
-                             data["label"].tolist())))
+    logging.info("Crossvalidation score is \n{}".format(
+        classification_report(data["label"].tolist(),
+                              data["prediction"].tolist())))
 
     return data
 
@@ -484,7 +498,7 @@ class Suite:
     self.train_data = self.cross_validate_classify()
 
   def all_combinations(self, function, matched_pairs=False):
-    print("Trying all combinations of hyper parameters.")
+    logging.info("Trying all combinations of hyper parameters.")
     global model
 
     scores = {}
@@ -516,16 +530,17 @@ class Suite:
     def self_issue_classification_statistics_per():
       # self.train_data
       self.self_issue_classification_from_comments()
-      score = fbeta_score(self.train_data["prediction"].tolist(),
-                          self.train_data["label"].tolist(),
-                          average="weighted",
-                          beta=0.5)
+      score = fbeta_score(
+          self.train_data["prediction"].tolist(),
+          self.train_data["label"].tolist(),
+          average="weighted",
+          beta=0.5)
 
-      return score#score["f_0.5"]
+      return score  #score["f_0.5"]
 
     best_score = self.all_combinations(
         self_issue_classification_statistics_per, matched_pairs=matched_pairs)
-    print("Best f0.5 score: {}".format(best_score))
+    logging.info("Best f0.5 score: {}".format(best_score))
     return self.model
 
   # applying the model to the test data
@@ -540,14 +555,14 @@ class Suite:
 
     self.test_data["prediction"] = self.model.predict(test_list)
     #test_result = test_issue_classifications_from_comments_statistics_per()
-    return self.test_data#test_result
+    return self.test_data  #test_result
 
   def self_comment_classification_all(self, matched_pairs=False):
 
     def self_comment_classification_statistics_per():
       score = self.cross_validate()
 
-      print("{}\t{}\t{}\t{}\t{}\t{}".format(
+      logging.info("{}\t{}\t{}\t{}\t{}\t{}".format(
           ",".join(self.nice_features),
           "{} {} ".format(self.model_function.__doc__, self.combination_dict),
           self.ratio, score["precision"], score["recall"], score["auc"]))
@@ -560,7 +575,7 @@ class Suite:
     def issue_classifications_from_comments_statistics_per():
       score = self.classify_test_statistics()
 
-      print("{}\t{}\t{}\t{}\t{}".format(
+      logging.info("{}\t{}\t{}\t{}\t{}".format( \
           ",".join(self.nice_features),
           "{} {} ".format(self.model_function.__doc__, self.combination_dict),
           self.ratio, score["precision"], score["recall"]))
