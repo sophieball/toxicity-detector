@@ -1,7 +1,6 @@
 # input: a pandas dataframe
 # output: a pandas dataframe
 
-import numpy as np
 from nltk.stem import WordNetLemmatizer
 from src import convo_politeness
 from src import text_cleaning
