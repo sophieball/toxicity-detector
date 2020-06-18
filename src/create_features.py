@@ -1,6 +1,7 @@
 # input: a pandas dataframe
 # output: a pandas dataframe
 
+import numpy as np
 from nltk.stem import WordNetLemmatizer
 from src import convo_politeness
 from src import text_cleaning
@@ -8,12 +9,14 @@ from src import text_parser
 from src import util
 from src import config
 import json
+import logging
 import multiprocessing as mp
 import pandas as pd
 import re
 import requests
 import spacy
 import sys
+import time
 wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_md", disable = ["parser", "ner"])
 
@@ -111,7 +114,7 @@ def extract_features(total_comment_info):
 
 # input: pd.DataFrame
 # output: pd.DataFrame
-def create_features(comments_df):
+def create_features(comments_df, training):
   # remove invalide toxicity scores or empty comments
   comments_df = comments_df.dropna()
 
@@ -131,7 +134,7 @@ def create_features(comments_df):
   pool.close()
   features_df = pd.DataFrame(features)
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
-  print("Total number of training data: {}.".format(len(comments_df)))
+  logging.info("Total number of {} data: {}.".format(training, len(comments_df)))
 
   #features_df.to_csv("training_data_label_cleaned.csv", index=False)
   return features_df
