@@ -10,6 +10,7 @@ from src import config
 import json
 import logging
 import multiprocessing as mp
+import numpy as np
 import pandas as pd
 import re
 import requests
@@ -17,13 +18,14 @@ import spacy
 import sys
 import time
 wordnet_lemmatizer = WordNetLemmatizer()
-nlp = spacy.load("en_core_web_md", disable = ["parser", "ner"])
+nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
 
 # number of multiprocess
 num_proc = 10
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
       "?key=" + config.perspective_api_key)
+
 
 def get_perspective_score(text, det_lang):
   data_dict = {
@@ -45,12 +47,15 @@ def get_perspective_score(text, det_lang):
     response = requests.post(url=url, data=json.dumps(data_dict))
     response_dict = json.loads(response.content.decode("utf-8"))
     try:
-      return response_dict["attributeScores"]["TOXICITY"]["summaryScore"]["value"]
+      return response_dict["attributeScores"]["TOXICITY"]["summaryScore"][
+          "value"]
     except:
       return -1
 
+
 def cleanup_text(text):
-  if len(text) == 0: return ""
+  if len(text) == 0:
+    return ""
 
   text = nlp(text.lower().strip())
   # Stem Non-Urls/non-Stop Words/Non Punctuation/symbol/numbers
@@ -64,6 +69,7 @@ def cleanup_text(text):
       if text_parser.is_ascii(w)
   ]
   return " ".join(text)
+
 
 # input: pd.DataFrame (comment)
 # output: dict (features)
@@ -111,6 +117,7 @@ def extract_features(total_comment_info):
 
   return total_comment_info
 
+
 # input: pd.DataFrame
 # output: pd.DataFrame
 def create_features(comments_df, training):
@@ -133,7 +140,14 @@ def create_features(comments_df, training):
   pool.close()
   features_df = pd.DataFrame(features)
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
-  logging.info("Total number of {} data: {}.".format(training, len(comments_df)))
+  logging.info("Total number of {} data: {}.".format(training,
+                                                     len(features_df)))
+  logging.info(
+      "Some descriptive statistics of {} data's perspective scores: \n{}".format(
+          training, features_df["perspective_score"].describe()))
+  logging.info(
+      "Some descriptive statistics of {} data's politeness scores: \n{}".format(
+          training, features_df["stanford_polite"].describe()))
 
-  #features_df.to_csv("training_data_label_cleaned.csv", index=False)
+  features_df.to_csv("training_data_label_cleaned.csv", index=False)
   return features_df

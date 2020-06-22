@@ -120,8 +120,8 @@ Before you can run the script, you should first create a file `config.py`, which
 - Currently, the program reads in a single data frame which contains both
   training and unlabeled data.
 - The output will be written to `classification_results.csv`. It consists of
-  `id`, `prediction`, `perspective_score`, `politeness_score`, `has_SE`, and
-  `is_anger`.
+  `id`, `prediction`, `perspective_score`, `politeness_score`, `is_SE`, and
+  `self_anger`.
 
 ## Bazel and pip3
 

@@ -39,14 +39,25 @@ def train_model(training_data, unlabeled_data):
 
   # train the model, test all combinations of hyper parameter
   model = s.self_issue_classification_all()
+  # save the model
+  model_out = open("src/pickles/SVM_model.p", "wb")
+  pickle.dump(model, model_out)
+  model_out.close()
 
   # fit the model on test data
   result = s.test_issue_classifications_from_comments_all()
 
   # only write the id and label to file
-  result = result[["_id", "perspective_score", "stanford_polite", "prediction"]]
-  result.to_csv("PATH_TO_OUTPUT_FILE", index=False)
+  if G_data:
+    result = result.rename(columns={"_id": "id"})
+  result = result.rename(columns={"stanford_polite": "politeness_score"})
+  result = result[[
+      "id", "perspective_score", "politeness_score", "prediction", "is_SE",
+      "self_angry"
+  ]]
+  result.to_csv("classification_results.csv", index=False)
 
 
+G_data = True
 [training, unlabeled] = receive_data.receive_data()
 train_model(training, unlabeled)
