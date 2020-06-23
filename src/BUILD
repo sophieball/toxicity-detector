@@ -7,7 +7,8 @@ exports_files(
      "data/lexicons.csv",
      "pickles/all_words.p",
      "pickles/github_words.p",
-     "pickles/anger.p"]
+     "pickles/anger.p"],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
