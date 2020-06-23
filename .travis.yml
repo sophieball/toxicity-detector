@@ -16,7 +16,7 @@ addons:
     packages:
       - bazel
 script:
-  - bazel build //main:train_classifier_g 
+  - bazel build ...
   - bazel test //tests:main_test
   
 after_failure:
