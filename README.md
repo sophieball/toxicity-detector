@@ -112,17 +112,23 @@ Before you can run the script, you should first create a file `config.py`, which
 
 ## Data
 
-- Training and testing files should be stored in `src/data/'.
-- Training data (file `src/data/training_data.csv`) should contain at least 3 columns: `_id`, `text`, and `toxic`
-- Test data (file `src/data/test_data.csv`) should contain at least 2 columns: `_id` and `text`
-- The output will be written to `src/classification_results.csv`.
+- Training data should contain at least 3 columns: `id`, `text`, and `label`,
+  and a column `training` set to 1 indicating that these data are for training
+  phase.
+- Unlabeled data should contain at least 2 columns: `id` and `text`, and a column
+  `training` set to 0 indicating that these data are unlabeled.
+- Currently, the program reads in a single data frame which contains both
+  training and unlabeled data.
+- The output will be written to `classification_results.csv`. It consists of
+  `id`, `prediction`, `perspective_score`, `politeness_score`, `is_SE`, and
+  `self_anger`.
 
 ## Bazel and pip3
 
-The code can be built and run with Bazel ([installation
+The code can be built with Bazel ([installation
 guide](https://docs.bazel.build/versions/3.2.0/install.html)).
 Bazel will pull pypi libraries automatically, but you need to have pip3
 installed.
 
-To run the script using Bazel, execute `bazel run //main:train_classifier_g`, which will fetch pypi
-libraries listed in `requirements.txt`, then build and execute the python binary.
+Then you can feed data into the program by writing it as a string to standard
+input, and execute `bazel-bin/main/train_classifier_g`.

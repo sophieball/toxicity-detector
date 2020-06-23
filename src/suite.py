@@ -360,7 +360,8 @@ class Suite:
 
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
-    self.all_train_data = create_features.create_features(train_collection, "training")
+    self.all_train_data = create_features.create_features(
+        train_collection, "training")
     logging.info(
         "Prepared training dataset, it took {} seconds".format(time.time() - \
                                                                self.last_time))
@@ -368,7 +369,8 @@ class Suite:
 
   def set_unlabeled_set(self, test_collection):
     self.test_collection = test_collection
-    self.test_data = create_features.create_features(test_collection, "unlabeled")
+    self.test_data = create_features.create_features(test_collection,
+                                                     "unlabeled")
     logging.info(
         "Prepared unlabeled dataset, it took {} seconds".format(time.time() - \
                                                               self.last_time))
@@ -440,7 +442,6 @@ class Suite:
         remove_SE_comment,
         [(x, model, features, tf_idf_counter) for x in original_text])
     test_issues.loc[test_issues.prediction == 1, "is_SE"] = original_text
-    #test_issues.loc[test_issues.prediction == 1, "is_SE"] = test_issues[test_issues["prediction"] == 1]["original_text"].map(lambda x: self.remove_SE_comment(x))
     test_issues.loc[test_issues.is_SE == 1, "prediction"] = 0
 
     return test_issues
@@ -489,9 +490,10 @@ class Suite:
 
   def issue_classifications_from_comments(self):
     t = time.time()
-    self.test_data = self.classify_test()
+    #self.test_data = self.classify_test()
     self.test_data = self.remove_I(self.test_data)
     self.test_data = self.remove_SE(self.test_data)
+    logging.info(self.test_data.columns)
     return self.test_data
 
   def self_issue_classification_from_comments(self):
@@ -545,17 +547,11 @@ class Suite:
 
   # applying the model to the test data
   def test_issue_classifications_from_comments_all(self, matched_pairs=False):
-
-    def test_issue_classifications_from_comments_statistics_per():
-      t = time.time()
-      return self.issue_classifications_from_comments()
-      #test_issues = map_toxicity(test_issues)
-
     test_list = [list(x) for x in self.test_data[self.features].values]
 
     self.test_data["prediction"] = self.model.predict(test_list)
-    #test_result = test_issue_classifications_from_comments_statistics_per()
-    return self.test_data  #test_result
+    test_result = self.issue_classifications_from_comments()
+    return test_result
 
   def self_comment_classification_all(self, matched_pairs=False):
 
