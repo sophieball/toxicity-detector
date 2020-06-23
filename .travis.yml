@@ -1,6 +1,7 @@
 language:
-  python
- 
+  - python
+  - r
+  
 # Adding sudo:required such that Travis doesn't use containers; otherwise
 # Bazel's sandbox execution will fail. The alternative is to disable Bazel's
 # sandbox execution using "--genrule_strategy=standalone",
