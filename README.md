@@ -112,10 +112,10 @@ Before you can run the script, you should first create a file `config.py`, which
 
 ## Data
 
-- Training data should contain at least 3 columns: `id`, `text`, and `label`,
+- Training data should contain at least 4 columns: `id`, `text`, and `label`,
   and a column `training` set to 1 indicating that these data are for training
   phase.
-- Unlabeled data should contain at least 2 columns: `id` and `text`, and a column
+- Unlabeled data should contain at least 3 columns: `id` and `text`, and a column
   `training` set to 0 indicating that these data are unlabeled.
 - Currently, the program reads in a single data frame which contains both
   training and unlabeled data.
@@ -130,5 +130,4 @@ guide](https://docs.bazel.build/versions/3.2.0/install.html)).
 Bazel will pull pypi libraries automatically, but you need to have pip3
 installed.
 
-Then you can feed data into the program by writing it as a string to standard
-input, and execute `bazel-bin/main/train_classifier_g`.
+To run it, execute `bazel run //main:feed_data`.

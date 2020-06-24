@@ -2,6 +2,15 @@ load("@rules_python//python:defs.bzl", "py_binary")
 load("@rules_python//python:defs.bzl", "py_test")
 load("@deps//:requirements.bzl", "requirement")
 
+exports_files(
+    ["data/both_t_data.csv",
+     "data/lexicons.csv",
+     "pickles/all_words.p",
+     "pickles/github_words.p",
+     "pickles/anger.p"],
+    visibility = ["//visibility:public"]
+)
+
 py_library(
     name = "receive_data",
     srcs = ["receive_data.py"],

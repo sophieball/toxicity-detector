@@ -143,10 +143,10 @@ def create_features(comments_df, training):
   logging.info("Total number of {} data: {}.".format(training,
                                                      len(features_df)))
   logging.info(
-      "Some descriptive statistics of {} data's perspective scores: \n{}".format(
+      "Some descriptive statistics of {} data's perspective scores:\n{}".format(
           training, features_df["perspective_score"].describe()))
   logging.info(
-      "Some descriptive statistics of {} data's politeness scores: \n{}".format(
+      "Some descriptive statistics of {} data's politeness scores:\n{}".format(
           training, features_df["stanford_polite"].describe()))
 
   features_df.to_csv("training_data_label_cleaned.csv", index=False)

@@ -471,7 +471,7 @@ class Suite:
     logging.info("Removing angry words towards oneself and SE words.")
     data = self.remove_I(data)
     data = self.remove_SE(data)
-    logging.info("Crossvalidation score is \n{}".format(
+    logging.info("Crossvalidation score is\n{}".format(
         classification_report(data["label"].tolist(),
                               data["prediction"].tolist())))
 
@@ -490,10 +490,8 @@ class Suite:
 
   def issue_classifications_from_comments(self):
     t = time.time()
-    #self.test_data = self.classify_test()
     self.test_data = self.remove_I(self.test_data)
     self.test_data = self.remove_SE(self.test_data)
-    logging.info(self.test_data.columns)
     return self.test_data
 
   def self_issue_classification_from_comments(self):
