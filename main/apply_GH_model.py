@@ -9,7 +9,6 @@ import pickle
 logging.basicConfig(
     filename="main/test_model.log", filemode="w", level=logging.INFO)
 logging.basicConfig(level=logging.INFO)
-G_data = True
 
 s = suite.Suite()
 
@@ -31,7 +30,7 @@ s.nice_features = ["perspective_score", "stanford_polite"]
 result = s.test_issue_classifications_from_comments_all()
 
 # only write the id and label to file
-if G_data:
+if "_id" in result.columns
   result = result.rename(columns={"_id": "id"})
 result = result.rename(columns={"stanford_polite": "politeness_score"})
 result = result[[
