@@ -14,8 +14,9 @@ addons:
       -
         sourceline: "ppa:marutter/rrutter"
 script:
-  - "bazel build //main:feed_data" 
+  - "bazel build //main:feed_data"
   - "bazel test //tests:main_test"
+  - "bazel test //tests:test_apply_GH_model"
 sudo: false
 
 after_failure:
