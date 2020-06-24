@@ -15,8 +15,8 @@ py_binary(
 )
 
 py_binary(
-    name = "test_model",
-    srcs = ["test_model.py"],
+    name = "apply_GH_model",
+    srcs = ["apply_GH_model.py"],
     visibility = ["//visibility:public"],
     deps = [
         "//src:download_data",
@@ -45,7 +45,7 @@ r_binary(
     src = "feed_data.R",
     data = [
         ":train_classifier_g",
-        ":test_model",
+        ":apply_GH_model",
         "//src:data/both_t_data.csv",
     ],
     deps = [
