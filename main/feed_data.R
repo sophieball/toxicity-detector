@@ -1,11 +1,10 @@
 library(plyr)
 library(readr)
 
-# a csv containing BOTH Training and Testing DATA
-# 4 columns: _id, text, training (True/False), label (True/False)
+# the combined training data nad test data used in the NIER2019 paper
 df <- read.csv("./src/data/both_t_data.csv")
 df <- rename(df, c("X_id" = "id"))
 
-system2("main/train_classifier_g",
-        stdout = "test_out",
+system2("main/test_model",
+        stdout = "",#test_out",
         input = format_csv(df))
