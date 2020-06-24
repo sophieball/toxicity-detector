@@ -130,4 +130,4 @@ guide](https://docs.bazel.build/versions/3.2.0/install.html)).
 Bazel will pull pypi libraries automatically, but you need to have pip3
 installed.
 
-To run it, you need to put your `xxx.R` file in `main/`, then build with `bazel build ...` in the root directory, which is where `WORKSPACE` file locates, run with `bazel-bin/main/xxx`
+To run it, you need to put your `feed_data.R` file in `main/`, then build with `bazel build //main:feed_data` in the root directory, which is where `WORKSPACE` file locates, run with `bazel-bin/main/feed_data`
