@@ -18,6 +18,7 @@ load(
     "@com_grail_rules_r//R:defs.bzl",
     "r_binary",
     "r_library",
+    "r_pkg",
     "r_pkg_test",
     "r_unit_test",
 )
@@ -29,10 +30,8 @@ r_binary(
     name = "feed_data",
     src = "feed_data.R",
     data = [
+        ":train_classifier_g",
         "//src:data/both_t_data.csv",
-        "//src:pickles/all_words.p",
-        "//src:pickles/github_words.p",
-        "//src:pickles/anger.p",
     ],
     deps = [
         "@R_plyr",

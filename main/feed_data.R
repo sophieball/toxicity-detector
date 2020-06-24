@@ -6,6 +6,6 @@ library(readr)
 df <- read.csv("./src/data/both_t_data.csv")
 df <- rename(df, c("X_id" = "id"))
 
-system2("../../main/train_classifier_g",
+system2("main/train_classifier_g",
         stdout = "test_out",
         input = format_csv(df))
