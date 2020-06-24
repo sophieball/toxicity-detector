@@ -1,6 +1,9 @@
 # Lint as: python3
 """Apply pre-trained model on test data"""
 
+from src import download_data
+download_data.download_data()
+
 from src import receive_data
 from src import suite
 import logging
