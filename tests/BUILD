@@ -3,8 +3,8 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("@deps//:requirements.bzl", "requirement")
 
 py_test(
-    name = "test_apply_GH_model",
-    srcs = ["test_apply_GH_model.py"],
+    name = "test_GH_model",
+    srcs = ["test_GH_model.py"],
     deps = [
         "//src:receive_data",
         "//main:apply_GH_model",
