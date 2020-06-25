@@ -14,6 +14,20 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "apply_GH_model",
+    srcs = ["apply_GH_model.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src:download_data",
+        "//src:receive_data",
+        "//src:suite",
+    ],
+    data = [
+        "//src:pickles/SVM_model.p",
+    ],
+)
+
 load(
     "@com_grail_rules_r//R:defs.bzl",
     "r_binary",
@@ -31,6 +45,7 @@ r_binary(
     src = "feed_data.R",
     data = [
         ":train_classifier_g",
+        ":apply_GH_model",
         "//src:data/both_t_data.csv",
     ],
     deps = [
