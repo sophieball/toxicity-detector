@@ -16,7 +16,7 @@ addons:
 script:
   - "bazel build //main:feed_data"
   - "bazel test //tests:main_test"
-  - "bazel test //tests:test_apply_GH_model"
+  - "bazel test //tests:test_GH_model"
 sudo: false
 
 after_failure:
