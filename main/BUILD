@@ -15,6 +15,22 @@ py_binary(
 )
 
 py_binary(
+    name = "train_polite_score",
+    srcs = ["train_polite_score.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src:download_data",
+        "//src:convo_politeness",
+        "//src:receive_data",
+        requirement("sklearn"),
+    ],
+    data = [
+        "//src:pickles/SVM_model.p",
+    ],
+)
+
+
+py_binary(
     name = "apply_GH_model",
     srcs = ["apply_GH_model.py"],
     visibility = ["//visibility:public"],
@@ -46,6 +62,7 @@ r_binary(
     data = [
         ":train_classifier_g",
         ":apply_GH_model",
+        ":train_polite_score",
         "//src:data/both_t_data.csv",
     ],
     deps = [
