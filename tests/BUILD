@@ -5,9 +5,9 @@ load("@deps//:requirements.bzl", "requirement")
 py_test(
     name = "test_GH_model",
     srcs = ["test_GH_model.py"],
+    data = ["//src:pickles/SVM_pretrained_model.p"],
     deps = [
         "//src:receive_data",
-        "//main:apply_GH_model",
     ],
 )
 

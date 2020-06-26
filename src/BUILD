@@ -3,14 +3,10 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("@deps//:requirements.bzl", "requirement")
 
 exports_files(
-    [
-        "data/both_t_data.csv",
-        "data/lexicons.csv",
-        "pickles/all_words.p",
-        "pickles/SVM_model.p",
-        "pickles/github_words.p",
-        "pickles/anger.p",
-    ],
+    glob([
+        "data/*.csv",
+        "pickles/*.p",
+    ]),
     visibility = ["//visibility:public"],
 )
 

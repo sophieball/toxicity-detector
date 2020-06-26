@@ -12,7 +12,7 @@ class TestGHModel(unittest.TestCase):
 
   def test_GH_model(self):
     # set model
-    model_file = open("src/pickles/SVM_model.p", "rb")
+    model_file = open("src/pickles/SVM_pretrained_model.p", "rb")
     model = pickle.load(model_file)
     model_file.close()
 
@@ -21,26 +21,26 @@ class TestGHModel(unittest.TestCase):
     {
         "_id": "jekyll/jekyll/6948/386652799",
         "perspective_score": 0.060521,
-        "stanford_polite": 0.095238
+        "politeness": 0.095238
     },
     {
         "_id": "GoMint/GoMint/406/434020009",
         "perspective_score": 0.051550,
-        "stanford_polite": 0.00000
+        "politeness": 0.00000
     },
     {
         "_id": "bootstrap/twbs/3057/5142140",
         "perspective_score": 0.531060,
-        "stanford_polite": 0.428571
+        "politeness": 0.428571
     },
     {
         "_id": "openvpn-client/dperson/165/445486679",
         "perspective_score": 0.222210,
-        "stanford_polite": 0.190476
+        "politeness": 0.190476
     }]
 
 
-    features = ["perspective_score", "stanford_polite"]
+    features = ["perspective_score", "politeness"]
     test_list = [list(x) for x in test_data[features].values]
 
     test_data["prediction"] = model.predict(test_list)
