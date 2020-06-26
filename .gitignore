@@ -1,3 +1,2 @@
 src/config.py
-main/output/*
-main/logging/*
+*.csv

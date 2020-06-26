@@ -126,7 +126,6 @@ def create_features(comments_df, training):
 
   # get politeness scores for all comments
   all_stanford_polite = convo_politeness.get_politeness_score(comments_df)
-  comments_df = comments_df.join(all_stanford_polite.set_index("_id"), on="_id")
 
   # remove comments longer than 300 characters (perspective limit)
   comments_df = util.remove_large_comments(comments_df)
@@ -147,7 +146,7 @@ def create_features(comments_df, training):
           training, features_df["perspective_score"].describe()))
   logging.info(
       "Some descriptive statistics of {} data's politeness scores:\n{}".format(
-          training, features_df["stanford_polite"].describe()))
+          training, features_df["politeness"].describe()))
 
-  features_df.to_csv("training_data_label_cleaned.csv", index=False)
+  features_df.to_csv(training+"_data_label_cleaned.csv", index=False)
   return features_df
