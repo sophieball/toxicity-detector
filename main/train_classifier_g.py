@@ -61,6 +61,12 @@ def train_model(training_data, unlabeled_data):
       "is_SE", "self_angry"
   ]]
   result.to_csv("classification_results.csv", index=False)
+  logging.info("Number of 1's in raw prediction: {}.".format(
+      sum(result["raw_prediction"])))
+  logging.info("Number of data flipped due to SE: {}.".format(
+      sum(result["is_SE"])))
+  logging.info("Number of data flipped due to self angry: {}.".format(
+      sum(result["self_angry"])))
 
 
 G_data = True
