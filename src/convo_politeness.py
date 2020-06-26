@@ -131,10 +131,8 @@ def cross_validate(comments):
   X = pick_features(scores)
   X_train, X_test, y_train, y_test = model_selection.train_test_split(
       X, y, test_size=test_size, random_state=0)
-  #clf = linear_model.LogisticRegression(random_state=0).fit(X_train, y_train)
   clf = ensemble.RandomForestClassifier(
       max_depth=2, random_state=0).fit(X_train, y_train)
-  #clf = sklearn.tree.DecisionTreeClassifier().fit(X_train, y_train)
   pred = clf.predict(X_test)
   logging.info("\n" + metrics.classification_report(y_test, pred))
   # save the model
