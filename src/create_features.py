@@ -149,5 +149,5 @@ def create_features(comments_df, training):
       "Some descriptive statistics of {} data's politeness scores:\n{}".format(
           training, features_df["stanford_polite"].describe()))
 
-  features_df.to_csv("training_data_label_cleaned.csv", index=False)
+  features_df.to_csv("output/"+training+"_data_label_cleaned.csv", index=False)
   return features_df
