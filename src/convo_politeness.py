@@ -60,7 +60,7 @@ def transform_politeness(corpus):
 # input: convo corpus (from training comments)
 # output: a list of dictionaries, each of which corresponds to politeness
 # strategies of an utterance
-def polite_score(corpus, need_stanford=True):
+def polite_score(corpus):
   num_features = len(
       corpus.get_utterance(
           corpus.get_utterance_ids()[0]).meta["politeness_strategies"])
@@ -69,6 +69,7 @@ def polite_score(corpus, need_stanford=True):
     ret = {"_id": x}
     utt = corpus.get_utterance(x)
     total = 0
+    # get the number of words in each politeness strategy
     for ((k, v), (k1, v2)) in zip(utt.meta["politeness_strategies"].items(),
                                   utt.meta["politeness_markers"].items()):
       cur_name = k.split("==")[1]
@@ -76,19 +77,14 @@ def polite_score(corpus, need_stanford=True):
         ret[cur_name] = len(v2)
       else:
         ret[cur_name] = 0
-      # currently I'm taking average of strategies that are not associated with
-      # higher likelihood of being toxic
-      if cur_name != "HASNEGATIVE" and cur_name != "2nd_person" \
-          and cur_name != "2nd_person_start":
-        total += v
-    #if need_stanford:
-    #  ret["stanford_polite"] = total / num_features
+    # training data
     if "label" in utt.meta:
       ret["label"] = utt.meta["label"]
     scores.append(ret)
   return pd.DataFrame(scores)
 
 
+# These are based on manual inspection on the variance
 def transform_features(X):
   X["HASHEDGE"] = np.log(1 + X["HASHEDGE"])
   X["Please"] = X["Please"] > 0
@@ -113,6 +109,7 @@ def transform_features(X):
   return X
 
 
+# These features are picked based on a logistic regression
 def pick_features(X):
   if "label" in X.columns:
     X = X.drop(columns=["_id", "label"], axis=1)
@@ -172,6 +169,6 @@ def get_politeness_score(comments):
   X = pick_features(scores)
   # Load the model
   clf = pickle.load(open("src/pickles/politeness.p", "rb"))
-  y = clf.predict(X)
-  comments["politeness"] = y
-  #return comments[["_id", "politeness"]]
+  y = clf.predict_proba(X)
+  comments["politeness"] = y[:, 1]
+  return comments
