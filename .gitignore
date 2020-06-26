@@ -1,3 +1,3 @@
 src/config.py
-main/output/*
-main/logging/*
+output/*
+logging/*

@@ -65,6 +65,7 @@ py_library(
 py_library(
     name = "convo_politeness",
     srcs = ["convo_politeness.py"],
+    data = ["pickles/politeness.p"],
     deps = [
         requirement("convokit"),
         requirement("pandas"),
@@ -86,6 +87,7 @@ py_library(
         requirement("ftfy"),
         requirement("threadpoolctl"),
     ],
+    visibility = ["//visibility:public"],
 )
 
 py_library(

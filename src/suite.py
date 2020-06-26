@@ -65,13 +65,13 @@ def rescore(new_sentence, features, tf_idf_counter):
     persp_score = create_features.get_perspective_score(new_sentence, "en")
     new_features_dict["perspective_score"] = persp_score
 
-  if "stanford_polite" in features:
+  if "politeness" in features:
     polite_df = convo_politeness.get_politeness_score(
         pd.DataFrame([{
             "_id": "1",
             "text": new_sentence
         }]))
-    new_features_dict["stanford_polite"] = polite_df.iloc[0]["stanford_polite"]
+    new_features_dict["politeness"] = polite_df.iloc[0]["politeness"]
 
   if "word2vec_0" in features:
     # Calcualte word2vec
@@ -124,7 +124,7 @@ different_words = util.log_odds(
 
 
 def score_toxicity(text, model):
-  features = ["perspective_score", "stanford_polite"]
+  features = ["perspective_score", "politeness"]
 
   val = rescore(text, features, 0)
   predict = model.predict([val])[0]
@@ -165,7 +165,7 @@ def clean_text(text):
 
 
 def get_prediction(text, model):
-  features = ["perspective_score", "stanford_polite"]
+  features = ["perspective_score", "politeness"]
 
   val = rescore(text, features, 0)
   predict = model.predict([val])[0]
@@ -294,6 +294,9 @@ class Suite:
     self.test_data = None
     self.train_data = None
     self.model_function = None
+
+  def set_trained_model(self, model):
+    self.model = model
 
   def set_model(self, model_function):
     self.model_function = model_function
@@ -471,7 +474,10 @@ class Suite:
     logging.info("Removing angry words towards oneself and SE words.")
     data = self.remove_I(data)
     data = self.remove_SE(data)
-    logging.info("Crossvalidation score is\n{}".format(
+    logging.info("Crossvalidation score before adjustment is\n{}".format(
+        classification_report(data["label"].tolist(),
+                              data["raw_prediction"].tolist())))
+    logging.info("Crossvalidation score after adjustment is\n{}".format(
         classification_report(data["label"].tolist(),
                               data["prediction"].tolist())))
 
@@ -536,7 +542,7 @@ class Suite:
           average="weighted",
           beta=0.5)
 
-      return score  #score["f_0.5"]
+      return score
 
     best_score = self.all_combinations(
         self_issue_classification_statistics_per, matched_pairs=matched_pairs)
@@ -547,6 +553,7 @@ class Suite:
   def test_issue_classifications_from_comments_all(self, matched_pairs=False):
     test_list = [list(x) for x in self.test_data[self.features].values]
 
+    self.test_data["raw_prediction"] = self.model.predict(test_list)
     self.test_data["prediction"] = self.model.predict(test_list)
     test_result = self.issue_classifications_from_comments()
     return test_result
