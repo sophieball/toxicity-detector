@@ -471,6 +471,7 @@ class Suite:
       for i, row in test_data.iterrows():
         data.loc[data["_id"] == row["_id"], "prediction"] = row["prediction"]
 
+    data["raw_prediction"] = data["prediction"]
     logging.info("Removing angry words towards oneself and SE words.")
     data = self.remove_I(data)
     data = self.remove_SE(data)
