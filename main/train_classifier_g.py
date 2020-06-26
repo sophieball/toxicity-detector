@@ -27,17 +27,12 @@ def train_model(training_data, unlabeled_data):
   s.set_unlabeled_set(unlabeled_data)
 
   # select model
-  s.set_model(classifiers.svm_model)  #random_forest_model)
+  s.set_model(classifiers.svm_model)  
 
   # list the set of parameters you want to try out
   s.set_ratios([2])
   s.add_parameter("C", [.05])
   s.add_parameter("gamma", [2])
-  # RF params
-  #s.add_parameter("n_estimators",
-  #                [int(x) for x in np.linspace(start=200, stop=2000, num=10)])
-  #s.add_parameter("max_features", ["auto", "sqrt"])
-  #s.add_parameter("max_depth", [int(x) for x in np.linspace(10, 110, num=11)])
 
   # select features
   s.features = ["perspective_score", "politeness"]
@@ -46,7 +41,7 @@ def train_model(training_data, unlabeled_data):
   # train the model, test all combinations of hyper parameter
   model = s.self_issue_classification_all()
   # save the model
-  model_out = open("src/pickles/RF_model.p", "wb")
+  model_out = open("src/pickles/SVM_model.p", "wb")
   pickle.dump(model, model_out)
   model_out.close()
 
