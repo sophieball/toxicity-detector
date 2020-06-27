@@ -24,9 +24,6 @@ py_binary(
         "//src:receive_data",
         requirement("sklearn"),
     ],
-    data = [
-        "//src:pickles/SVM_model.p",
-    ],
 )
 
 load(
