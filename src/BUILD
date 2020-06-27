@@ -3,29 +3,30 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("@deps//:requirements.bzl", "requirement")
 
 exports_files(
-    glob([
-        "data/*.csv",
-        "pickles/*.p",
-    ]),
-    visibility = ["//visibility:public"],
+    ["data/both_t_data.csv",
+     "data/lexicons.csv",
+     "pickles/all_words.p",
+     "pickles/github_words.p",
+     "pickles/anger.p"],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
     name = "receive_data",
     srcs = ["receive_data.py"],
-    visibility = ["//visibility:public"],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
     name = "download_data",
     srcs = ["download_data.py"],
-    visibility = ["//visibility:public"],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
     name = "statistics",
     srcs = ["statistics.py"],
-    visibility = ["//visibility:public"],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
@@ -47,7 +48,6 @@ py_library(
 py_library(
     name = "text_modifier",
     srcs = ["text_modifier.py"],
-    visibility = ["//visibility:public"],
     deps = [
         ":download_data",
         requirement("sklearn"),
@@ -56,12 +56,12 @@ py_library(
         requirement("spacy"),
         requirement("numpy"),
     ],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
     name = "convo_politeness",
     srcs = ["convo_politeness.py"],
-    data = ["pickles/politeness.p"],
     deps = [
         requirement("convokit"),
         requirement("pandas"),
@@ -83,7 +83,6 @@ py_library(
         requirement("ftfy"),
         requirement("threadpoolctl"),
     ],
-    visibility = ["//visibility:public"],
 )
 
 py_library(
@@ -92,35 +91,35 @@ py_library(
     deps = [
         ":config",
         ":convo_politeness",
+        ":text_parser",
         ":text_cleaning",
         ":text_modifier",
-        ":text_parser",
         ":util",
         requirement("pandas"),
-        requirement("nltk"),
+        requirement("nltk")
     ],
 )
 
 py_library(
     name = "text_cleaning",
     srcs = ["text_cleaning.py"],
-    visibility = ["//visibility:public"],
     deps = [
         requirement("nltk"),
-        requirement("markdown"),
+        requirement("markdown")
     ],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
     name = "text_parser",
     srcs = ["text_parser.py"],
-    visibility = ["//visibility:public"],
     deps = [
         requirement("nltk"),
         requirement("markdown"),
         requirement("importlib_metadata"),
-        requirement("zipp"),
+        requirement("zipp")
     ],
+    visibility = ["//visibility:public"]
 )
 
 py_library(
@@ -129,18 +128,13 @@ py_library(
     deps = [
         requirement("sklearn"),
         ":classifiers",
-        ":text_modifier",
+        ":text_modifier"
     ],
 )
 
 py_library(
     name = "suite",
     srcs = ["suite.py"],
-    data = glob([
-        "data/*.csv",
-        "pickles/*.p",
-    ]),
-    visibility = ["//visibility:public"],
     deps = [
         ":classifiers",
         ":convo_politeness",
@@ -154,18 +148,23 @@ py_library(
         requirement("sklearn"),
         requirement("smart_open"),
         requirement("textblob"),
-        requirement("wordfreq"),
+        requirement("wordfreq")
     ],
+    data = glob([
+        "data/*.csv",
+        "pickles/*.p"
+    ]),
+    visibility = ["//visibility:public"]
 )
 
 py_library(
     name = "classifiers",
     srcs = ["classifiers.py"],
-    visibility = ["//visibility:public"],
     deps = [
         requirement("sklearn"),
-        ":statistics",
+        ":statistics"
     ],
+    visibility = ["//visibility:public"]
 )
 
 py_test(
@@ -174,6 +173,6 @@ py_test(
     main = "test_receive_data.py",
     deps = [
         ":receive_data",
-        requirement("pandas"),
-    ],
+        requirement("pandas")
+    ]
 )
