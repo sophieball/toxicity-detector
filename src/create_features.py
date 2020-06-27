@@ -126,7 +126,6 @@ def create_features(comments_df, training):
 
   # get politeness scores for all comments
   all_stanford_polite = convo_politeness.get_politeness_score(comments_df)
-  comments_df = comments_df.join(all_stanford_polite.set_index("_id"), on="_id")
 
   # remove comments longer than 300 characters (perspective limit)
   comments_df = util.remove_large_comments(comments_df)
@@ -142,12 +141,35 @@ def create_features(comments_df, training):
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
   logging.info("Total number of {} data: {}.".format(training,
                                                      len(features_df)))
-  logging.info(
-      "Some descriptive statistics of {} data's perspective scores:\n{}".format(
-          training, features_df["perspective_score"].describe()))
-  logging.info(
-      "Some descriptive statistics of {} data's politeness scores:\n{}".format(
-          training, features_df["stanford_polite"].describe()))
+  if training == "training":
+    logging.info(
+        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 1,
+                                      "perspective_score"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 0,
+                                      "perspective_score"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 1 politeness scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 1,
+                                      "politeness"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 0 politeness scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 0,
+                                      "politeness"].describe()))
 
-  features_df.to_csv("training_data_label_cleaned.csv", index=False)
+  else:
+    logging.info(
+        "Some descriptive statistics of {} data's perspective scores:\n{}"
+        .format(training, features_df["perspective_score"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data's politeness scores:\n{}"
+        .format(training, features_df["politeness"].describe()))
+
+  features_df.to_csv(training + "_data_label_cleaned.csv", index=False)
   return features_df
