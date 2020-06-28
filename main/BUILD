@@ -64,6 +64,5 @@ r_binary(
         ":politeness_logi",
         "@R_plyr",
         "@R_readr",
-        "@R_pscl",
     ],
 )
