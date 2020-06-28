@@ -422,7 +422,7 @@ class Suite:
     return ret
 
   def remove_I(self, test_issues):
-    test_issues.loc[test_issues.prediction != 1, "self_angry"] = 0
+    test_issues["self_angry"] = 0
 
     test_issues.loc[test_issues.prediction == 1, "self_angry"] = test_issues[
         test_issues["prediction"] == 1]["original_text"].map(
@@ -439,7 +439,7 @@ class Suite:
     model = self.model
 
     p = Pool(8)
-    test_issues.loc[test_issues.prediction != 1, "is_SE"] = 0
+    test_issues.loc["is_SE"] = 0
     original_text = test_issues[test_issues["prediction"] == 1]["original_text"]
     original_text = p.starmap(
         remove_SE_comment,
@@ -471,6 +471,7 @@ class Suite:
       for i, row in test_data.iterrows():
         data.loc[data["_id"] == row["_id"], "prediction"] = row["prediction"]
 
+    data["raw_prediction"] = data["prediction"]
     logging.info("Removing angry words towards oneself and SE words.")
     data = self.remove_I(data)
     data = self.remove_SE(data)

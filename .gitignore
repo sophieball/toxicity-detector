@@ -1,2 +1,6 @@
+analysis/*
+main/feed_data.R
+src/config.py
+src/pickles/*
 src/config.py
 *.csv

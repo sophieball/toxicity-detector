@@ -141,12 +141,35 @@ def create_features(comments_df, training):
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
   logging.info("Total number of {} data: {}.".format(training,
                                                      len(features_df)))
-  logging.info(
-      "Some descriptive statistics of {} data's perspective scores:\n{}".format(
-          training, features_df["perspective_score"].describe()))
-  logging.info(
-      "Some descriptive statistics of {} data's politeness scores:\n{}".format(
-          training, features_df["politeness"].describe()))
+  if training == "training":
+    logging.info(
+        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 1,
+                                      "perspective_score"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 0,
+                                      "perspective_score"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 1 politeness scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 1,
+                                      "politeness"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 0 politeness scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 0,
+                                      "politeness"].describe()))
 
-  features_df.to_csv(training+"_data_label_cleaned.csv", index=False)
+  else:
+    logging.info(
+        "Some descriptive statistics of {} data's perspective scores:\n{}"
+        .format(training, features_df["perspective_score"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data's politeness scores:\n{}"
+        .format(training, features_df["politeness"].describe()))
+
+  features_df.to_csv(training + "_data_label_cleaned.csv", index=False)
   return features_df

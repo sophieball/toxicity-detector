@@ -3,14 +3,10 @@ load("@rules_python//python:defs.bzl", "py_test")
 load("@deps//:requirements.bzl", "requirement")
 
 exports_files(
-    [
-        "data/both_t_data.csv",
-        "data/lexicons.csv",
-        "pickles/all_words.p",
-        "pickles/SVM_model.p",
-        "pickles/github_words.p",
-        "pickles/anger.p",
-    ],
+    glob([
+        "data/*.csv",
+        "pickles/*.p",
+    ]),
     visibility = ["//visibility:public"],
 )
 
@@ -41,6 +37,7 @@ py_library(
 py_library(
     name = "util",
     srcs = ["util.py"],
+    visibility = ["//visibility:public"],
     deps = [
         requirement("pandas"),
         requirement("sklearn"),
@@ -65,7 +62,7 @@ py_library(
 py_library(
     name = "convo_politeness",
     srcs = ["convo_politeness.py"],
-    data = ["pickles/politeness.p"],
+    visibility = ["//visibility:public"],
     deps = [
         requirement("convokit"),
         requirement("pandas"),
@@ -87,12 +84,12 @@ py_library(
         requirement("ftfy"),
         requirement("threadpoolctl"),
     ],
-    visibility = ["//visibility:public"],
 )
 
 py_library(
     name = "create_features",
     srcs = ["create_features.py"],
+    visibility = ["//visibility:public"],
     deps = [
         ":config",
         ":convo_politeness",
@@ -130,6 +127,7 @@ py_library(
 py_library(
     name = "cross_validate",
     srcs = ["cross_validate.py"],
+    visibility = ["//visibility:public"],
     deps = [
         requirement("sklearn"),
         ":classifiers",
@@ -169,15 +167,5 @@ py_library(
     deps = [
         requirement("sklearn"),
         ":statistics",
-    ],
-)
-
-py_test(
-    name = "test_receive_data",
-    srcs = ["test_receive_data.py"],
-    main = "test_receive_data.py",
-    deps = [
-        ":receive_data",
-        requirement("pandas"),
     ],
 )

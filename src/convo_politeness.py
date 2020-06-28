@@ -126,7 +126,7 @@ def pick_features(X):
 def cross_validate(comments):
   corpus = prepare_corpus(comments)
   corpus = transform_politeness(corpus)
-  scores = polite_score(corpus, need_stanford=False)
+  scores = polite_score(corpus)
   y = scores["label"]
   X = pick_features(scores)
   X_train, X_test, y_train, y_test = model_selection.train_test_split(
@@ -146,7 +146,7 @@ def train_polite(comments):
   corpus = prepare_corpus(comments)
   corpus = transform_politeness(corpus)
   # get only politeness strategy markers counts
-  scores = polite_score(corpus, need_stanford=False)
+  scores = polite_score(corpus)
   y = scores["label"]
   X = pick_features(scores)
   clf = linear_model.LogisticRegression(random_state=0).fit(X, y)
