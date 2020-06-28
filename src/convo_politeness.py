@@ -1,6 +1,9 @@
 # Lint as: python3
 """Use ConvoKit to get politeness score"""
 
+from src import download_data
+download_data.download_data()
+
 from convokit import Corpus, Speaker, Utterance
 from collections import defaultdict
 from convokit.text_processing import TextParser
@@ -14,6 +17,7 @@ from sklearn import linear_model
 from sklearn import metrics
 from sklearn import model_selection
 import sklearn
+from src import receive_data
 
 test_size = 0.2
 
@@ -170,3 +174,11 @@ def get_politeness_score(comments):
   y = clf.predict_proba(X)
   comments["politeness"] = y[:, 1]
   return comments
+
+
+if __name__ == "__main__":
+  [comments, _] = receive_data.receive_data()
+  comments = comments.dropna()
+  corpus = transform_politeness(prepare_corpus(comments))
+  scores = polite_score(corpus)
+  scores.to_csv("politeness_features.csv", index=False)

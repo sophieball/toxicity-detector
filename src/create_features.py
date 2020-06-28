@@ -68,7 +68,7 @@ def cleanup_text(text):
       for w in text
       if text_parser.is_ascii(w)
   ]
-  return " ".join(text)
+  return text
 
 
 # input: pd.DataFrame (comment)
@@ -78,6 +78,11 @@ def extract_features(total_comment_info):
   total_comment_info["original_text"] = text
   if not isinstance(text, (str, list, dict)) or text is None:
     text = ""
+
+  # count ?
+  num_q = text.count("?")
+  # count !
+  num_exclamation = text.count("!")
 
   uppercase = text_parser.percent_uppercase(text)
   c_length = len(text)
@@ -105,7 +110,11 @@ def extract_features(total_comment_info):
 
   # remove stop words and lemmatization
   text = cleanup_text(text)
+  total_comment_info["num_words"] = len(text)
+  text = " ".join(text)
 
+  total_comment_info["num_q_marks"] = num_q
+  total_comment_info["num_e_marks"] = num_exclamation
   total_comment_info["percent_uppercase"] = uppercase
   total_comment_info["num_reference"] = num_reference
   total_comment_info["num_url"] = num_url

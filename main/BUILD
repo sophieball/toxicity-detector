@@ -39,6 +39,20 @@ load("@com_grail_rules_r//R:defs.bzl", "r_package_with_test")
 load("@r_repositories_bzl//:r_repositories.bzl", "r_repositories")
 
 r_binary(
+    name = "politeness_logi",
+    src = "politeness_logi.R",
+    data = [
+        "//src:data/both_t_data.csv",
+        "//src:convo_politeness",
+    ],
+    deps = [
+        "@R_plyr",
+        "@R_readr",
+        "@R_pscl",
+    ],
+)
+
+r_binary(
     name = "feed_data",
     src = "feed_data.R",
     data = [
@@ -47,7 +61,9 @@ r_binary(
         "//src:data/both_t_data.csv",
     ],
     deps = [
+        ":politeness_logi",
         "@R_plyr",
         "@R_readr",
+        "@R_pscl",
     ],
 )

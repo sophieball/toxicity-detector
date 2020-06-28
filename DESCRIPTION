@@ -1,0 +1,9 @@
+Package: toxicity.detector
+Title: Classify toxic comments.
+Version: 0.1
+Authors@R: person("Sophie", "Qiu", email = "hsqq@cmu.com",
+                  role = c("aut", "cre"))
+Description: What the package does (one paragraph)
+Depends: R (>= 4.0.0)
+License: What license is it under?
+LazyData: true

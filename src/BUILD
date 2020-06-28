@@ -59,11 +59,13 @@ py_library(
     ],
 )
 
-py_library(
+py_binary(
     name = "convo_politeness",
     srcs = ["convo_politeness.py"],
     visibility = ["//visibility:public"],
     deps = [
+        ":download_data",
+        ":receive_data",
         requirement("convokit"),
         requirement("pandas"),
         requirement("spacy"),
