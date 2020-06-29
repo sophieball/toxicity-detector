@@ -49,6 +49,7 @@ r_binary(
         "@R_plyr",
         "@R_readr",
         "@R_pscl",
+        "@R_testit",
     ],
 )
 

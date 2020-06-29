@@ -1,20 +1,22 @@
+# redirect output to a file
+sink("politeness_logi.out")
+
 library(pscl)
+library(testit)
 library(plyr)
 library(readr)
 
 # get data
 dat <- read.csv("/dev/stdin")
-dim(dat)
+assert(length(dat) > 0)
 # collect counts of marked politness words and store them in a file
 system2("src/convo_politeness",
         stdout = "politeness_features.csv",
         input = format_csv(dat))
 
-# redirect output to a file
-sink("politeness_logi.out")
-
 # read python's output from file
 dat <- read.csv("politeness_features.csv")
+names(dat)
 m_pol <- glm(label ~
               log(1 + HASHEDGE)
             + (Please > 0)
@@ -41,3 +43,4 @@ m_pol <- glm(label ~
             , family = "binomial")
 summary(m_pol)
 pR2(m_pol)
+write("Done. Results are stored in `politeness_logi.out`", stderr())
