@@ -59,6 +59,37 @@ py_library(
     ],
 )
 
+
+py_binary(
+    name = "convo_word_freq_diff",
+    srcs = ["convo_word_freq_diff.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":download_data",
+        ":receive_data",
+        requirement("convokit"),
+        requirement("pandas"),
+        requirement("spacy"),
+        requirement("pytz"),
+        requirement("cycler"),
+        requirement("kiwisolver"),
+        requirement("thinc"),
+        requirement("catalogue"),
+        requirement("importlib_metadata"),
+        requirement("zipp"),
+        requirement("srsly"),
+        requirement("cymem"),
+        requirement("preshed"),
+        requirement("murmurhash"),
+        requirement("blis"),
+        requirement("wasabi"),
+        requirement("plac"),
+        requirement("ftfy"),
+        requirement("threadpoolctl"),
+    ],
+)
+
+
 py_binary(
     name = "convo_politeness",
     srcs = ["convo_politeness.py"],
