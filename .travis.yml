@@ -1,15 +1,11 @@
 language:
   - python
-  - r
 
 r:
   - release
   - devel
 
 cache: packages
-r:
-  - release
-  - devel
 
 addons:
   apt:
@@ -23,7 +19,7 @@ addons:
       -
         sourceline: "ppa:marutter/rrutter"
 script:
-  - "bazel build //main:feed_data"
+  - "bazel run //main:feed_data"
   - "bazel test //tests:main_test"
   - "bazel test //tests:test_GH_model"
 

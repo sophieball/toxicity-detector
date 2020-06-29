@@ -5,7 +5,7 @@ download_data.download_data()
 import logging
 logging.basicConfig(
     filename="main/train_classifier.log", filemode="w", level=logging.INFO)
-logging.basicConfig(level=logging.INFO)
+
 from src import receive_data
 from src import classifiers
 from src import suite
@@ -111,4 +111,4 @@ if __name__ == "__main__":
   else:
     [training, unlabeled] = receive_data.receive_data()
     trained_model = train_model(training)
-    predict_unlabeled(unlabeled_data, trained_model)
+    predict_unlabeled(unlabeled, trained_model)
