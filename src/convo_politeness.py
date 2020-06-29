@@ -128,8 +128,7 @@ def pick_features(X):
 
 # split data to do cross validation
 def cross_validate(comments):
-  corpus = prepare_corpus(comments)
-  corpus = transform_politeness(corpus)
+  corpus = transform_politeness(prepare_corpus(comments))
   scores = polite_score(corpus)
   y = scores["label"]
   X = pick_features(scores)
@@ -147,8 +146,7 @@ def cross_validate(comments):
 
 # train a logistic regression model using all training data
 def train_polite(comments):
-  corpus = prepare_corpus(comments)
-  corpus = transform_politeness(corpus)
+  corpus = transform_politeness(prepare_corpus(comments))
   # get only politeness strategy markers counts
   scores = polite_score(corpus)
   y = scores["label"]
@@ -163,9 +161,7 @@ def train_polite(comments):
 # input: a pandas dataframe: _id, text
 # output: a pandas dataframe: _id, text, politeness
 def get_politeness_score(comments):
-  corpus = prepare_corpus(comments)
-  # Processing utterance texts
-  corpus = transform_politeness(corpus)
+  corpus = transform_politeness(prepare_corpus(comments))
   # Calculate politeness score
   scores = polite_score(corpus)
   X = pick_features(scores)

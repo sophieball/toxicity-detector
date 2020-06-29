@@ -1,16 +1,16 @@
 # Lint as: python3
-"""
-check if necessary nltk data and spacy models are downloaded
+"""check if necessary nltk data and spacy models are downloaded
 """
 
 import nltk
 import spacy
 
+
 def download_data():
   try:
     nltk.data.find("tokenizers/punkt")
   except LookupError:
-    print("not found")
+    nltk.download("punkt")
 
   try:
     nltk.data.find("corpora/words")
