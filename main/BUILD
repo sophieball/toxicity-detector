@@ -59,6 +59,7 @@ r_binary(
     data = [
         ":train_classifier_g",
         ":train_polite_score",
+        "//src:convo_word_freq_diff",
         "//src:data/both_t_data.csv",
     ],
     deps = [
