@@ -1,5 +1,6 @@
 blis
 catalogue
+catalogue
 convokit
 cycler
 cymem
@@ -15,6 +16,7 @@ nltk
 numpy
 pandas
 plac
+plac
 preshed
 pytz
 requests
@@ -22,7 +24,9 @@ scipy
 sklearn
 spacy==2.2.4
 srsly
+srsly
 textblob
+thinc
 thinc
 threadpoolctl
 wasabi
