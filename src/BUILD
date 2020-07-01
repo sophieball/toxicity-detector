@@ -79,6 +79,7 @@ py_binary(
         requirement("importlib_metadata"),
         requirement("kiwisolver"),
         requirement("markdown"),
+        requirement("matplotlib"),
         requirement("murmurhash"),
         requirement("numpy"),
         requirement("pandas"),
