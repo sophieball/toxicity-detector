@@ -366,7 +366,7 @@ class Suite:
 
     features = self.features
     tf_idf_counter = self.tf_idf_counter
-    #model = self.model
+    model = self.model
 
     p = Pool(num_subproc)
     data["is_SE"] = 0
@@ -494,7 +494,7 @@ class Suite:
 
     #self.cross_validation()
 
-    #logging.info("Removing angry words towards oneself and SE words.")
+    logging.info("Removing angry words towards oneself and SE words.")
     y_train = self.all_train_data["label"]
     X_train = self.all_train_data[self.features]
     self.all_train_data["raw_prediction"] = model.predict(X_train)
