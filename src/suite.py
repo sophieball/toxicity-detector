@@ -8,9 +8,10 @@ from nltk.corpus import wordnet
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import RegexpTokenizer
 from nltk.tokenize import word_tokenize
+from sklearn import model_selection
 from sklearn.metrics import classification_report, fbeta_score
-from sklearn.model_selection import KFold
-from sklearn.svm import LinearSVC
+from sklearn.model_selection import KFold, GridSearchCV
+from sklearn.svm import LinearSVC, SVC
 from src import classifiers
 from src import convo_politeness
 from src import create_features
@@ -19,7 +20,6 @@ from src import util
 from wordfreq import word_frequency
 import itertools
 import logging
-import nltk
 import numpy as np
 import operator
 import pandas as pd
@@ -34,6 +34,7 @@ import sys
 sys.path.insert(0, "politeness3")
 #import politeness3.model
 
+num_subproc = 20
 model = 0
 
 
@@ -42,7 +43,7 @@ def score(lexicon_dataframe, text):
 
   all_specific = lexicon_dataframe["specific"].unique()
 
-  text = nltk.word_tokenize(text)
+  text = word_tokenize(text)
   text = [i.lower() for i in text]
 
   score_dict = {}
@@ -55,8 +56,11 @@ def score(lexicon_dataframe, text):
   return score_dict
 
 
-def rescore(new_sentence, features, tf_idf_counter):
+def rescore(row, features, tf_idf_counter):
+  new_sentence = row["text"]
   new_features_dict = {}
+  for f in features:
+    new_features_dict[f] = row[f]
 
   if "length" in features:
     new_features_dict["length"] = len(new_sentence)
@@ -117,21 +121,6 @@ def rescore(new_sentence, features, tf_idf_counter):
   return new_features
 
 
-counter = pickle.load(open("src/pickles/github_words.p", "rb"))
-our_words = dict([(i, word_frequency(i, "en") * 10**9) for i in counter])
-different_words = util.log_odds(
-    defaultdict(int, counter), defaultdict(int, our_words))
-
-
-def score_toxicity(text, model):
-  features = ["perspective_score", "politeness"]
-
-  val = rescore(text, features, 0)
-  predict = model.predict([val])[0]
-
-  return [predict, val[0], val[1]]
-
-
 # postprocessing (usually only done for toxic comments)
 # returns list of clean text variants
 def clean_text(text):
@@ -164,57 +153,12 @@ def clean_text(text):
   return result
 
 
-def get_prediction(text, model):
-  features = ["perspective_score", "politeness"]
-
-  val = rescore(text, features, 0)
-  predict = model.predict([val])[0]
-
-  if predict == 0:
-    return 0
-
-  t = time.time()
-  words = text.split(" ")
-  words = [a.strip(",.!?:; ") for a in words]
-
-  words = list(set(words))
-  words = [
-      word for word in words
-      if not word.isalpha() or word.lower() in different_words
-  ]
-
-  for word in set(words):
-    # Maybe unkify?
-    new_sentence = re.sub(
-        r"[^a-zA-Z0-9]" + re.escape(word.lower()) + r"[^a-zA-Z0-9]", " potato ",
-        text.lower())
-    new_features = rescore(new_sentence, features, 0)
-    prediction = model.predict([new_features])[0]
-
-    if prediction == 0:
-      return 0
-
-  tokenizer = RegexpTokenizer(r"\w+")
-  all_words = tokenizer.tokenize(text)
-  # Try removing all unknown words
-  for word in set(all_words):
-    if word.lower() not in counter and word_frequency(
-        word.lower(), "en") == 0 and len(word) > 2:
-      text = text.replace(word, "")
-
-  new_features = rescore(text, features, 0)
-  prediction = model.predict([new_features])[0]
-  if prediction == 0:
-    return 0
-
-  return 1
-
-
 # input: comment, trained model, features used, ?
 # output: 0 if the comment was labeled to be toxic NOT due to SE words (it IS toxic)
 #         1 if the comment was labeled to be toxic due to SE words (it shouldn't
 #         be toxic)
-def remove_SE_comment(text, model, features, tf_idf_counter):
+def remove_SE_comment(row, model, features, tf_idf_counter):
+  text = row["original_text"]
   t = time.time()
   words = text.split(" ")
   words = [a.strip(",.!?:; ") for a in words]
@@ -238,7 +182,8 @@ def remove_SE_comment(text, model, features, tf_idf_counter):
         r"[^a-zA-Z0-9]" + re.escape(word.lower()) + r"[^a-zA-Z0-9]", " potato ",
         text.lower())
     # re-compute features
-    new_features = rescore(new_sentence, features, tf_idf_counter)
+    row["text"] = new_sentence
+    new_features = rescore(row, features, tf_idf_counter)
 
     # after removing SE words, the model labels it as non-toxic
     if model.predict([new_features])[0] == 0:
@@ -271,6 +216,7 @@ class Suite:
     self.nice_features = []
     self.parameter_names = []
     self.hyper_parameters_lists = []
+    self.param_grid = {}
     self.last_time = time.time()
     self.tf_idf_counter = 0
     self.use_filters = True
@@ -294,9 +240,7 @@ class Suite:
     self.test_data = None
     self.train_data = None
     self.model_function = None
-
-  def set_trained_model(self, model):
-    self.model = model
+    self.model = None
 
   def set_model(self, model_function):
     self.model_function = model_function
@@ -359,7 +303,7 @@ class Suite:
     return indexes_we_want
 
   def set_ratios(self, ratios):
-    self.ratios = ratios
+    self.ratio = ratios
 
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
@@ -380,6 +324,8 @@ class Suite:
 
     self.last_time = time.time()
 
+  # select data from the total data set so that
+  # the number of toxic:non-toxic is 1:ratio
   def select_subset(self, ratio):
     self.train_data = util.select_ratio(self.all_train_data, ratio)
 
@@ -389,29 +335,13 @@ class Suite:
     a = []
     for i in body:
       if i != None:
-        a += nltk.word_tokenize(i)
+        a += word_tokenize(i)
     a = [i.lower() for i in a]
     a = Counter(a)
 
     self.last_time = time.time()
 
     return a
-
-  def get_anger_classifier(self):
-    text = open("data/anger.txt").read().split("\n")
-    label = [i.split("\t")[1] for i in text]
-    train = [i.split("\t")[-1][1:-1] for i in text]
-    train = [(train[i], label[i]) for i in range(len(train))]
-    self.all_words = set(
-        word.lower() for passage in train for word in word_tokenize(passage[0]))
-    all_words = self.all_words
-    train = [({word: (word in word_tokenize(x[0]))
-               for word in all_words}, x[1])
-             for x in train]
-    classifier = SklearnClassifier(LinearSVC())
-    classifier.train(train)
-
-    return classifier
 
   def convert(self, test_sentence):
     ret = copy(self.all_false)
@@ -432,22 +362,22 @@ class Suite:
 
     return test_issues
 
-  def remove_SE(self, test_issues):
+  def remove_SE(self, data):
 
     features = self.features
     tf_idf_counter = self.tf_idf_counter
     model = self.model
 
-    p = Pool(8)
-    test_issues.loc["is_SE"] = 0
-    original_text = test_issues[test_issues["prediction"] == 1]["original_text"]
-    original_text = p.starmap(
-        remove_SE_comment,
-        [(x, model, features, tf_idf_counter) for x in original_text])
-    test_issues.loc[test_issues.prediction == 1, "is_SE"] = original_text
-    test_issues.loc[test_issues.is_SE == 1, "prediction"] = 0
+    p = Pool(num_subproc)
+    data["is_SE"] = 0
+    new_pred = p.starmap(remove_SE_comment, [
+        (x, self.model, features, tf_idf_counter)
+        for x in data.loc[data["prediction"] == 1].T.to_dict().values()
+    ])  #original_text])
+    data.loc[data.prediction == 1, "is_SE"] = new_pred
+    data.loc[data.is_SE == 1, "prediction"] = 0
 
-    return test_issues
+    return data
 
   def classify_test(self):
     return classifiers.classify(self.model, self.train_data, self.test_data,
@@ -457,13 +387,14 @@ class Suite:
     return classify_statistics(self.model, self.train_data, self.test_data,
                                self.features)
 
-  def cross_validate_classify(self):
+  def cross_validation(self):
     kfold = KFold(10)
     data = self.all_train_data.sample(frac=1)
     for train, test in kfold.split(data):
       train_data = data.iloc[train].copy()
       test_data = data.iloc[test].copy()
-      train_data = util.select_ratio(train_data, self.ratio)
+      train_data = util.select_ratio(train_data, self.ratio[0])
+      self.model = classifiers.svm_model()
 
       test_data = classifiers.classify(self.model, train_data, test_data,
                                        self.features)
@@ -482,29 +413,15 @@ class Suite:
         classification_report(data["label"].tolist(),
                               data["prediction"].tolist())))
 
-    return data
+    self.all_train_data = data
 
-  def set_parameters(self):
-    for ratio in self.ratios:
-      for combination in itertools.product(*self.hyper_parameters_lists):
-        self.combination_dict = {}
-        for i in range(len(combination)):
-          self.combination_dict[self.parameter_names[i]] = combination[i]
-
-        self.model = self.model_function(**self.combination_dict)
-
-        self.select_subset(ratio)
-
-  def issue_classifications_from_comments(self):
-    t = time.time()
-    self.test_data = self.remove_I(self.test_data)
-    self.test_data = self.remove_SE(self.test_data)
-    return self.test_data
+  def set_parameters(self, grid):
+    self.param_grid = grid
 
   def self_issue_classification_from_comments(self):
-    self.train_data = self.cross_validate_classify()
+    self.train_data = self.cross_validation()
 
-  def all_combinations(self, function, matched_pairs=False):
+  def all_combinations(self):
     logging.info("Trying all combinations of hyper parameters.")
     global model
 
@@ -533,36 +450,78 @@ class Suite:
 
   # training the model
   def self_issue_classification_all(self, matched_pairs=False):
+    global model
+    # n-fold nested cross validation
+    # https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html
+    svm = SVC()
+    num_trials = 5
+    n_splits = 10
+    best_model = None
+    best_score = 0
+    best_ratio = 0
+    for ratio in self.ratio:
+      for i in range(num_trials):
+        # find the best paramter combination
+        # need to try different ratios later
+        train_data = util.select_ratio(self.all_train_data, ratio)
+        y_train = train_data["label"]
+        X_train = train_data[self.features]
+        model = GridSearchCV(
+            estimator=svm,
+            param_grid=self.param_grid,
+            scoring="f1_weighted",
+            n_jobs=14,  # parallel
+            cv=KFold(n_splits=n_splits, shuffle=True),
+            verbose=0)
+        model.fit(X_train, y_train)
 
-    def self_issue_classification_statistics_per():
-      # self.train_data
-      self.self_issue_classification_from_comments()
-      score = fbeta_score(
-          self.train_data["prediction"].tolist(),
-          self.train_data["label"].tolist(),
-          average="weighted",
-          beta=0.5)
+        # nested cross validation with paramter optimization
+        nested_score = model_selection.cross_val_score(
+            model, X_train, y_train, cv=KFold(n_splits=n_splits, shuffle=True))
+        nested_scores = nested_score.mean()
+        if nested_scores > best_score:
+          best_score = nested_scores
+          best_model = model
+          best_ratio = ratio
 
-      return score
+    # Find the optimal parameters
+    logging.info("Trying all combinations of hyper parameters.")
+    logging.info("Scores with {}-fold cross validation".format(n_splits))
+    logging.info("Best parameter: {}, ratio: {}.".format(
+        best_model.best_estimator_, best_ratio))
+    logging.info("Best score: {}.".format(best_model.best_score_))
+    self.model = best_model
 
-    best_score = self.all_combinations(
-        self_issue_classification_statistics_per, matched_pairs=matched_pairs)
-    logging.info("Best f0.5 score: {}".format(best_score))
-    return self.model
+    #self.cross_validation()
+
+    logging.info("Removing angry words towards oneself and SE words.")
+    y_train = self.all_train_data["label"]
+    X_train = self.all_train_data[self.features]
+    self.all_train_data["raw_prediction"] = model.predict(X_train)
+    self.all_train_data["prediction"] = self.all_train_data["raw_prediction"]
+
+    self.all_train_data = self.remove_I(self.all_train_data)
+    self.all_train_data = self.remove_SE(self.all_train_data)
+    logging.info("Crossvalidation score after adjustment is\n{}".format(
+        classification_report(self.all_train_data["label"].tolist(),
+                              self.all_train_data["prediction"].tolist())))
+    return model
 
   # applying the model to the test data
   def test_issue_classifications_from_comments_all(self, matched_pairs=False):
-    test_list = [list(x) for x in self.test_data[self.features].values]
+    #test_list = [list(x) for x in self.test_data[self.features].values]
+    X_test = self.test_data[self.features]
 
-    self.test_data["raw_prediction"] = self.model.predict(test_list)
-    self.test_data["prediction"] = self.model.predict(test_list)
-    test_result = self.issue_classifications_from_comments()
-    return test_result
+    self.test_data["raw_prediction"] = self.model.predict(X_test)
+    self.test_data["prediction"] = self.test_data["raw_prediction"]
+    self.test_data = self.remove_I(self.test_data)
+    self.test_data = self.remove_SE(self.test_data)
+    return self.test_data
 
   def self_comment_classification_all(self, matched_pairs=False):
 
     def self_comment_classification_statistics_per():
-      score = self.cross_validate()
+      score = self.cross_validation()
 
       logging.info("{}\t{}\t{}\t{}\t{}\t{}".format(
           ",".join(self.nice_features),

@@ -4,6 +4,7 @@
 from nltk.stem import WordNetLemmatizer
 from src import convo_politeness
 from src import text_cleaning
+from src import text_modifier
 from src import text_parser
 from src import util
 from src import config
@@ -21,7 +22,7 @@ wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
 
 # number of multiprocess
-num_proc = 10
+num_proc = 14
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
       "?key=" + config.perspective_api_key)
@@ -112,6 +113,7 @@ def extract_features(total_comment_info):
   text = cleanup_text(text)
   total_comment_info["num_words"] = len(text)
   text = " ".join(text)
+
 
   total_comment_info["num_q_marks"] = num_q
   total_comment_info["num_e_marks"] = num_exclamation

@@ -63,9 +63,9 @@ def linear_svm_model(C=10**1.5):
   return svm.LinearSVC(C=C, max_iter=10000)
 
 
-def svm_model(C=10**1.5, gamma='scale', kernel='poly'):
+def svm_model(C=10**1.5, gamma='scale', kernel='rbf'):
   """SVM"""
-  return svm.SVC(kernel=kenel, gamma=gamma, C=C, probability=True)
+  return svm.SVC(kernel=kernel, gamma=gamma, C=C, probability=True)
 
 
 def logistic_model(C=1):

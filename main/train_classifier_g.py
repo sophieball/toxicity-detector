@@ -15,6 +15,8 @@ import pickle
 import numpy as np
 import sys
 
+features = ["perspective_score", "politeness", "num_q_marks", "num_e_marks"]
+
 
 # train the classifier using the result of a SQL query
 def train_model(training_data, model_name="svm", pretrain=False):
@@ -30,9 +32,12 @@ def train_model(training_data, model_name="svm", pretrain=False):
     s.set_model(classifiers.svm_model)
 
     # list the set of parameters you want to try out
-    s.set_ratios([2])
-    s.add_parameter("C", [.05])
-    s.add_parameter("gamma", [2])
+    s.set_ratios([1, 2, 3, 5, 8, 10])
+    s.set_parameters({
+        "C": [0.01, 0.05, 0.1, 0.5, 1, 10],
+        "gamma": [1, 2, 2.5, 3],
+        "kernel": ["sigmoid"]
+    })
   elif model_name == "rf":
     s.set_model(classifiers.random_forest_model)
     # RF params
@@ -42,8 +47,9 @@ def train_model(training_data, model_name="svm", pretrain=False):
     s.add_parameter("max_depth", [int(x) for x in np.linspace(10, 110, num=11)])
 
   # select features
-  s.features = ["perspective_score", "politeness"]
-  s.nice_features = ["perspective_score", "politeness"]
+  s.features = features
+  s.nice_features = features
+  logging.info("Features: {}".format(", ".join(features)))
 
   # train the model, test all combinations of hyper parameter
   model = s.self_issue_classification_all()
@@ -57,6 +63,13 @@ def train_model(training_data, model_name="svm", pretrain=False):
   model_out.close()
   logging.info("Model is stored at {}.".format(
       str(pathlib.Path(__file__).parent.name) + "/src/pickles/"))
+  result = s.all_train_data
+  logging.info("Number of 1's in raw prediction: {}.".format(
+      sum(result["raw_prediction"])))
+  logging.info("Number of data flipped due to SE: {}.".format(
+      len(result.loc[result["is_SE"] == 1])))
+  logging.info("Number of data flipped due to self angry: {}.".format(
+      len(result.loc[result["self_angry"] == "self"])))
   return model
 
 
@@ -67,8 +80,8 @@ def predict_unlabeled(unlabeled_data, trained_model, G_data=True):
 
   s.set_trained_model(trained_model)
   # select features
-  s.features = ["perspective_score", "politeness"]
-  s.nice_features = ["perspective_score", "politeness"]
+  s.features = features
+  s.nice_features = features
 
   # fit the model on test data
   result = s.test_issue_classifications_from_comments_all()
@@ -81,12 +94,6 @@ def predict_unlabeled(unlabeled_data, trained_model, G_data=True):
       "is_SE", "self_angry"
   ]]
   result.to_csv("classification_results.csv", index=False)
-  logging.info("Number of 1's in raw prediction: {}.".format(
-      sum(result["raw_prediction"])))
-  logging.info("Number of data flipped due to SE: {}.".format(
-      len(result.loc[result["is_SE"] == 1])))
-  logging.info("Number of data flipped due to self angry: {}.".format(
-      len(result.loc[result["self_angry"] == "self"])))
 
 
 if __name__ == "__main__":
@@ -109,6 +116,7 @@ if __name__ == "__main__":
         logging.info(
             "The file should be among the data dependencies in the BUILD file.")
   else:
+    logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data()
     trained_model = train_model(training)
     predict_unlabeled(unlabeled, trained_model)
