@@ -134,8 +134,7 @@ def politeness_hist(corpus):
 
 
 if __name__ == "__main__":
-  #[comments, _] = receive_data.receive_data()
-  comments = pd.read_csv("src/data/both_t_data.csv")
+  [comments, _] = receive_data.receive_data()
   comments = comments.dropna()
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
