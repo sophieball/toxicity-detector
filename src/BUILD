@@ -78,6 +78,7 @@ py_binary(
         requirement("ftfy"),
         requirement("importlib_metadata"),
         requirement("kiwisolver"),
+        requirement("markdown"),
         requirement("murmurhash"),
         requirement("numpy"),
         requirement("pandas"),
