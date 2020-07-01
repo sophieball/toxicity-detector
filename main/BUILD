@@ -42,7 +42,7 @@ r_binary(
     name = "politeness_logi",
     src = "politeness_logi.R",
     data = [
-        "//src:data/both_t_data.csv",
+        "//src:data/both_t_data_subset.csv",
         "//src:convo_politeness",
     ],
     deps = [
@@ -60,7 +60,7 @@ r_binary(
         ":train_classifier_g",
         ":train_polite_score",
         "//src:convo_word_freq_diff",
-        "//src:data/both_t_data.csv",
+        "//src:data/both_t_data_subset.csv",
     ],
     deps = [
         ":politeness_logi",
