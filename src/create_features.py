@@ -22,7 +22,7 @@ wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
 
 # number of multiprocess
-num_proc = 20
+num_proc = 14
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
       "?key=" + config.perspective_api_key)
