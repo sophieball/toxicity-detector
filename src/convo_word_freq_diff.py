@@ -21,7 +21,9 @@ from pandas import DataFrame
 from typing import List, Dict, Set
 import convokit
 import convo_politeness
+import matplotlib.pyplot as plt
 import nltk
+import numpy as np
 import pandas as pd
 import receive_data
 import spacy
@@ -31,6 +33,22 @@ nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 tokenizer = nltk.RegexpTokenizer(r"\w+")
+
+
+def save_plot(scores, file_name, y_lim):
+  scores = scores.to_dict()["Averages"]
+  plt.figure(dpi=200, figsize=(9, 6))
+  plt.bar(
+      list(range(len(scores))),
+      scores.values(),
+      tick_label=list(scores.keys()),
+      align="edge")
+  plt.xticks(np.arange(.4, len(scores) + .4), rotation=45, ha="right")
+  plt.ylabel("Occurrences per Utterance", size=20)
+  plt.yticks(size=15)
+  if y_lim != None:
+    plt.ylim(0, y_lim)
+  plt.savefig(file_name)
 
 
 # compare ngram in toxic and non-toxic comments
@@ -67,10 +85,11 @@ def politeness_hist(corpus):
   neg_query = lambda x: x.meta["label"] == 0
   positive_count = ps.summarize(corpus, pos_query)
   negative_count = ps.summarize(corpus, neg_query)
+  # plot histograms and save them
   y_lim = max(max(positive_count["Averages"]), max(
       negative_count["Averages"])) + 1
-  positive_data = ps.summarize(corpus, pos_query, plot=True, y_lim=y_lim)
-  negative_data = ps.summarize(corpus, neg_query, plot=True, y_lim=y_lim)
+  save_plot(positive_count, "positive_data_politeness_hist.png", y_lim)
+  save_plot(negative_count, "negative_data_politeness_hist.png", y_lim)
 
   # individual politeness strategies
   out = open("politeness_words_marked_sorted.txt", "w")
