@@ -15,8 +15,9 @@ system2("src/convo_politeness",
         input = format_csv(dat))
 
 # read python's output from file
-dat <- read.csv("politeness_features.csv")
-names(dat)
+  dat <- read.csv("politeness_features.csv", stringsAsFactors=FALSE)
+dat[is.na(dat)] <- 0
+sapply(dat, class)
 m_pol <- glm(label ~
               log(1 + HASHEDGE)
             + (Please > 0)
