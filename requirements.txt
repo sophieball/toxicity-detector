@@ -18,6 +18,7 @@ pandas
 plac
 plac
 preshed
+python-dateutil
 pytz
 requests
 scipy

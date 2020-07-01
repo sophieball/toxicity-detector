@@ -19,6 +19,9 @@ py_library(
 py_library(
     name = "download_data",
     srcs = ["download_data.py"],
+    deps = [
+        requirement("numpy"),
+    ],
     visibility = ["//visibility:public"],
 )
 
@@ -63,6 +66,7 @@ py_binary(
     name = "convo_word_freq_diff",
     srcs = ["convo_word_freq_diff.py"],
     visibility = ["//visibility:public"],
+    data = ["data/both_t_data.csv"],
     deps = [
         ":download_data",
         ":receive_data",
@@ -74,11 +78,13 @@ py_binary(
         requirement("ftfy"),
         requirement("importlib_metadata"),
         requirement("kiwisolver"),
+        requirement("markdown"),
         requirement("murmurhash"),
         requirement("numpy"),
         requirement("pandas"),
         requirement("plac"),
         requirement("preshed"),
+        requirement("python-dateutil"),
         requirement("pytz"),
         requirement("spacy"),
         requirement("srsly"),
