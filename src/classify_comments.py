@@ -14,8 +14,10 @@ import pickle
 import pymongo
 import time
 import toxicity_report
+import statsd
+from dateutil.parser import parse
 
-
+monitor = statsd.StatsClient('localhost', 8125, prefix='toxic')
 
 
 logging.info("connecting to database")
@@ -76,6 +78,8 @@ def update_db(table, id, new_data):
 
 
 def process_one_item(table):
+	monitor.incr("process."+table)
+
 	# grab the most recent issue to process
 	[issue_id, d, t1] = claim_next(table)
 	print(table, issue_id, d)
@@ -89,7 +93,15 @@ def process_one_item(table):
 
 	# write results to db
 	t4=update_db(table,issue_id,result)
-	# print("db time", t1, t2, t4, "scoring time", t3)
+
+	monitor.timing("db.next."+table,int(t1*1000))
+	monitor.timing("db.gettext."+table,int(t2*1000))
+	monitor.timing("db.writeresult."+table,int(t4*1000))
+	monitor.timing("scoring."+table,int(t3*1000))
+	monitor.gauge("lastprocessed."+table,parse(d).timestamp())
+	if score_report["score"]==1:
+		monitor.incr("foundtoxic."+table)
+	#print("db time", t1, t2, t4, "scoring time", t3)
 
 def process_100_items(table):
 	for x in range(0, 99):
