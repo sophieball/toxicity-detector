@@ -15,15 +15,17 @@ system2("src/convo_politeness",
         input = format_csv(dat))
 
 # read python's output from file
-  dat <- read.csv("politeness_features.csv", stringsAsFactors=FALSE)
+dat <- read.csv("politeness_features.csv", stringsAsFactors=FALSE)
 dat[is.na(dat)] <- 0
+summary(dat$Indirect_.btw.)
 sapply(dat, class)
 m_pol <- glm(label ~
-              log(1 + HASHEDGE)
+              log(1+length)
+            + log(1 + HASHEDGE)
             + (Please > 0)
             + (Please_start > 0)
             + (Indirect_.btw. > 0)
-            + Hedges
+            #+ Hedges
             + (Factuality > 0)
             + (Deference > 0)
             + (Gratitude > 0)
