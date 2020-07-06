@@ -54,7 +54,7 @@ def save_plot(scores, file_name, y_lim):
 # compare ngram in toxic and non-toxic comments
 def word_freq(corpus):
   # fighting words
-  fw = fightingWords.FightingWords(ngram_range=(1, 5))
+  fw = fightingWords.FightingWords(ngram_range=(2, 5))
   toxic_comments = lambda utt: utt.meta["label"] == 1.0
   non_toxic_comments = lambda utt: utt.meta["label"] == 0.0
   fw.fit(
