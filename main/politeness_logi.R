@@ -15,14 +15,17 @@ system2("src/convo_politeness",
         input = format_csv(dat))
 
 # read python's output from file
-dat <- read.csv("politeness_features.csv")
-names(dat)
+dat <- read.csv("politeness_features.csv", stringsAsFactors=FALSE)
+dat[is.na(dat)] <- 0
+summary(dat$Indirect_.btw.)
+sapply(dat, class)
+
 m_pol <- glm(label ~
-              log(1 + HASHEDGE)
+              log(1+length)
+            + log(1 + HASHEDGE)
             + (Please > 0)
             + (Please_start > 0)
             + (Indirect_.btw. > 0)
-            + Hedges
             + (Factuality > 0)
             + (Deference > 0)
             + (Gratitude > 0)
@@ -41,6 +44,7 @@ m_pol <- glm(label ~
             + (INDICATIVE > 0)
             , data = dat
             , family = "binomial")
+
 summary(m_pol)
 pR2(m_pol)
 write("Done. Results are stored in `politeness_logi.out`", stderr())
