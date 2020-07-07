@@ -17,7 +17,7 @@ system2("src/convo_politeness",
 # read python's output from file
 dat <- read.csv("politeness_features.csv", stringsAsFactors=FALSE)
 dat[is.na(dat)] <- 0
-summary(dat$Indirect_.btw.)
+dat$length <- as.numeric(dat$length)
 sapply(dat, class)
 
 m_pol <- glm(label ~
@@ -47,4 +47,4 @@ m_pol <- glm(label ~
 
 summary(m_pol)
 pR2(m_pol)
-write("Done. Results are stored in `politeness_logi.out`", stderr())
+write("Done. Results are stored in `bazel-bin/main/feed_data.runfiles/__main__/politeness_logi.out`", stderr())

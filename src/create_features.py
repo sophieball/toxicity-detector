@@ -114,7 +114,6 @@ def extract_features(total_comment_info):
   total_comment_info["num_words"] = len(text)
   text = " ".join(text)
 
-
   total_comment_info["num_q_marks"] = num_q
   total_comment_info["num_e_marks"] = num_exclamation
   total_comment_info["percent_uppercase"] = uppercase
@@ -136,7 +135,8 @@ def create_features(comments_df, training):
   comments_df = comments_df.dropna()
 
   # get politeness scores for all comments
-  all_stanford_polite = convo_politeness.get_politeness_score(comments_df)
+  comments_df = convo_politeness.get_politeness_score(
+      comments_df)
 
   # remove comments longer than 300 characters (perspective limit)
   comments_df = util.remove_large_comments(comments_df)
