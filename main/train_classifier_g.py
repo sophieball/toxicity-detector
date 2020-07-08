@@ -5,6 +5,7 @@ download_data.download_data()
 import logging
 logging.basicConfig(
     filename="train_classifier.log", filemode="w", level=logging.INFO)
+import os
 
 from src import receive_data
 from src import classifiers
@@ -120,13 +121,11 @@ if __name__ == "__main__":
     [training, unlabeled] = receive_data.receive_data()
     trained_model = train_model(training)
     predict_unlabeled(unlabeled, trained_model)
-    logging.info("Trained model saved in {}".format(
-        "`bazel-bin/main/feed_data.runfiles/__main__/src/pickles/"))
+    logging.info("Trained model saved in {}".format("`" + os.getcwd() +
+                                                    "/src/pickles/"))
   logging.info(
         "Prepared training dataset, it took {} seconds".format(time.time() - \
                                                                start_time))
-  print("Log saved in {}".format(
-      "`bazel-bin/main/feed_data.runfiles/__main__/train_classifier.log`"))
-  print("Prediction result saved in {}".format(
-      "`bazel-bin/main/feed_data.runfiles/__main__/classification_results.csv`")
-       )
+  print("Log saved in {}".format("`" + os.getcwd() + "/train_classifier.log`"))
+  print("Prediction result saved in {}".format("`" + os.getcwd() +
+                                               "/classification_results.csv`"))

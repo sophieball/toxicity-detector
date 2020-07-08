@@ -46,4 +46,4 @@ m_pol <- glm(label ~
 
 summary(m_pol)
 pR2(m_pol)
-write("Done. Results are stored in `bazel-bin/main/feed_data.runfiles/__main__/politeness_logi.out`", stderr())
+write(paste("Done. Results are stored in `", getwd(), "/politeness_logi.out`",  sep=""), stderr())
