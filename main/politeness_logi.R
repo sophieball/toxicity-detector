@@ -17,7 +17,6 @@ system2("src/convo_politeness",
 # read python's output from file
 dat <- read.csv("politeness_features.csv", stringsAsFactors=FALSE)
 dat[is.na(dat)] <- 0
-dat$length <- as.numeric(dat$length)
 sapply(dat, class)
 
 m_pol <- glm(label ~
