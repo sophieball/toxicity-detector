@@ -17,7 +17,6 @@ system2("src/convo_politeness",
 # read python's output from file
 dat <- read.csv("politeness_features.csv", stringsAsFactors=FALSE)
 dat[is.na(dat)] <- 0
-summary(dat$Indirect_.btw.)
 sapply(dat, class)
 
 m_pol <- glm(label ~
@@ -47,4 +46,4 @@ m_pol <- glm(label ~
 
 summary(m_pol)
 pR2(m_pol)
-write("Done. Results are stored in `politeness_logi.out`", stderr())
+write(paste("Done. Results are stored in `", getwd(), "/politeness_logi.out`",  sep=""), stderr())

@@ -4,7 +4,8 @@ download_data.download_data()
 
 import logging
 logging.basicConfig(
-    filename="main/train_classifier.log", filemode="w", level=logging.INFO)
+    filename="train_classifier.log", filemode="w", level=logging.INFO)
+import os
 
 from src import receive_data
 from src import classifiers
@@ -14,8 +15,9 @@ import pathlib
 import pickle
 import numpy as np
 import sys
+import time
 
-features = ["perspective_score", "politeness", "num_q_marks", "num_e_marks"]
+features = ["perspective_score", "num_url", "politeness"]
 
 
 # train the classifier using the result of a SQL query
@@ -32,9 +34,9 @@ def train_model(training_data, model_name="svm", pretrain=False):
     s.set_model(classifiers.svm_model)
 
     # list the set of parameters you want to try out
-    s.set_ratios([1, 2, 3, 5, 8, 10])
+    s.set_ratios([1, 5, 10])
     s.set_parameters({
-        "C": [0.01, 0.05, 0.1, 0.5, 1, 10],
+        "C": [0.05, 0.1, 0.5, 1, 10, 20],
         "gamma": [1, 2, 2.5, 3],
         "kernel": ["sigmoid"]
     })
@@ -82,21 +84,20 @@ def predict_unlabeled(unlabeled_data, trained_model, G_data=True):
   # select features
   s.features = features
   s.nice_features = features
+  logging.info("Features: {}".format(", ".join(features)))
 
   # fit the model on test data
   result = s.test_issue_classifications_from_comments_all()
 
-  # only write the id and label to file
+  # remove text from the output
   if G_data:
     result = result.rename(columns={"_id": "id"})
-  result = result[[
-      "id", "perspective_score", "politeness", "raw_prediction", "prediction",
-      "is_SE", "self_angry"
-  ]]
+  result = result.drop(["text", "original_text"], axis=1)
   result.to_csv("classification_results.csv", index=False)
 
 
 if __name__ == "__main__":
+  start_time = time.time()
   if len(sys.argv) > 1:
     if sys.argv[1] == "pretrain":
       logging.info("Training on GH data.")
@@ -120,3 +121,11 @@ if __name__ == "__main__":
     [training, unlabeled] = receive_data.receive_data()
     trained_model = train_model(training)
     predict_unlabeled(unlabeled, trained_model)
+    logging.info("Trained model saved in {}".format("`" + os.getcwd() +
+                                                    "/src/pickles/"))
+  logging.info(
+        "Prepared training dataset, it took {} seconds".format(time.time() - \
+                                                               start_time))
+  print("Log saved in {}".format("`" + os.getcwd() + "/train_classifier.log`"))
+  print("Prediction result saved in {}".format("`" + os.getcwd() +
+                                               "/classification_results.csv`"))

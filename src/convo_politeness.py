@@ -32,11 +32,12 @@ def prepare_corpus(comments):
   utterance_corpus = {}
   for idx, row in comments.iterrows():
     # training data
+    alpha_text = " ".join([x for x in row["text"].split(" ") if x.isalpha()])
     if "label" in comments.columns:
       utterance_corpus[row["_id"]] = Utterance(
           id=row["_id"],
           speaker=corpus_speakers[row["_id"]],
-          text=row["text"],
+          text=alpha_text,
           meta={
               "id": row["_id"],
               "label": row["label"]
@@ -45,7 +46,7 @@ def prepare_corpus(comments):
       utterance_corpus[row["_id"]] = Utterance(
           id=row["_id"],
           speaker=corpus_speakers[row["_id"]],
-          text=row["text"],
+          text=alpha_text,
           meta={"id": row["_id"]})
 
   utterance_list = utterance_corpus.values()
@@ -62,7 +63,7 @@ def transform_politeness(corpus):
 
 
 # input: convo corpus (from training comments)
-# output: a list of dictionaries, each of which corresponds to politeness
+# output: a pd frame; each row corresponds to politeness
 # strategies of an utterance
 def polite_score(corpus):
   num_features = len(
@@ -81,6 +82,8 @@ def polite_score(corpus):
         ret[cur_name] = len(v2)
       else:
         ret[cur_name] = 0
+    ret["num_words"] = len(utt.text.split(" "))
+    ret["length"] = len(utt.text)
     # training data
     if "label" in utt.meta:
       ret["label"] = utt.meta["label"]
@@ -115,15 +118,11 @@ def transform_features(X):
 
 # These features are picked based on a logistic regression
 def pick_features(X):
-  if "label" in X.columns:
-    X = X.drop(columns=["_id", "label"], axis=1)
-  else:
-    X = X.drop(columns=["_id"], axis=1)
   X = transform_features(X)
-  X = X[[
-      "HASHEDGE", "2nd_person", "HASNEGATIVE", "1st_person", "2nd_person_start"
-  ]]
-  return X
+  return X[[
+        "HASHEDGE", "2nd_person", "HASNEGATIVE", "1st_person",
+        "2nd_person_start"
+    ]]
 
 
 # split data to do cross validation
@@ -151,6 +150,7 @@ def train_polite(comments):
   scores = polite_score(corpus)
   y = scores["label"]
   X = pick_features(scores)
+  X = X.drop(columns=["_id", "label"], axis=1)
   clf = linear_model.LogisticRegression(random_state=0).fit(X, y)
   # save the model
   out = open("src/pickles/politeness.p", "wb")
@@ -169,6 +169,11 @@ def get_politeness_score(comments):
   clf = pickle.load(open("src/pickles/politeness.p", "rb"))
   y = clf.predict_proba(X)
   comments["politeness"] = y[:, 1]
+  if "label" in scores:
+    scores = scores.drop(["_id", "label"], axis=1)
+  else:
+    scores = scores.drop(["_id"], axis=1)
+  comments = pd.concat([comments, scores], axis=1)
   return comments
 
 
