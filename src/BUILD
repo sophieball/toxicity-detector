@@ -19,10 +19,11 @@ py_library(
 py_library(
     name = "download_data",
     srcs = ["download_data.py"],
+    visibility = ["//visibility:public"],
     deps = [
         requirement("numpy"),
+        requirement("setuptools"),
     ],
-    visibility = ["//visibility:public"],
 )
 
 py_library(
@@ -65,8 +66,8 @@ py_library(
 py_binary(
     name = "convo_word_freq_diff",
     srcs = ["convo_word_freq_diff.py"],
-    visibility = ["//visibility:public"],
     data = ["data/both_t_data.csv"],
+    visibility = ["//visibility:public"],
     deps = [
         ":download_data",
         ":receive_data",

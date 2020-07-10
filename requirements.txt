@@ -23,6 +23,7 @@ pytz
 requests
 regex
 scipy
+setuptools
 sklearn
 spacy==2.2.4
 srsly
