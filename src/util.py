@@ -106,7 +106,6 @@ def find_surrounding_comments(df,comment_id,window=1):
     return {'before':before,'after':after}
 
 def remove_large_comments(train_data,cutoff=5000):
-    train_data["length"] = train_data["text"].map(len)
     return train_data[train_data["length"]<cutoff]
 
 def scale_data(train_data,scale_features):
