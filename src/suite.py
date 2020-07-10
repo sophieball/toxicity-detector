@@ -10,8 +10,8 @@ from nltk.tokenize import RegexpTokenizer
 from nltk.tokenize import word_tokenize
 from sklearn import model_selection
 from sklearn.metrics import classification_report, fbeta_score
-from sklearn.model_selection import KFold, GridSearchCV
-from sklearn.svm import LinearSVC, SVC
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
+from sklearn.svm import SVC
 from src import classifiers
 from src import convo_politeness
 from src import create_features
@@ -242,7 +242,7 @@ class Suite:
     self.model_function = None
     self.model = None
 
-  def set_model(self, model_function):
+  def set_model_function(self, model_function):
     self.model_function = model_function
 
   def set_trained_model(self, trained_model):
@@ -251,56 +251,6 @@ class Suite:
   def add_parameter(self, name, l):
     self.parameter_names.append(name)
     self.hyper_parameters_lists.append(l)
-
-  def matching_pairs(self, ratio):
-    assert type(self.all_train_data) != type(None)
-
-    matching_features = ["length"]
-    potential_train_list = deepcopy(self.all_train_data)
-    for i in range(len(potential_train_list)):
-      potential_train_list.loc[i, "index1"] = i
-
-    potential_train_list = potential_train_list[potential_train_list["label"] ==
-                                                0]
-    potential_train_list = potential_train_list[matching_features + ["index1"]]
-
-    potential_train_list = [tuple(x) for x in potential_train_list.values]
-
-    toxic_data = self.all_train_data[self.all_train_data["label"] ==
-                                     1][matching_features]
-
-    indexes_we_want = []
-    for i, row in toxic_data.iterrows():
-      row_score = tuple(row)
-
-      smallest_index = 0
-
-      for j in range(1, len(potential_train_list)):
-        if util.dist(potential_train_list[j][:-1], row_score) < util.dist(
-            potential_train_list[smallest_index][:-1], row_score):
-          smallest_index = j
-
-      indexes_we_want.append(potential_train_list[smallest_index][-1])
-      potential_train_list.pop(smallest_index)
-
-    non_toxic_random = pd.DataFrame()
-    non_toxic_matched = self.all_train_data.iloc[indexes_we_want]
-
-    if ratio - 1 > 0:
-      non_matched = list(
-          set(range(len(self.all_train_data))) - set(indexes_we_want))
-      non_toxic_random = self.all_train_data.iloc[non_matched]
-      non_toxic_random = non_toxic_random[non_toxic_random["label"] == 0]
-      non_toxic_random = non_toxic_random.sample(
-          int((ratio - 1) * len(toxic_data)))
-
-    toxic_data = self.all_train_data[self.all_train_data["label"] == 1]
-    total = toxic_data
-    total = total.append([non_toxic_random, non_toxic_matched])
-
-    self.train_data = total
-
-    return indexes_we_want
 
   def set_ratios(self, ratios):
     self.ratio = ratios
@@ -323,25 +273,6 @@ class Suite:
                                                               self.last_time))
 
     self.last_time = time.time()
-
-  # select data from the total data set so that
-  # the number of toxic:non-toxic is 1:ratio
-  def select_subset(self, ratio):
-    self.train_data = util.select_ratio(self.all_train_data, ratio)
-
-  def create_counter(self):
-    body = random_issues()
-    body = body["body"]
-    a = []
-    for i in body:
-      if i != None:
-        a += word_tokenize(i)
-    a = [i.lower() for i in a]
-    a = Counter(a)
-
-    self.last_time = time.time()
-
-    return a
 
   def convert(self, test_sentence):
     ret = copy(self.all_false)
@@ -387,112 +318,50 @@ class Suite:
     return classify_statistics(self.model, self.train_data, self.test_data,
                                self.features)
 
-  def cross_validation(self):
-    kfold = KFold(10)
-    data = self.all_train_data.sample(frac=1)
-    for train, test in kfold.split(data):
-      train_data = data.iloc[train].copy()
-      test_data = data.iloc[test].copy()
-      train_data = util.select_ratio(train_data, self.ratio[0])
-      self.model = classifiers.svm_model()
-
-      test_data = classifiers.classify(self.model, train_data, test_data,
-                                       self.features)
-
-      for i, row in test_data.iterrows():
-        data.loc[data["_id"] == row["_id"], "prediction"] = row["prediction"]
-
-    data["raw_prediction"] = data["prediction"]
-    logging.info("Removing angry words towards oneself and SE words.")
-    data = self.remove_I(data)
-    data = self.remove_SE(data)
-    logging.info("Crossvalidation score before adjustment is\n{}".format(
-        classification_report(data["label"].tolist(),
-                              data["raw_prediction"].tolist())))
-    logging.info("Crossvalidation score after adjustment is\n{}".format(
-        classification_report(data["label"].tolist(),
-                              data["prediction"].tolist())))
-
-    self.all_train_data = data
-
   def set_parameters(self, grid):
     self.param_grid = grid
 
-  def self_issue_classification_from_comments(self):
-    self.train_data = self.cross_validation()
-
-  def all_combinations(self):
-    logging.info("Trying all combinations of hyper parameters.")
-    global model
-
-    scores = {}
-    for ratio in self.ratios:
-      if matched_pairs:
-        self.matching_pairs(ratio)
-        if "matched_pairs" not in self.nice_features:
-          self.nice_features += ["matched_pairs"]
-      else:
-        self.select_subset(ratio)
-
-      self.ratio = ratio
-      for combination in itertools.product(*self.hyper_parameters_lists):
-        self.combination_dict = {}
-        for i in range(len(combination)):
-          self.combination_dict[self.parameter_names[i]] = combination[i]
-
-        self.model = self.model_function(**self.combination_dict)
-        model = self.model
-
-        s = function()
-        scores["{},{}".format(ratio, str(self.combination_dict))] = s
-
-    return max(scores.items(), key=operator.itemgetter(1))
-
-  # training the model
-  def self_issue_classification_all(self, matched_pairs=False):
-    global model
+  # training the model on comments
+  def self_issue_classification_all(self, estimator_name):
     # n-fold nested cross validation
     # https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html
-    svm = SVC()
     num_trials = 5
     n_splits = 10
     best_model = None
     best_score = 0
-    best_ratio = 0
-    for ratio in self.ratio:
-      for i in range(num_trials):
-        # find the best paramter combination
-        # need to try different ratios later
-        train_data = util.select_ratio(self.all_train_data, ratio)
-        y_train = train_data["label"]
-        X_train = train_data[self.features]
-        model = GridSearchCV(
-            estimator=svm,
-            param_grid=self.param_grid,
-            scoring="f1_weighted",
-            n_jobs=14,  # parallel
-            cv=KFold(n_splits=n_splits, shuffle=True),
-            verbose=0)
-        model.fit(X_train, y_train)
+    if estimator_name == "svm":
+      estimator = SVC()
+    for i in range(num_trials):
+      # find the best paramter combination
+      train_data = self.all_train_data
+      y_train = train_data["label"]
+      X_train = train_data[self.features]
+      model = GridSearchCV(
+          estimator=estimator,
+          param_grid=self.param_grid,
+          scoring="f1_weighted",
+          n_jobs=14,  # parallel
+          cv=StratifiedKFold(n_splits=n_splits, shuffle=True),
+          verbose=0)
+      model.fit(X_train, y_train)
 
-        # nested cross validation with paramter optimization
-        nested_score = model_selection.cross_val_score(
-            model, X_train, y_train, cv=KFold(n_splits=n_splits, shuffle=True))
-        nested_scores = nested_score.mean()
-        if nested_scores > best_score:
-          best_score = nested_scores
-          best_model = model
-          best_ratio = ratio
+      # nested cross validation with paramter optimization
+      nested_score = model_selection.cross_val_score(
+          model,
+          X_train,
+          y_train,
+          cv=StratifiedKFold(n_splits=n_splits, shuffle=True))
+      nested_scores = nested_score.mean()
+      if nested_scores > best_score:
+        best_score = nested_scores
+        best_model = model
 
     # Find the optimal parameters
     logging.info("Trying all combinations of hyper parameters.")
     logging.info("Scores with {}-fold cross validation".format(n_splits))
-    logging.info("Best parameter: {}, ratio: {}.".format(
-        best_model.best_estimator_, best_ratio))
+    logging.info("Best parameter: {}.".format(best_model.best_estimator_))
     logging.info("Best score: {}.".format(best_model.best_score_))
     self.model = best_model
-
-    #self.cross_validation()
 
     logging.info("Removing angry words towards oneself and SE words.")
     y_train = self.all_train_data["label"]
@@ -509,7 +378,6 @@ class Suite:
 
   # applying the model to the test data
   def test_issue_classifications_from_comments_all(self, matched_pairs=False):
-    #test_list = [list(x) for x in self.test_data[self.features].values]
     X_test = self.test_data[self.features]
 
     self.test_data["raw_prediction"] = self.model.predict(X_test)
@@ -517,30 +385,3 @@ class Suite:
     self.test_data = self.remove_I(self.test_data)
     self.test_data = self.remove_SE(self.test_data)
     return self.test_data
-
-  def self_comment_classification_all(self, matched_pairs=False):
-
-    def self_comment_classification_statistics_per():
-      score = self.cross_validation()
-
-      logging.info("{}\t{}\t{}\t{}\t{}\t{}".format(
-          ",".join(self.nice_features),
-          "{} {} ".format(self.model_function.__doc__, self.combination_dict),
-          self.ratio, score["precision"], score["recall"], score["auc"]))
-
-    self.all_combinations(
-        self_comment_classification_statistics_per, matched_pairs=matched_pairs)
-
-  def test_comment_classifications_from_comments_all(self, matched_pairs=False):
-
-    def issue_classifications_from_comments_statistics_per():
-      score = self.classify_test_statistics()
-
-      logging.info("{}\t{}\t{}\t{}\t{}".format( \
-          ",".join(self.nice_features),
-          "{} {} ".format(self.model_function.__doc__, self.combination_dict),
-          self.ratio, score["precision"], score["recall"]))
-
-    self.all_combinations(
-        test_comment_classifications_from_comments_statistics,
-        matched_pairs=matched_pairs)

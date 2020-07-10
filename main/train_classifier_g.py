@@ -31,7 +31,7 @@ def train_model(training_data, model_name="svm", pretrain=False):
 
   # select model
   if model_name == "svm":
-    s.set_model(classifiers.svm_model)
+    s.set_model_function(classifiers.svm_model)
 
     # list the set of parameters you want to try out
     s.set_ratios([1, 5, 10])
@@ -41,7 +41,7 @@ def train_model(training_data, model_name="svm", pretrain=False):
         "kernel": ["sigmoid"]
     })
   elif model_name == "rf":
-    s.set_model(classifiers.random_forest_model)
+    s.set_model_function(classifiers.random_forest_model)
     # RF params
     s.add_parameter("n_estimators",
                     [int(x) for x in np.linspace(start=200, stop=2000, num=10)])
@@ -54,7 +54,7 @@ def train_model(training_data, model_name="svm", pretrain=False):
   logging.info("Features: {}".format(", ".join(features)))
 
   # train the model, test all combinations of hyper parameter
-  model = s.self_issue_classification_all()
+  model = s.self_issue_classification_all("svm")
   # save the model
   if pretrain:
     model_out = open(
