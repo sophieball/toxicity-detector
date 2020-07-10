@@ -21,6 +21,7 @@ preshed
 python-dateutil
 pytz
 requests
+regex
 scipy
 sklearn
 spacy==2.2.4
