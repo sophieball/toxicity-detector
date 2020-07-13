@@ -115,7 +115,7 @@ class Perspective(object):
                             data=payload,
                             headers=headers,
                             params=querystring,
-                            timeout=10)
+                            timeout=60)
         # print("persp time", time.time()-t)
         data = response.json()
         if "error" in data.keys():
