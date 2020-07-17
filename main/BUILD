@@ -54,9 +54,19 @@ r_binary(
 )
 
 r_binary(
+    name = "factor",
+    src = "factor.R",
+    deps = [
+        "@R_DataCombine",
+    ],
+)
+
+
+r_binary(
     name = "feed_data",
     src = "feed_data.R",
     data = [
+        ":factor",
         ":train_classifier_g",
         ":train_polite_score",
         "//src:convo_word_freq_diff",
