@@ -9,6 +9,9 @@ py_test(
     deps = [
         "//src:receive_data",
         requirement("pandas"),
+        requirement("numpy"),
+        requirement("pytz"),
+        requirement("dateutil"),
     ],
 )
 
@@ -18,6 +21,9 @@ py_test(
     deps = [
         "//src:receive_data",
         requirement("pandas"),
+        requirement("numpy"),
+        requirement("pytz"),
+        requirement("dateutil"),
     ],
 )
 
