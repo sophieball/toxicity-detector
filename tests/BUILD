@@ -11,7 +11,7 @@ py_test(
         requirement("pandas"),
         requirement("numpy"),
         requirement("pytz"),
-        requirement("dateutil"),
+        requirement("python-dateutil"),
     ],
 )
 
@@ -23,7 +23,7 @@ py_test(
         requirement("pandas"),
         requirement("numpy"),
         requirement("pytz"),
-        requirement("dateutil"),
+        requirement("python-dateutil"),
     ],
 )
 
