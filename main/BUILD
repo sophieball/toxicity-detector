@@ -54,18 +54,6 @@ r_binary(
 )
 
 r_binary(
-    name = "factor",
-    src = "factor.R",
-    deps = [
-        "@R_DataCombine",
-        "@R_nFactors",
-        "@R_readr",
-        "@R_psych",
-    ],
-)
-
-
-r_binary(
     name = "feed_data",
     src = "feed_data.R",
     data = [
