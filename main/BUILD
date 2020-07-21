@@ -58,6 +58,9 @@ r_binary(
     src = "factor.R",
     deps = [
         "@R_DataCombine",
+        "@R_nFactors",
+        "@R_readr",
+        "@R_psych",
     ],
 )
 
