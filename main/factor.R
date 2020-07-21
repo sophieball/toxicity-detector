@@ -18,7 +18,7 @@ write(paste("Eigen values:", ev$values), stdout())
 
 ap <- parallel(subject=nrow(dat), var=ncol(dat), rep=100, cent=0.05)
 nS <- nScree(x=ev$values, aparallel=ap$eigen$qevpea)
-png("scree.png")
+png(paste("scree", "_", toString(format(Sys.time(), format="%y-%m-%d_%H:%M:%S")), ".png", sep=""))
 plotnScree(nS)
 
 # try different numbers of factors
@@ -27,7 +27,7 @@ for (n_fac in 3:6){
   print(fit, digits=2, cutoff=0.3, sort=TRUE)
   # plot first 2 factors
   load <- fit$loadings[,1:2]
-  png(paste("factors", n_fac, ".png"))
+  png(paste("factors", n_fac, "_", toString(format(Sys.time(), format="%y-%m-%d_%H:%M:%S")), ".png", sep=""))
   plot(load, xlab="Factor 1", ylab="Factor 2",
        ylim=c(-1, 1), xlim=c(-1, 1), main="Varimax rotation")
   text(
@@ -40,6 +40,6 @@ for (n_fac in 3:6){
 
 write(paste("Done. Plots are stored in path `",
             getwd(),
-            "` with names `scree.pdf`, `factors3.png`, `factors4.png`, `factors5.png`, `factors6.png`",
+            "` with names `scree_<time>.pdf`, `factors3_<time>.png`, `factors4_<time>.png`, `factors5_<time>.png`, `factors6_<time>.png`",
             sep=""), stderr())
 write(paste("Results are stored in `", getwd(), "/factor.out`",  sep=""), stderr())
