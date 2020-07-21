@@ -8,13 +8,17 @@ py_test(
     data = ["//src:pickles/SVM_pretrained_model.p"],
     deps = [
         "//src:receive_data",
+        requirement("pandas"),
     ],
 )
 
 py_test(
     name = "test_receive_data",
     srcs = ["test_receive_data.py"],
-    deps = ["//src:receive_data"],
+    deps = [
+        "//src:receive_data",
+        requirement("pandas"),
+    ],
 )
 
 py_test(
