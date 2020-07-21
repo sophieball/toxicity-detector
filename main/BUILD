@@ -57,7 +57,6 @@ r_binary(
     name = "feed_data",
     src = "feed_data.R",
     data = [
-        ":factor",
         ":train_classifier_g",
         ":train_polite_score",
         "//src:convo_word_freq_diff",
