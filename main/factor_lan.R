@@ -36,3 +36,9 @@ for (numFactor in 3:7){
        col="blue"
      )
 }
+
+write(paste("Done. Plots are stored in path `",
+            getwd(),
+            "` with names `scree_<time>.pdf`, `factors3_<time>.png`, `factors4_<time>.png`, `factors5_<time>.png`, `factors6_<time>.png`",
+            sep=""), stderr())
+write(paste("Results are stored in `", getwd(), "/factor.out`",  sep=""), stderr())
