@@ -18,7 +18,7 @@ py_library(
         requirement("pandas"),
         requirement("numpy"),
         requirement("pytz"),
-        requirement("dateutil"),
+        requirement("python-dateutil"),
     ],
 )
 
