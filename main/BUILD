@@ -65,14 +65,21 @@ r_binary(
 )
 
 r_binary(
+    name = "factor_lan",
+    src = "factor_lan.R",
+)
+
+r_binary(
     name = "feed_data",
     src = "feed_data.R",
     data = [
         ":factor",
+        ":factor_lan",
         ":train_classifier_g",
         ":train_polite_score",
         "//src:convo_word_freq_diff",
         "//src:data/both_t_data_subset.csv",
+        "//src:data/gcd.csv",
     ],
     deps = [
         ":politeness_logi",
