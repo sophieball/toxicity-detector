@@ -79,7 +79,6 @@ r_binary(
         ":train_polite_score",
         "//src:convo_word_freq_diff",
         "//src:data/both_t_data_subset.csv",
-        "//src:data/gcd.csv",
     ],
     deps = [
         ":politeness_logi",
