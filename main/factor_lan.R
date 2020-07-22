@@ -20,8 +20,8 @@ for (numFactor in 3:7){
   fa.result.loading <- fa.result$loadings
   fa.result.scores <- data.frame(fa.result$scores)
   fa.result.scores$fingerprint <- dat$fingerprint
-  cat(paste(numFactor, " factors:"))
-  cat(fa.result, digits=2, cutoff=0.3, sort=TRUE)
+  print(paste(numFactor, " factors:"))
+  print(fa.result, digits=2, cutoff=0.3, sort=TRUE)
   cat("\n\n")
 
   # plot first 2 factors
@@ -37,8 +37,14 @@ for (numFactor in 3:7){
      )
 }
 
-write(paste("Done. Plots are stored in path `",
+write("Done.", stderr())
+write(paste("\nPlots are stored in path `",
             getwd(),
-            "` with names `scree_<time>.pdf`, `factors3_<time>.png`, `factors4_<time>.png`, `factors5_<time>.png`, `factors6_<time>.png`",
+            "` with names
+            `scree_<time>.png`,
+            `factors3_<time>.png`,
+            `factors4_<time>.png`,
+            `factors5_<time>.png`,
+            `factors6_<time>.png`",
             sep=""), stderr())
-write(paste("Results are stored in `", getwd(), "/factor.out`",  sep=""), stderr())
+write(paste("\nResults are stored in `", getwd(), "/factor.out`",  sep=""), stderr())
