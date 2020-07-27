@@ -1,10 +1,28 @@
 # Code by Lan Cheng
+library(caret)
 
 # redirect output to a file
 sink("factor.out")
 
 # Factor analysis to pushback metrics to 3-7 factors
 dat <- read.csv("/dev/stdin")
+
+# Check variance
+print(paste("dataframe shape:", dim(dat)))
+no_var <- as.numeric(which(apply(dat, 2, var) == 0))
+print(paste("columns with no variance:", no_var))
+# Remove columns with 0 variance
+if (length(no_var) > 0){
+  dat <- dat[ - no_var]
+}
+print(paste("dataframe shape after droping no var cols:", dim(dat)))
+
+linear_combos <- findLinearCombos(dat)
+linear_combos
+# remove columns that are linear combos
+dat <- dat[, ! names(dat) %in% linear_combos$remove]
+print(paste("dataframe shape after dropping linear combination cols:", dim(dat)))
+
 
 # Use elbow method to determine the optimal number of factors. Here the elbow
 # point is determined by visual inspection
