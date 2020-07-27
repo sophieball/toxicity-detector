@@ -1,9 +1,5 @@
 language:
-  - r
-
-r:
-  - release
-  - devel
+  - python
 
 cache: packages
 
