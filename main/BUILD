@@ -80,7 +80,6 @@ r_binary(
         "@R_testthat",
         "@R_munsell",
         "@R_evaluate",
-        "@R_KernSmooth",
         "@R_lava",
         "@R_colorspace",
         "@R_survival",
@@ -109,7 +108,6 @@ r_binary(
     name = "feed_data",
     src = "feed_data.R",
     data = [
-        ":factor",
         "factor_lan.R",
         ":factor_lan",
         ":train_classifier_g",
