@@ -8,6 +8,7 @@ addons:
     packages:
       - bazel
       - r-recommended
+      - r-base-dev
     sources:
       -
         key_url: "https://bazel.build/bazel-release.pub.gpg"
