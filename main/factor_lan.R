@@ -6,7 +6,6 @@ sink("factor.out")
 
 # Factor analysis to pushback metrics to 3-7 factors
 dat <- read.csv("/dev/stdin")
-dat$comb <- 2*dat$mot1 + 3*dat$mot2
 
 # Check variance
 print("initial dataframe shape:")
@@ -14,17 +13,25 @@ print(dim(dat))
 no_var <- as.numeric(which(apply(dat, 2, var) == 0))
 print("columns with no variance:")
 print(no_var)
+
 # Remove columns with 0 variance
 if (length(no_var) > 0){
   dat <- dat[ - no_var]
 }
-print(paste("dataframe shape after droping no var cols:", dim(dat)))
+print("dataframe shape after droping no var cols:")
+print(dim(dat))
 
+# find linear combinations in dat
 linear_combos <- findLinearCombos(dat)
-linear_combos
+cat("\n\n")
+print("Columns that are linear combos:")
+print(linear_combos)
+
 # remove columns that are linear combos
-dat <- dat[, - as.numeric(linear_combos$remove)]
-print("dataframe shape after dropping linear combination cols:")
+if (length(linear_combos$remove) > 0){
+  dat <- dat[, - as.numeric(linear_combos$remove)]
+}
+print("dataframe shape after checking linear combination cols:")
 print(dim(dat))
 
 
@@ -42,9 +49,9 @@ for (numFactor in 3:7){
   fa.result.loading <- fa.result$loadings
   fa.result.scores <- data.frame(fa.result$scores)
   fa.result.scores$fingerprint <- dat$fingerprint
+  cat("\n\n")
   print(paste("Trying ", numFactor, " factors:"))
   print(fa.result, digits=2, cutoff=0.3, sort=TRUE)
-  cat("\n\n")
 
   # plot first 2 factors
   load <- fa.result$loadings[,1:2]
