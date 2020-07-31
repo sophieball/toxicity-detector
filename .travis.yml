@@ -1,10 +1,6 @@
 language:
   - r
 
-r:
-  - release
-  - devel
-
 cache: packages
 
 addons:
@@ -12,6 +8,7 @@ addons:
     packages:
       - bazel
       - r-recommended
+      - r-base-dev
     sources:
       -
         key_url: "https://bazel.build/bazel-release.pub.gpg"
@@ -19,6 +16,7 @@ addons:
       -
         sourceline: "ppa:marutter/rrutter"
 script:
+  - "R --version"
   - "bazel build //src:convo_word_freq_diff"
   - "bazel run //main:feed_data"
   - "bazel test //tests:main_test"

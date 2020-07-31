@@ -14,6 +14,12 @@ py_library(
     name = "receive_data",
     srcs = ["receive_data.py"],
     visibility = ["//visibility:public"],
+    deps = [
+        requirement("pandas"),
+        requirement("numpy"),
+        requirement("pytz"),
+        requirement("python-dateutil"),
+    ],
 )
 
 py_library(
@@ -67,6 +73,40 @@ py_binary(
     name = "convo_word_freq_diff",
     srcs = ["convo_word_freq_diff.py"],
     data = ["data/both_t_data.csv"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":download_data",
+        ":receive_data",
+        requirement("blis"),
+        requirement("catalogue"),
+        requirement("convokit"),
+        requirement("cycler"),
+        requirement("cymem"),
+        requirement("ftfy"),
+        requirement("importlib_metadata"),
+        requirement("kiwisolver"),
+        requirement("markdown"),
+        requirement("matplotlib"),
+        requirement("murmurhash"),
+        requirement("numpy"),
+        requirement("pandas"),
+        requirement("plac"),
+        requirement("preshed"),
+        requirement("python-dateutil"),
+        requirement("pytz"),
+        requirement("spacy"),
+        requirement("srsly"),
+        requirement("thinc"),
+        requirement("threadpoolctl"),
+        requirement("wasabi"),
+        requirement("zipp"),
+    ],
+)
+
+py_binary(
+    name = "conversation_struct",
+    srcs = ["conversation_struct.py"],
+    data = ["data/pr_comments.csv"],
     visibility = ["//visibility:public"],
     deps = [
         ":download_data",
