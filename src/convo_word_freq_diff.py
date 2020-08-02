@@ -79,8 +79,8 @@ def politeness_hist(corpus):
   neg_query = lambda x: x.meta["label"] == 0
   positive_count = ps.summarize(corpus, pos_query)
   negative_count = ps.summarize(corpus, neg_query)
-  positive_count.to_csv("polite_strategies_label_1.csv", index=False)
-  negative_count.to_csv("polite_strategies_label_0.csv", index=False)
+  positive_count.to_csv("polite_strategies_label_1.csv")
+  negative_count.to_csv("polite_strategies_label_0.csv")
 
   # individual politeness strategies
   out = open("politeness_words_marked_sorted.txt", "w")
@@ -120,7 +120,7 @@ def politeness_hist(corpus):
     out.write("\n")
   out.close()
   print(
-      "politeness words counts are stored in `{}/polite_strategies_label_x.csv`\n"
+      "politeness words counts are stored in `{}/polite_strategies_label_x.csv`, x = {{0, 1}}\n"
       .format("bazel-bin"+os.getcwd().split("/bin")[1]))
   print(
       "politeness words lists are stored in `{}/politeness_wrods_marked_sorted.txt`\n"
