@@ -24,6 +24,7 @@ import convo_politeness
 import matplotlib.pyplot as plt
 import nltk
 import numpy as np
+import os
 import pandas as pd
 import receive_data
 import spacy
@@ -54,26 +55,19 @@ def save_plot(scores, file_name, y_lim):
 # compare ngram in toxic and non-toxic comments
 def word_freq(corpus):
   # fighting words
-  fw = fightingWords.FightingWords(ngram_range=(2, 5))
+  fw = fightingWords.FightingWords(ngram_range=(1, 6))
   toxic_comments = lambda utt: utt.meta["label"] == 1.0
   non_toxic_comments = lambda utt: utt.meta["label"] == 0.0
   fw.fit(
       corpus=corpus, class1_func=toxic_comments, class2_func=non_toxic_comments)
   summary = fw.summarize(corpus)
-  summary = summary.loc[abs(summary["z-score"]) >= 1.645].reset_index()
-  # class1 has positive z-scores
-  class1 = summary.loc[summary["class"] == "class1"].sort_values(
-      by="z-score", ascending=False)
-  # class2 has negative z-scores
-  class2 = summary.loc[summary["class"] == "class2"].sort_values(by="z-score")
+  summary["abs_z-score"] = abs(summary["z-score"])
+  summary = summary.sort_values(by="abs_z-score", ascending=False)
   out = open("fighting_words_freq.csv", "w")
-  out.write("label==1,z-score,label==0,z-score\n")
-  for i in range(40):
-    out.write(class1.iloc[i]["ngram"] + "," + str(class1.iloc[i]["z-score"]) +
-              "," + class2.iloc[i]["ngram"] + "," +
-              str(class2.iloc[i]["z-score"]) + "\n")
-  out.close()
-  logging.info("fighting words lists are stored in `fighting_words_freq.csv`")
+  summary.to_csv("fighting_words_freq.csv")
+  print(
+      "fighting words lists are stored in `{}/fighting_words_freq.csv`\n".format(
+          "bazel-bin"+os.getcwd().split("/bin")[1]))
 
 
 def politeness_hist(corpus):
@@ -85,11 +79,8 @@ def politeness_hist(corpus):
   neg_query = lambda x: x.meta["label"] == 0
   positive_count = ps.summarize(corpus, pos_query)
   negative_count = ps.summarize(corpus, neg_query)
-  # plot histograms and save them
-  y_lim = max(max(positive_count["Averages"]), max(
-      negative_count["Averages"])) + 1
-  save_plot(positive_count, "positive_data_politeness_hist.png", y_lim)
-  save_plot(negative_count, "negative_data_politeness_hist.png", y_lim)
+  positive_count.to_csv("polite_strategies_label_1.csv", index=False)
+  negative_count.to_csv("polite_strategies_label_0.csv", index=False)
 
   # individual politeness strategies
   out = open("politeness_words_marked_sorted.txt", "w")
@@ -128,9 +119,12 @@ def politeness_hist(corpus):
       out.write(str(each_word) + ",")
     out.write("\n")
   out.close()
-  logging.info(
-      "politeness words lists are stored in `politeness_wrods_marked_sorted.txt`"
-  )
+  print(
+      "politeness words counts are stored in `{}/polite_strategies_label_x.csv`\n"
+      .format("bazel-bin"+os.getcwd().split("/bin")[1]))
+  print(
+      "politeness words lists are stored in `{}/politeness_wrods_marked_sorted.txt`\n"
+      .format("bazel-bin"+os.getcwd().split("/bin")[1]))
 
 
 if __name__ == "__main__":
