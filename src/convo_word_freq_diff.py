@@ -21,7 +21,6 @@ from pandas import DataFrame
 from typing import List, Dict, Set
 import convokit
 import convo_politeness
-import matplotlib.pyplot as plt
 import nltk
 import numpy as np
 import os
@@ -34,22 +33,6 @@ nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 tokenizer = nltk.RegexpTokenizer(r"\w+")
-
-
-def save_plot(scores, file_name, y_lim):
-  scores = scores.to_dict()["Averages"]
-  plt.figure(dpi=200, figsize=(9, 6))
-  plt.bar(
-      list(range(len(scores))),
-      scores.values(),
-      tick_label=list(scores.keys()),
-      align="edge")
-  plt.xticks(np.arange(.4, len(scores) + .4), rotation=45, ha="right")
-  plt.ylabel("Occurrences per Utterance", size=20)
-  plt.yticks(size=15)
-  if y_lim != None:
-    plt.ylim(0, y_lim)
-  plt.savefig(file_name)
 
 
 # compare ngram in toxic and non-toxic comments
@@ -65,9 +48,8 @@ def word_freq(corpus):
   summary = summary.sort_values(by="abs_z-score", ascending=False)
   out = open("fighting_words_freq.csv", "w")
   summary.to_csv("fighting_words_freq.csv")
-  print(
-      "fighting words lists are stored in `{}/fighting_words_freq.csv`\n".format(
-          "bazel-bin"+os.getcwd().split("/bin")[1]))
+  print("fighting words lists are stored in `{}/fighting_words_freq.csv`\n"
+        .format("bazel-bin" + os.getcwd().split("/bin")[1]))
 
 
 def politeness_hist(corpus):
@@ -121,14 +103,15 @@ def politeness_hist(corpus):
   out.close()
   print(
       "politeness words counts are stored in `{}/polite_strategies_label_x.csv`, x = {{0, 1}}\n"
-      .format("bazel-bin"+os.getcwd().split("/bin")[1]))
+      .format("bazel-bin" + os.getcwd().split("/bin")[1]))
   print(
-      "politeness words lists are stored in `{}/politeness_wrods_marked_sorted.txt`\n"
-      .format("bazel-bin"+os.getcwd().split("/bin")[1]))
+      "politeness words lists are stored in `{}/politeness_words_marked_sorted.txt`\n"
+      .format("bazel-bin" + os.getcwd().split("/bin")[1]))
 
 
 if __name__ == "__main__":
-  [comments, _] = receive_data.receive_data()
+  #[comments, _] = receive_data.receive_data()
+  comments = pd.read_csv("src/data/both_t_data.csv")
   comments = comments.dropna()
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
