@@ -48,8 +48,9 @@ def word_freq(corpus):
   summary = summary.sort_values(by="abs_z-score", ascending=False)
   out = open("fighting_words_freq.csv", "w")
   summary.to_csv("fighting_words_freq.csv")
-  print("fighting words lists are stored in `{}/fighting_words_freq.csv`\n"
-        .format("bazel-bin" + os.getcwd().split("/bin")[1]))
+  print(
+      "fighting words lists are stored in the bazel binary's runfiles folder with the name `fighting_words_freq.csv`\n"
+  )
 
 
 def politeness_hist(corpus):
@@ -102,16 +103,15 @@ def politeness_hist(corpus):
     out.write("\n")
   out.close()
   print(
-      "politeness words counts are stored in `{}/polite_strategies_label_x.csv`, x = {{0, 1}}\n"
-      .format("bazel-bin" + os.getcwd().split("/bin")[1]))
+      "politeness words counts are stored in the bazel binary's runfiles folder with the name `polite_strategies_label_x.csv`, x = {{0, 1}}\n"
+  )
   print(
-      "politeness words lists are stored in `{}/politeness_words_marked_sorted.txt`\n"
-      .format("bazel-bin" + os.getcwd().split("/bin")[1]))
+      "politeness words lists are stored in the bazel binary's runfiles folder with the name `politeness_words_marked_sorted.txt`\n"
+  )
 
 
 if __name__ == "__main__":
-  #[comments, _] = receive_data.receive_data()
-  comments = pd.read_csv("src/data/both_t_data.csv")
+  [comments, _] = receive_data.receive_data()
   comments = comments.dropna()
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
