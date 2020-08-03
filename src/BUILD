@@ -86,8 +86,9 @@ py_binary(
         requirement("importlib_metadata"),
         requirement("kiwisolver"),
         requirement("markdown"),
-        requirement("matplotlib"),
         requirement("murmurhash"),
+        requirement("matplotlib"),
+        requirement("Pillow"),
         requirement("numpy"),
         requirement("pandas"),
         requirement("plac"),
@@ -106,7 +107,11 @@ py_binary(
 py_binary(
     name = "conversation_struct",
     srcs = ["conversation_struct.py"],
-    data = ["data/pr_comments.csv"],
+    data = [
+        "data/pr_comments.csv",
+        "data/pr_body.csv",
+        "data/speakers_bots_full.list",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":download_data",
@@ -121,6 +126,7 @@ py_binary(
         requirement("kiwisolver"),
         requirement("markdown"),
         requirement("matplotlib"),
+        requirement("Pillow"),
         requirement("murmurhash"),
         requirement("numpy"),
         requirement("pandas"),
@@ -134,6 +140,62 @@ py_binary(
         requirement("threadpoolctl"),
         requirement("wasabi"),
         requirement("zipp"),
+    ],
+)
+
+py_library(
+    name ="predict_bad_conver_helpers",
+    srcs = ["predict_bad_conver_helpers.py"],
+    data = [
+        "data/pr_comments.csv",
+        "data/pr_body.csv",
+        "data/both_t_data.csv",
+        "pickles/pm_model.files",
+        "pickles/pt_model.files",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":download_data",
+        ":conversation_struct",
+        requirement("pandas"),
+        requirement("numpy"),
+        requirement("scipy"),
+        requirement("sklearn"),
+        requirement("convokit"),
+    ],
+)
+
+py_binary(
+    name ="predict_bad_conver",
+    srcs = ["predict_bad_conver.py"],
+    data = ["data/pr_comments.csv"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":predict_bad_conver_helpers",
+        ":download_data",
+        ":conversation_struct",
+        requirement("pandas"),
+        requirement("markdown"),
+        requirement("numpy"),
+        requirement("scipy"),
+        requirement("sklearn"),
+        requirement("convokit"),
+    ],
+)
+
+py_binary(
+    name ="convo_forecast",
+    srcs = ["convo_forecast.py"],
+    data = ["data/pr_comments.csv"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":download_data",
+        ":conversation_struct",
+        requirement("pandas"),
+        requirement("numpy"),
+        requirement("scipy"),
+        requirement("sklearn"),
+        requirement("convokit"),
     ],
 )
 

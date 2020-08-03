@@ -21,9 +21,9 @@ from pandas import DataFrame
 from typing import List, Dict, Set
 import convokit
 import convo_politeness
-import matplotlib.pyplot as plt
 import nltk
 import numpy as np
+import os
 import pandas as pd
 import receive_data
 import spacy
@@ -35,45 +35,22 @@ lemmatizer = WordNetLemmatizer()
 tokenizer = nltk.RegexpTokenizer(r"\w+")
 
 
-def save_plot(scores, file_name, y_lim):
-  scores = scores.to_dict()["Averages"]
-  plt.figure(dpi=200, figsize=(9, 6))
-  plt.bar(
-      list(range(len(scores))),
-      scores.values(),
-      tick_label=list(scores.keys()),
-      align="edge")
-  plt.xticks(np.arange(.4, len(scores) + .4), rotation=45, ha="right")
-  plt.ylabel("Occurrences per Utterance", size=20)
-  plt.yticks(size=15)
-  if y_lim != None:
-    plt.ylim(0, y_lim)
-  plt.savefig(file_name)
-
-
 # compare ngram in toxic and non-toxic comments
 def word_freq(corpus):
   # fighting words
-  fw = fightingWords.FightingWords(ngram_range=(2, 5))
+  fw = fightingWords.FightingWords(ngram_range=(1, 6))
   toxic_comments = lambda utt: utt.meta["label"] == 1.0
   non_toxic_comments = lambda utt: utt.meta["label"] == 0.0
   fw.fit(
       corpus=corpus, class1_func=toxic_comments, class2_func=non_toxic_comments)
   summary = fw.summarize(corpus)
-  summary = summary.loc[abs(summary["z-score"]) >= 1.645].reset_index()
-  # class1 has positive z-scores
-  class1 = summary.loc[summary["class"] == "class1"].sort_values(
-      by="z-score", ascending=False)
-  # class2 has negative z-scores
-  class2 = summary.loc[summary["class"] == "class2"].sort_values(by="z-score")
+  summary["abs_z-score"] = abs(summary["z-score"])
+  summary = summary.sort_values(by="abs_z-score", ascending=False)
   out = open("fighting_words_freq.csv", "w")
-  out.write("label==1,z-score,label==0,z-score\n")
-  for i in range(40):
-    out.write(class1.iloc[i]["ngram"] + "," + str(class1.iloc[i]["z-score"]) +
-              "," + class2.iloc[i]["ngram"] + "," +
-              str(class2.iloc[i]["z-score"]) + "\n")
-  out.close()
-  logging.info("fighting words lists are stored in `fighting_words_freq.csv`")
+  summary.to_csv("fighting_words_freq.csv")
+  print(
+      "fighting words lists are stored in the bazel binary's runfiles folder with the name `fighting_words_freq.csv`\n"
+  )
 
 
 def politeness_hist(corpus):
@@ -85,11 +62,8 @@ def politeness_hist(corpus):
   neg_query = lambda x: x.meta["label"] == 0
   positive_count = ps.summarize(corpus, pos_query)
   negative_count = ps.summarize(corpus, neg_query)
-  # plot histograms and save them
-  y_lim = max(max(positive_count["Averages"]), max(
-      negative_count["Averages"])) + 1
-  save_plot(positive_count, "positive_data_politeness_hist.png", y_lim)
-  save_plot(negative_count, "negative_data_politeness_hist.png", y_lim)
+  positive_count.to_csv("polite_strategies_label_1.csv")
+  negative_count.to_csv("polite_strategies_label_0.csv")
 
   # individual politeness strategies
   out = open("politeness_words_marked_sorted.txt", "w")
@@ -128,8 +102,11 @@ def politeness_hist(corpus):
       out.write(str(each_word) + ",")
     out.write("\n")
   out.close()
-  logging.info(
-      "politeness words lists are stored in `politeness_wrods_marked_sorted.txt`"
+  print(
+      "politeness words counts are stored in the bazel binary's runfiles folder with the name `polite_strategies_label_x.csv`, x = {{0, 1}}\n"
+  )
+  print(
+      "politeness words lists are stored in the bazel binary's runfiles folder with the name `politeness_words_marked_sorted.txt`\n"
   )
 
 
