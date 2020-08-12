@@ -23,6 +23,7 @@ py_binary(
         "//src:download_data",
         "//src:conversation_struct",
         "//src:receive_data",
+        "//src:data/pr_body_comments.csv",
         requirement("pandas"),
         requirement("markdown"),
         requirement("numpy"),
