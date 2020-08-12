@@ -1,5 +1,5 @@
 # Lint as: python3
-"""Use ConvoKit to get politeness score"""
+"""Use ConvoKit to construct Conversation"""
 
 from src import download_data
 download_data.download_data()
@@ -21,6 +21,7 @@ from src import receive_data
 import re
 import markdown
 import string
+
 # https://stackoverflow.com/questions/34293875/how-to-remove-punctuation-marks-from-a-string-in-python-3-x-using-translate
 translator = str.maketrans("", "", string.punctuation)
 
@@ -89,7 +90,6 @@ class PullRequest:
         if quote in self.comment_text[k]:
           reply_to = self.root_id + "_____" + k
           self.sub_conversation_id[k] = str(row["id"])
-          #print(quote, reply_to)
           return reply_to
     # @
     if "@" in text:
@@ -119,6 +119,7 @@ class PullRequest:
   # update sub_conversation_id[reply_to] and a new entry of current id
   def add_comment(self, row):
     utt_id = self.root_id + "_____" + str(row["id"])
+    print(utt_id)
     if type(row["text"]) == str:
       self.comment_text[str(row["id"])] = row["text"]
     else:
@@ -192,7 +193,6 @@ def prepare_corpus(comments, corpus_speakers):
     try:
       [owner, repo, CR_id] = row["_id"].split("_____")
     except:
-      print(row["_id"])
       continue
     # update conversation root if we are entering a new code review
     if row["_id"] != prev_repo:
@@ -242,18 +242,6 @@ def prepare_corpus(comments, corpus_speakers):
     convo_id = convo.get_id()
     if convo_id in conversation_label:
       convo.meta["label"] = conversation_label[convo_id]
-
-  openssl = corpus.get_conversation("openssl_____openssl_____12089")
-  #openssl = corpus.get_conversation(corpus.get_conversation_ids()[0])#"openssl_____openssl_____12089")
-  #print(openssl.check_integrity())
-  #print("number of conversations in the dataset = {}".format(
-  #    len(corpus.get_conversation_ids())))
-  #print("openssl")
-  print("\n".join([str((x.id, x.reply_to)) for x in openssl.get_chronological_utterance_list()]))
-  #print("\n".join([openssl.get_utterance(x).text for x in openssl.get_utterance_ids()]))
-  openssl.print_conversation_structure()
-  #print("openssl")
-
   return corpus
 
 
