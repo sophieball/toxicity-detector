@@ -108,8 +108,7 @@ py_binary(
     name = "conversation_struct_g",
     srcs = ["conversation_struct_g.py"],
     data = [
-        "data/pr_comments.csv",
-        "data/pr_body.csv",
+        "data/pr_body_comments.csv",
         "data/speakers_bots_full.list",
     ],
     visibility = ["//visibility:public"],
@@ -147,7 +146,7 @@ py_binary(
     name = "conversation_struct",
     srcs = ["conversation_struct.py"],
     data = [
-        "data/pr_comments.csv",
+        "data/pr_body_comments.csv",
         "data/pr_body.csv",
         "data/speakers_bots_full.list",
     ],
@@ -186,8 +185,7 @@ py_library(
     name ="predict_bad_conver_helpers",
     srcs = ["predict_bad_conver_helpers.py"],
     data = [
-        "data/pr_comments.csv",
-        "data/pr_body.csv",
+        "data/pr_body_comments.csv",
         "data/both_t_data.csv",
         "pickles/pm_model.files",
         "pickles/pt_model.files",
@@ -207,7 +205,7 @@ py_library(
 py_binary(
     name ="convo_forecast",
     srcs = ["convo_forecast.py"],
-    data = ["data/pr_comments.csv"],
+    data = ["data/pr_body_comments.csv"],
     visibility = ["//visibility:public"],
     deps = [
         ":download_data",
