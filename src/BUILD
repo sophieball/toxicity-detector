@@ -187,8 +187,6 @@ py_library(
     data = [
         "data/pr_body_comments.csv",
         "data/both_t_data.csv",
-        "pickles/pm_model.files",
-        "pickles/pt_model.files",
     ],
     visibility = ["//visibility:public"],
     deps = [
