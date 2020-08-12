@@ -15,6 +15,50 @@ py_binary(
 )
 
 py_binary(
+    name ="train_prompt_types",
+    srcs = ["train_prompt_types.py"],
+    data = [
+        "//src:data/pr_body_comments.csv",
+        "//src:data/comments_from_random_sample_10000_prs.csv",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src:predict_bad_conver_helpers",
+        "//src:download_data",
+        "//src:conversation_struct",
+        "//src:receive_data",
+        requirement("pandas"),
+        requirement("markdown"),
+        requirement("numpy"),
+        requirement("scipy"),
+        requirement("sklearn"),
+        requirement("convokit"),
+    ],
+)
+
+py_binary(
+    name ="predict_bad_conver",
+    srcs = ["predict_bad_conver.py"],
+    data = [
+        "//src:data/pr_body_comments.csv",
+        "//src:data/comments_from_random_sample_10000_prs.csv",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src:predict_bad_conver_helpers",
+        "//src:download_data",
+        "//src:conversation_struct",
+        "//src:receive_data",
+        requirement("pandas"),
+        requirement("markdown"),
+        requirement("numpy"),
+        requirement("scipy"),
+        requirement("sklearn"),
+        requirement("convokit"),
+    ],
+)
+
+py_binary(
     name = "train_polite_score",
     srcs = ["train_polite_score.py"],
     visibility = ["//visibility:public"],
@@ -114,6 +158,9 @@ r_binary(
         ":train_polite_score",
         "//src:convo_word_freq_diff",
         "//src:data/both_t_data_subset.csv",
+        "//src:data/pr_comments.csv",
+        "//src:data/comments_from_random_sample_10000_prs.csv",
+        "//main:train_prompt_types",
     ],
     deps = [
         ":politeness_logi",

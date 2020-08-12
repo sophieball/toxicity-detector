@@ -205,28 +205,6 @@ py_library(
 )
 
 py_binary(
-    name ="predict_bad_conver",
-    srcs = ["predict_bad_conver.py"],
-    data = [
-        "data/pr_comments.csv",
-        "data/comments_from_random_sample_10000_prs.csv",
-        #glob("data/10K_PRs.corpus"),
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        ":predict_bad_conver_helpers",
-        ":download_data",
-        ":conversation_struct",
-        requirement("pandas"),
-        requirement("markdown"),
-        requirement("numpy"),
-        requirement("scipy"),
-        requirement("sklearn"),
-        requirement("convokit"),
-    ],
-)
-
-py_binary(
     name ="convo_forecast",
     srcs = ["convo_forecast.py"],
     data = ["data/pr_comments.csv"],

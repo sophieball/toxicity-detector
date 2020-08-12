@@ -89,7 +89,7 @@ class PullRequest:
       for k in self.comment_text:
         if quote in self.comment_text[k]:
           reply_to = self.root_id + "_____" + k
-          self.sub_conversation_id[k] = str(row["id"])
+          self.sub_conversation_id[k] = str(row["comment_id"])
           return reply_to
     # @
     if "@" in text:
@@ -100,7 +100,7 @@ class PullRequest:
         mention_login = mention.group(0).strip()[1:]
         if mention_login in self.authors:
           reply_to = self.root_id + "_____" + self.authors[mention_login]
-          self.sub_conversation_id[self.authors[mention_login]] = str(row["id"])
+          self.sub_conversation_id[self.authors[mention_login]] = str(row["comment_id"])
           return reply_to
 
     if reply_to in self.sub_conversation_id:
@@ -110,47 +110,52 @@ class PullRequest:
     else:
       # new thread
       reply_to = self.root_id + "_____" + str(self.sub_conversation_id[self.root_id])
-      self.sub_conversation_id[self.root_id] = str(row["id"])
+      self.sub_conversation_id[self.root_id] = str(row["comment_id"])
     return reply_to
 
   # set author
   # increment comment count
   # set comment_text
   # update sub_conversation_id[reply_to] and a new entry of current id
-  def add_comment(self, row):
-    utt_id = self.root_id + "_____" + str(row["id"])
-    print(utt_id)
+  def add_comment(self, row, google):
+    utt_id = self.root_id + "_____" + str(row["comment_id"])
     if type(row["text"]) == str:
-      self.comment_text[str(row["id"])] = row["text"]
+      self.comment_text[str(row["comment_id"])] = row["text"]
     else:
-      self.authors[row["author"]] = str(row["id"])
+      self.authors[row["author"]] = str(row["comment_id"])
       self.comment_count += 1
       reply_to = self.root_id
       self.prev_id = utt_id
-      self.sub_conversation_id[self.root_id] = str(row["id"])
-      self.sub_conversation_id[str(row["id"])] = str(row["id"])
+      self.sub_conversation_id[self.root_id] = str(row["comment_id"])
+      self.sub_conversation_id[str(row["comment_id"])] = str(row["comment_id"])
       return reply_to, utt_id
 
     if row["reply_to"] == "ROOT":  # initial PR description
       current_reply_to = None
       reply_to = None
       utt_id = self.root_id
-      self.sub_conversation_id[self.root_id] = str(row["id"])
+      self.sub_conversation_id[self.root_id] = str(row["comment_id"])
     elif row["reply_to"] == "NONE":
       # new thread of sub-conversation, usually a code review
       if self.comment_count == 1:
         reply_to = self.root_id
       else:
-        reply_to = self.find_reply_to(row)
-      self.sub_conversation_id[self.root_id] = str(row["id"])
-      self.sub_conversation_id[str(row["id"])] = str(row["id"])
+        if google: # Google's comments don't have quotes or @s
+          reply_to = self.prev_id
+        else:
+          reply_to = self.find_reply_to(row)
+      self.sub_conversation_id[self.root_id] = str(row["comment_id"])
+      self.sub_conversation_id[str(row["comment_id"])] = str(row["comment_id"])
     else:
-      reply_to = self.find_reply_to(row)
-      self.sub_conversation_id[reply_to] = str(row["id"])
-      self.sub_conversation_id[str(row["reply_to"]).replace(".0", "")] = str(row["id"])
+      if google:
+        reply_to = self.prev_id
+      else:
+        reply_to = self.find_reply_to(row)
+      self.sub_conversation_id[reply_to] = str(row["comment_id"])
+      self.sub_conversation_id[str(row["reply_to"]).replace(".0", "")] = str(row["comment_id"])
 
     self.prev_id = utt_id
-    self.authors[row["author"]] = str(row["id"])
+    self.authors[row["author"]] = str(row["comment_id"])
     self.comment_count += 1
     return reply_to, utt_id
 
@@ -180,13 +185,13 @@ def preprocess_text(cur_text):
 
 # input: pd.DataFrame, convokit.Speakers
 # output: convokit.Corpus
-def prepare_corpus(comments, corpus_speakers):
+def prepare_corpus(comments, corpus_speakers, google):
   comments = comments.sort_values(by=["_id", "created_at"])
   utterance_corpus = {}
   # keep track of the root of each code review
   # _id is owner_repo_prid, id is the numeric id of the comment
   prev_repo = comments.iloc[0]["_id"]
-  pr = PullRequest(prev_repo, str(comments.iloc[0]["id"]))
+  pr = PullRequest(prev_repo, str(comments.iloc[0]["comment_id"]))
 
   conversation_label = {}
   for idx, row in comments.iterrows():
@@ -196,7 +201,7 @@ def prepare_corpus(comments, corpus_speakers):
       continue
     # update conversation root if we are entering a new code review
     if row["_id"] != prev_repo:
-      pr = PullRequest(row["_id"], str(row["id"]))
+      pr = PullRequest(row["_id"], str(row["comment_id"]))
     prev_repo = row["_id"]
 
     # ignore bots
@@ -204,7 +209,7 @@ def prepare_corpus(comments, corpus_speakers):
       continue
 
     # group comments by their reply_to
-    reply_to, utt_id = pr.add_comment(row)
+    reply_to, utt_id = pr.add_comment(row, google)
 
     meta = {
         "owner": owner,
