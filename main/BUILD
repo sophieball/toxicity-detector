@@ -37,7 +37,6 @@ py_binary(
     srcs = ["predict_bad_conver.py"],
     data = [
         "//src:data/pr_body_comments.csv",
-        "//src:data/comments_from_random_sample_10000_prs.csv",
     ],
     visibility = ["//visibility:public"],
     deps = [
