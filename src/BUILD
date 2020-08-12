@@ -105,6 +105,45 @@ py_binary(
 )
 
 py_binary(
+    name = "conversation_struct_g",
+    srcs = ["conversation_struct_g.py"],
+    data = [
+        "data/pr_comments.csv",
+        "data/pr_body.csv",
+        "data/speakers_bots_full.list",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":download_data",
+        ":receive_data",
+        requirement("blis"),
+        requirement("catalogue"),
+        requirement("convokit"),
+        requirement("cycler"),
+        requirement("cymem"),
+        requirement("ftfy"),
+        requirement("importlib_metadata"),
+        requirement("kiwisolver"),
+        requirement("markdown"),
+        requirement("matplotlib"),
+        requirement("Pillow"),
+        requirement("murmurhash"),
+        requirement("numpy"),
+        requirement("pandas"),
+        requirement("plac"),
+        requirement("preshed"),
+        requirement("python-dateutil"),
+        requirement("pytz"),
+        requirement("spacy"),
+        requirement("srsly"),
+        requirement("thinc"),
+        requirement("threadpoolctl"),
+        requirement("wasabi"),
+        requirement("zipp"),
+    ],
+)
+
+py_binary(
     name = "conversation_struct",
     srcs = ["conversation_struct.py"],
     data = [
@@ -168,7 +207,11 @@ py_library(
 py_binary(
     name ="predict_bad_conver",
     srcs = ["predict_bad_conver.py"],
-    data = ["data/pr_comments.csv"],
+    data = [
+        "data/pr_comments.csv",
+        "data/comments_from_random_sample_10000_prs.csv",
+        #glob("data/10K_PRs.corpus"),
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":predict_bad_conver_helpers",
