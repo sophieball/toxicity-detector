@@ -23,7 +23,6 @@ py_binary(
         "//src:download_data",
         "//src:conversation_struct",
         "//src:receive_data",
-        "//src:data/pr_body_comments.csv",
         requirement("pandas"),
         requirement("markdown"),
         requirement("numpy"),
@@ -36,9 +35,6 @@ py_binary(
 py_binary(
     name ="predict_bad_conver",
     srcs = ["predict_bad_conver.py"],
-    data = [
-        "//src:data/pr_body_comments.csv",
-    ],
     visibility = ["//visibility:public"],
     deps = [
         "//src:predict_bad_conver_helpers",
