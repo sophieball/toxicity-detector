@@ -136,7 +136,7 @@ class PullRequest:
       utt_id = self.root_id
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
     elif row["reply_to"] == "NONE":
-      # new thread of sub-conversation, usually a code review
+      # new thread of sub-conversation, usually not a code review
       if self.comment_count == 1:
         reply_to = self.root_id
       else:
