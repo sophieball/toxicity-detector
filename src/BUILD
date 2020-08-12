@@ -147,7 +147,6 @@ py_binary(
     srcs = ["conversation_struct.py"],
     data = [
         "data/pr_body_comments.csv",
-        "data/pr_body.csv",
         "data/speakers_bots_full.list",
     ],
     visibility = ["//visibility:public"],
