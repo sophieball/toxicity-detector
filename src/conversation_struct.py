@@ -251,10 +251,6 @@ def prepare_corpus(comments, corpus_speakers, google):
 
 
 if __name__ == "__main__":
-  comments = pd.read_csv("src/data/pr_comments.csv")
-  body = pd.read_csv("src/data/pr_body.csv")
-  comments = pd.concat([comments, body])
-  comments = comments.sort_values(by=["_id", "created_at"])
-  comments = comments.drop_duplicates()
+  comments = pd.read_csv("src/data/pr_body_comments.csv")
   speakers = create_speakers(comments)
   prepare_corpus(comments, speakers)

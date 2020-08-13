@@ -1,8 +1,6 @@
 # Lint as: python3
-"""TODO(hsqq): DO NOT SUBMIT without one-line documentation for predict_bad_convo_helpers.
-
-TODO(hsqq): DO NOT SUBMIT without a detailed description of
-predict_bad_convo_helpers.
+"""
+Helper functions for predicting conversation faillure
 """
 
 from src import download_data
@@ -109,7 +107,7 @@ def draw_figure(ax,
   title_size = 10
   radius = 144
   features = feat_order
-  print(features)
+  logging.info(features)
   ax.invert_yaxis()
   ax.plot([0, 0], [0, len(features) / gap_prop], color="black")
 
@@ -252,7 +250,7 @@ def run_pred_single(inputs, X, y):
   feature_mask = clf.best_estimator_.named_steps["featselect"].get_support()
 
   hyperparams = clf.best_params_
-  print(hyperparams)
+  logging.info(hyperparams)
 
   return (y_pred, y_scores, feature_weights, hyperparams, feature_mask)
 
@@ -337,36 +335,29 @@ def get_feature_subset(feature_table, feature_list):
 
   feature_subset = feature_table[features_to_use]
 
-  #c0_feats = feature_subset.loc[labeled_pairs_df.c0].values
-  #c1_feats = feature_subset.loc[labeled_pairs_df.c1].values
-  #c_feats = feature_subset.loc[feature["conversation_id"]]
-
-  #return c0_feats, c1_feats, features_to_use
   return feature_subset, features_to_use
 
 
 def run_pipeline(feature_table, feature_set):
-  print("Running prediction task for feature set", "+".join(feature_set))
-  print("Generating labels...")
-  #labeled_pairs_df = get_labeled_pairs(pairs_df)
-  print("Computing paired features...")
-  #X_c0, X_c1, feature_names = get_feature_subset(labeled_pairs_df, feature_set)
+  logging.info("Running prediction task for feature set", "+".join(feature_set))
+  logging.info("Generating labels...")
+  logging.info("Computing paired features...")
   X, feature_names = get_feature_subset(
       feature_table.drop(columns=["conversation_id", "slug", "label"], axis=1),
       feature_set)
   #X = X_c1 - X_c0
-  print("Using", X.shape[1], "features")
+  logging.info("Using", X.shape[1], "features")
   #y = labeled_pairs_df.first_convo_toxic.values
   y_train = feature_table["label"]
   y = LabelEncoder().fit_transform(y_train)
-  print("Running leave-one-page-out prediction...")
+  logging.info("Running leave-one-page-out prediction...")
   accuracy, coefs, scores, hyperparams, pvalue, chi2_df = run_pred(
       X, y, feature_names, feature_table.slug)  #, labeled_pairs_df.page_id)
-  print("Accuracy:", accuracy)
-  print("p-value: %.4e" % pvalue)
-  print("C (mode):", mode(hyperparams.logreg__C))
-  print("Percent of features (mode):", mode(hyperparams.featselect__percentile))
-  print("Coefficents:")
+  logging.info("Accuracy:", accuracy)
+  logging.info("p-value: %.4e" % pvalue)
+  logging.info("C (mode):", mode(hyperparams.logreg__C))
+  logging.info("Percent of features (mode):", mode(hyperparams.featselect__percentile))
+  logging.info("Coefficents:")
   coefs.join(chi2_df).sort_values(by="mean_coef").round(3).to_csv("_".join(feature_set) +
                                                          ".csv")
   return accuracy

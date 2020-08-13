@@ -75,14 +75,6 @@ from src import predict_bad_conver_helpers as hp
 VERBOSITY = 10000
 N_TYPES = 6
 
-# read in data
-#comments = pd.read_csv("src/data/pr_comments.csv")
-#body = pd.read_csv("src/data/pr_body.csv")
-#comments = pd.concat([comments, body])
-#comments = comments.sort_values(by=["_id", "created_at"])
-## data from MongoDB contains duplicates
-#comments = comments.drop_duplicates()
-
 
 def prepare_corpus(comments, f_name, google):
   # construct corpus and preprocess text
