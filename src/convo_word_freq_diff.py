@@ -29,6 +29,9 @@ import receive_data
 import spacy
 import text_cleaning
 
+from src import sep_ngram
+from src import plot_politeness
+
 nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
@@ -48,9 +51,42 @@ def word_freq(corpus):
   summary = summary.sort_values(by="abs_z-score", ascending=False)
   out = open("fighting_words_freq.csv", "w")
   summary.to_csv("fighting_words_freq.csv")
+  sep_ngram.sep_ngram(summary.reset_index(), "fighting_words_sorted.csv", 20)
   print(
-      "fighting words lists are stored in the bazel binary's runfiles folder with the name `fighting_words_freq.csv`\n"
+      "raw output are stored in the bazel binary's runfiles folder with the name `fighting_words_freq.csv`.\n"
   )
+  print(
+      "sorted by ngram version is stored in the bazel binary's runfiles folder with the name `fighting_words_sorted.csv`.\n"
+  )
+
+
+def pl_summarize(corpus, selector):
+  utts = list(corpus.iter_utterances(selector))
+  if "politeness_markers" not in utts[0].meta:
+    print(
+        "Could not find politeness markers metadata. Running transform() on corpus first...",
+        end="")
+    self.transform(corpus, markers=True)
+    print("Done.")
+
+  counts = {
+      k[21:len(k) - 2]: 0 for k in utts[0].meta["politeness_markers"].keys()
+  }
+
+  for utt in utts:
+    if len(utt.text) == 0:
+      continue
+    for k, v in utt.meta["politeness_markers"].items():
+      name = k[21:len(k) - 2]
+      if name in [
+          "Please_start", "Direct_start", "Direct_question", "1st_person_start",
+          "2nd_person_start"
+      ]:
+        counts[name] += len(v) / utt.meta["num_sents"]
+      else:
+        counts[k[21:len(k) - 2]] += len(v) / len(utt.text)
+  scores = {k: v / len(utts) for k, v in counts.items()}
+  return scores
 
 
 def politeness_hist(corpus):
@@ -60,10 +96,16 @@ def politeness_hist(corpus):
   corpus_ps = ps.transform(corpus, markers=True)
   pos_query = lambda x: x.meta["label"] == 1
   neg_query = lambda x: x.meta["label"] == 0
-  positive_count = ps.summarize(corpus, pos_query)
-  negative_count = ps.summarize(corpus, neg_query)
-  positive_count.to_csv("polite_strategies_label_1.csv")
-  negative_count.to_csv("polite_strategies_label_0.csv")
+  positive_count = pl_summarize(corpus, pos_query)
+  negative_count = pl_summarize(corpus, neg_query)
+  pos_df = pd.DataFrame(positive_count, positive_count.keys())
+  neg_df = pd.DataFrame(negative_count, negative_count.keys())
+  pos_df.to_csv("polite_strategies_label_1.csv")
+  neg_df.to_csv("polite_strategies_label_0.csv")
+
+  # plot the histogram
+  plot_politeness.save_plot(positive_count, "label1_politeness.pdf", 0.2)
+  plot_politeness.save_plot(negative_count, "label0_politeness.pdf", 0.2)
 
   # individual politeness strategies
   out = open("politeness_words_marked_sorted.txt", "w")
@@ -107,6 +149,9 @@ def politeness_hist(corpus):
   )
   print(
       "politeness words lists are stored in the bazel binary's runfiles folder with the name `politeness_words_marked_sorted.txt`\n"
+  )
+  print(
+      "politeness words plots are stored in the bazel binary's runfiles folder with the name `labelx_politeness.pdf`, x = {{0, 1}}\n"
   )
 
 
