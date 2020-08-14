@@ -8,7 +8,7 @@ logging.basicConfig(
     filename="bad_conver.log",
     filemode="w",
     format="%(message)s",
-    level=logging.DEBUG)
+    level=logging.INFO)
 from src import download_data
 download_data.download_data()
 import numpy as np
@@ -20,8 +20,7 @@ import sys
 
 
 class StreamToLogger(object):
-  """Fake file-like stream object that redirects writes to a logger instance.
-  """
+  """Fake file-like stream object that redirects writes to a logger instance."""
 
   def __init__(self, logger, log_level=logging.INFO):
     self.logger = logger
@@ -83,7 +82,9 @@ def prepare_corpus(comments, f_name, google):
   # parse the text with spacy
   parser = TextParser(verbosity=VERBOSITY)
   corpus = parser.transform(corpus)
-  corpus.dump(f_name, base_path="./")
+  # dumping the corpus will save the comments to disk
+  if not google:
+    corpus.dump(f_name, base_path="./")
   return corpus
 
 
@@ -108,12 +109,11 @@ def train_prompt(corpus, f_name):
 
 
 if __name__ == "__main__":
-  if len(sys.argv) > 1:
-    if sys.argv[1] == "google":
-      google = True
+  if len(sys.argv) == 1:
+    google = True
   else:
     google = False
 
   comments = receive_data.receive_single_data()
-  corpus = prepare_corpus(comments, "10K_PRs.corpus", True)
+  corpus = prepare_corpus(comments, "10K_PRs.corpus", google)
   train_prompt(corpus, "pt_model_10K.files")

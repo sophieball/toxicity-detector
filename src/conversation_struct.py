@@ -44,7 +44,7 @@ def create_speakers(comments):
       continue
     if login not in speaker_meta:
       speaker_meta[login] = {
-          "id": count,
+          "id": str(count),
           "login": login,
           "associations": set(),
           "num_comments": 1
@@ -55,8 +55,10 @@ def create_speakers(comments):
     speaker_meta[login]["associations"].add(
         ("_____".join(row["_id"].split("____")[:-1]),
          row["author_association"]))
-
   corpus_speakers = {k: Speaker(id=k, meta=v) for k, v in speaker_meta.items()}
+
+  # I can sort speakers by the number of comments and verify if the uses with
+  # top most comments are bots
   speaker_out = open("speakers.list", "w")
   for s in speaker_meta:
     speaker_out.write(
@@ -74,16 +76,20 @@ class PullRequest:
     # {"reply_to_1": latest_id_1, "reply_to_2": latest_id_2}:
     self.sub_conversation_id = {root_id: self.first_comment_id}
     self.first_sentences = {}
-    self.authors = {} # author_id: comment_id
-    self.comment_text = {} # comment_id: text
+    self.authors = {}  # author_id: comment_id
+    self.comment_text = {}  # comment_id: text
     self.prev_id = root_id
 
+  # only needed for GH
   def find_reply_to(self, row):
-    reply_to = str(row["reply_to"]).replace(".0", "")
+    reply_to = row["reply_to"].replace(".0", "")
     # if there's quote, use that to map to the reply to
     # find the first sentence of the outer layer quote
     text = row["text"]
-    quotes = [x for x in text.split("\n") if len(x) > 2 and x[:2] == "> " and x[2] != ">"]
+    quotes = [
+        x for x in text.split("\n")
+        if len(x) > 2 and x[:2] == "> " and x[2] != ">"
+    ]
     if len(quotes) > 0:
       quote = quotes[0][2:].strip()
       for k in self.comment_text:
@@ -100,16 +106,17 @@ class PullRequest:
         mention_login = mention.group(0).strip()[1:]
         if mention_login in self.authors:
           reply_to = self.root_id + "_____" + self.authors[mention_login]
-          self.sub_conversation_id[self.authors[mention_login]] = str(row["comment_id"])
+          self.sub_conversation_id[self.authors[mention_login]] = str(
+              row["comment_id"])
           return reply_to
 
     if reply_to in self.sub_conversation_id:
       # there's already a thread
-      reply_to = self.root_id + "_____" + self.sub_conversation_id[
-          reply_to]
+      reply_to = self.root_id + "_____" + self.sub_conversation_id[reply_to]
     else:
       # new thread
-      reply_to = self.root_id + "_____" + str(self.sub_conversation_id[self.root_id])
+      reply_to = self.root_id + "_____" + str(
+          self.sub_conversation_id[self.root_id])
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
     return reply_to
 
@@ -122,25 +129,28 @@ class PullRequest:
     if type(row["text"]) == str:
       self.comment_text[str(row["comment_id"])] = row["text"]
     else:
+      # to record what's the last comment by this author - find quote reply
       self.authors[row["author"]] = str(row["comment_id"])
       self.comment_count += 1
       reply_to = self.root_id
       self.prev_id = utt_id
+      # update the end of root' thread to be this comment
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
+      # each comment also starts its own thread
       self.sub_conversation_id[str(row["comment_id"])] = str(row["comment_id"])
       return reply_to, utt_id
 
     if row["reply_to"] == "ROOT":  # initial PR description
       current_reply_to = None
       reply_to = None
-      utt_id = self.root_id
+      utt_id = self.root_id # root comment doesn't need comment_id
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
     elif row["reply_to"] == "NONE":
-      # new thread of sub-conversation, usually not a code review
+      # new thread of sub-conversation, on GH usually not a code review
       if self.comment_count == 1:
         reply_to = self.root_id
       else:
-        if google: # Google's comments don't have quotes or @s
+        if google:  # Google's comments don't have quotes or @s
           reply_to = self.prev_id
         else:
           reply_to = self.find_reply_to(row)
@@ -148,11 +158,12 @@ class PullRequest:
       self.sub_conversation_id[str(row["comment_id"])] = str(row["comment_id"])
     else:
       if google:
-        reply_to = self.prev_id
+        reply_to = self.root_id + row["reply_to"]
       else:
         reply_to = self.find_reply_to(row)
       self.sub_conversation_id[reply_to] = str(row["comment_id"])
-      self.sub_conversation_id[str(row["reply_to"]).replace(".0", "")] = str(row["comment_id"])
+      self.sub_conversation_id[row["reply_to"].replace(".0", "")] = str(
+          row["comment_id"])
 
     self.prev_id = utt_id
     self.authors[row["author"]] = str(row["comment_id"])
@@ -187,6 +198,7 @@ def preprocess_text(cur_text):
 # output: convokit.Corpus
 def prepare_corpus(comments, corpus_speakers, google):
   comments = comments.sort_values(by=["_id", "created_at"])
+  comments["reply_to"] = comments["reply_to"].map(lambda x:str(x))
   utterance_corpus = {}
   # keep track of the root of each code review
   # _id is owner_repo_prid, id is the numeric id of the comment
@@ -198,7 +210,9 @@ def prepare_corpus(comments, corpus_speakers, google):
     try:
       [owner, repo, CR_id] = row["_id"].split("_____")
     except:
-      continue
+      owner = ""
+      repo = ""
+      CR_id = row["_id"]
     # update conversation root if we are entering a new code review
     if row["_id"] != prev_repo:
       pr = PullRequest(row["_id"], str(row["comment_id"]))
@@ -247,6 +261,13 @@ def prepare_corpus(comments, corpus_speakers, google):
     convo_id = convo.get_id()
     if convo_id in conversation_label:
       convo.meta["label"] = conversation_label[convo_id]
+
+  # print out the conversation structure of the first conversation
+  first_conv = corpus.get_conversation(corpus.get_conversation_ids()[0])
+  logging.info(first_conv.check_integrity())
+  logging.info("reply chain of the first conversation")
+  logging.info(first_conv.print_conversation_structure())
+
   return corpus
 
 
