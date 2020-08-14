@@ -66,7 +66,7 @@ order = [
 ]
 
 
-def save_plot(scores, file_name, y_lim):
+def save_plot(scores0, scores1, file_name, y_lim):
   scores.pop("HASHEDGE")
   plt.figure(dpi=200, figsize=(9, 6))
   bars = plt.bar(
