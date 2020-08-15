@@ -1,5 +1,4 @@
 Pillow
-blis
 catalogue
 catalogue
 convokit

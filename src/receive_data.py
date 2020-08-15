@@ -21,3 +21,12 @@ def receive_data():
   training = data.loc[data["training"] == 1]
   unlabeled = data.loc[data["training"] == 0].drop(["label"], axis = 1)
   return [training, unlabeled]
+
+def receive_single_data():
+  logging.info("Reading data.")
+  data = pd.read_csv(io.StringIO(sys.stdin.read()), sep=",")
+  # rename id column -> CMU MongoDB uses _id as unique comment id
+  data = data.rename(columns={"id": "_id"})
+  # convert _id to str, because convokit requires id to be str
+  data["_id"] = data["_id"].apply(str)
+  return data
