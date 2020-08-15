@@ -156,11 +156,14 @@ class PullRequest:
           reply_to = self.find_reply_to(row)
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
       self.sub_conversation_id[str(row["comment_id"])] = str(row["comment_id"])
-    else:
-      if google:
-        reply_to = self.root_id + "_____" + row["reply_to"]
+    else: # numbers
+      if self.comment_count == 1:
+        reply_to = self.root_id
       else:
-        reply_to = self.find_reply_to(row)
+        if google:
+          reply_to = self.root_id + "_____" + row["reply_to"]
+        else:
+          reply_to = self.find_reply_to(row)
       self.sub_conversation_id[reply_to] = str(row["comment_id"])
       self.sub_conversation_id[row["reply_to"].replace(".0", "")] = str(
           row["comment_id"])
