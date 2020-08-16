@@ -9,6 +9,7 @@ gensim
 imblearn
 importlib_metadata
 kiwisolver
+langdetect
 markdown
 matplotlib
 murmurhash

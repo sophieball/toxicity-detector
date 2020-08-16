@@ -193,7 +193,7 @@ def preprocess_text(cur_text):
   # remove punctuation - this will mess up urls
   alpha_text = alpha_text.translate(translator)
   # keep words with only letters
-  alpha_only = [x for x in alpha_text.split() if x.isalpha()]
+  alpha_only = [x for x in alpha_text.split() if x.isascii() and not x.isdigit()]
   return alpha_only
 
 
