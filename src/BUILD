@@ -33,6 +33,31 @@ py_library(
 )
 
 py_library(
+    name = "fighting_words",
+    srcs = ["fighting_words_py3.py"],
+    deps = [
+        ":receive_data",
+        requirement("numpy"),
+        requirement("sklearn"),
+    ],
+)
+
+py_binary(
+    name = "find_SE_words",
+    srcs = ["find_SE_words.py"],
+    data = [
+        "data/kaggle_toxicity_subset.csv",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":fighting_words",
+        requirement("langdetect"),
+        requirement("pandas"),
+    ],
+)
+
+
+py_library(
     name = "statistics",
     srcs = ["statistics.py"],
     visibility = ["//visibility:public"],
