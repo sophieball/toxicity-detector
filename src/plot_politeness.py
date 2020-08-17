@@ -31,71 +31,90 @@ type_colors = {
     "Factuality": "imp"
 }
 
-colors = {"pos": "g", "neg": "yellow", "imp": "w"}
+#colors = {"pos": "g", "neg": "yellow", "imp": "w"}
 colors = {"label=1": "yellow", "label=0": "g"}
 hatches = {"pos": "\\", "neg": "/", "imp": "x"}
-hatches = {"label=1": "\\", "label=0": ""}
-ecs = {"pos": "w", "neg": "black", "imp": "black"}
+#hatches = {"label=1": "\\", "label=0": ""}
+ecs = {"pos": "black", "neg": "black", "imp": "black"}
 
-pos = [{
+pos = {
     "Gratitude": "Gratitude",
     "Deference": "Deference",
     "Indirect_(greeting)": "Greeting",
     "HASPOSITIVE": "Positive lexicon",
-}, {}]
+}
 
-neg = [{
+neg = {
     "Apologizing": "Apologizing",
     "Please": "Please",
-    "Indirect_(btw)": "Indirect (btw)",
-    "SUBJUNCTIVE": "Counterfactual modal",
+    "Indirect_(btw)": "By the way",
+    "SUBJUNCTIVE": "Counterfactual",# modal",
     "INDICATIVE": "Indicative modal",
     "1st_person_pl.": "1st person pl.",
     "1st_person": "1st person",
     "2nd_person": "2nd person",
     "Hedges": "Hedges",
-}, {
     "1st_person_start": "1st person start",
-}]
+}
 
-imp = [{
+imp = {
     "Factuality": "Factuality",
     "HASNEGATIVE": "Negative lexicon",
-}, {
     "Please_start": "Please start",
     "2nd_person_start": "2nd person start",
     "Direct_question": "Direct question",
     "Direct_start": "Direct start",
-}]
+}
 
-order = [
-    "Gratitude", "Deference", "Indirect_(greeting)", "HASPOSITIVE",
-    "Apologizing", "Please", "Indirect_(btw)", "SUBJUNCTIVE", "INDICATIVE",
-    "1st_person_start", "1st_person_pl.", "1st_person", "2nd_person", "Hedges",
-    "Factuality", "HASNEGATIVE", "Please_start", "Direct_question",
-    "Direct_start", "2nd_person_start"
-]
+order = {
+    "Gratitude": "Gratitude",
+    "Deference": "Deference",
+    "Indirect_(greeting)": "Greeting",
+    "Apologizing": "Apologizing",
+    "Please": "Please",
+    "Indirect_(btw)": "By the way",
+    "SUBJUNCTIVE": "Counterfactual",# modal",
+    "INDICATIVE": "Indicative modal",
+    "1st_person_pl.": "1st person pl.",
+    "1st_person": "1st person",
+    "2nd_person": "2nd person",
+    "Hedges": "Hedges",
+    "1st_person_start": "1st person start",
+    "Factuality": "Factuality",
+    "Please_start": "Please start",
+    "2nd_person_start": "2nd person start",
+    "Direct_question": "Direct question",
+    "Direct_start": "Direct start",
+}
 
 
-def make_patch(polite_type, polite_name):
+def make_patch():
   patch1 = mpatches.Patch(
-      color=colors["label=1"],#polite_type],
-      hatch=hatches["label=1"],#polite_type],
-      #ec=ecs[polite_type],
-      label="label=1")
+      color=colors["label=1"],
+      #hatch=hatches["pos"],
+      #ec=ecs["pos"],
+      label="Pushback")
   patch0 = mpatches.Patch(
-      color=colors["label=0"],#polite_type],
-      hatch=hatches["label=0"],#polite_type],
-      #ec=ecs[polite_type],
-      label="label=0")
-  """
-  patch = mpatches.Patch(
-      color=colors,#polite_type],
-      hatch=hatches,#polite_type],
-      #ec=ecs[polite_type],
-      label=["label=1", "label=0"])
-  """
-  return [patch0, patch1]
+      color=colors["label=0"],
+      #hatch=hatches["neg"],
+      #ec=ecs["neg"],
+      label="Non-pushback")
+  patch2 = mpatches.Patch(
+      color="w",#colors["imp"],
+      hatch=hatches["pos"],
+      ec=ecs["imp"],
+      label="Positive politeness")
+  patch3 = mpatches.Patch(
+      color="w",#colors["imp"],
+      hatch=hatches["neg"],
+      ec=ecs["pos"],
+      label="Negative politeness")
+  patch4 = mpatches.Patch(
+      color="w",#colors["pos"],
+      hatch=hatches["imp"],
+      ec=ecs["neg"],
+      label="Impoliteness")
+  return [patch0, patch1, patch2, patch3, patch4]
 
 
 # input: pd.DataFrame, str, int
@@ -104,64 +123,50 @@ def save_plot(scores, file_name, x_lim):
   scores_d = scores.to_dict()
   scores1 = scores_d["label=1"]
   scores0 = scores_d["label=0"]
-  #plt.figure(dpi=200, figsize=(35, 15))
-  fig, ax = plt.subplots(3, 2)
-  fig.tight_layout()
-  fig.subplots_adjust(left=0.18, right=0.95, wspace=0.4)
-  bar_height = 0.35
+  plt.figure(dpi=200, figsize=(60, 75))
+  bar_height = 2.5
 
-  def plot_subplots(i, j, keys, polite_type, polite_name):
-    if len(keys) == 0:
-      fig.delaxes(ax[i, j])
-      return
-    # subplots
-    ind = np.arange(len(keys))
-    bars = ax[i, j].barh(
-        ind, [scores1[t] for t in keys],
-        height=bar_height,
-        color=[colors["label=1"] for t in keys],#type_colors[t]] for t in keys],
-        ec="black",
-        #ec=[ecs[type_colors[t]] for t in keys],
-        tick_label=list(keys.values()),
-        align="edge")
-    bar_hatches = [hatches["label=1"] for t in keys]#type_colors[t]] for t in keys]
-    for bar, hatch in zip(bars, bar_hatches):
-      bar.set_hatch(hatch)
+  ind = np.arange(0, 6*len(order), 6)
+  for i in range(len(pos), len(pos)+len(neg)):
+    ind[i] += 4
+  for i in range(len(pos)+len(neg), len(order)):
+    ind[i] += 8
 
-    bars = ax[i, j].barh(
-        ind + bar_height, [scores0[t] for t in keys],
-        height=bar_height,
-        color=[colors["label=0"] for t in keys],#type_colors[t]] for t in keys],
-        #ec=[ecs[type_colors[t]] for t in keys],
-        ec="black",
-        tick_label=list(keys.values()),
-        align="edge")
+  bars = plt.barh(
+      ind, [scores1[t] for t in order],
+      height=bar_height,
+      color=[colors["label=1"]],#type_colors[t]] for t in order],
+      ec=[ecs[type_colors[t]] for t in order],
+      tick_label=[order[t] for t in order],
+      align="edge")
+  bar_hatches = [hatches[type_colors[t]] for t in order]
+  for bar, hatch in zip(bars, bar_hatches):
+    bar.set_hatch(hatch)
 
-    patch = make_patch(polite_type, polite_name)
-    ax[i, j].legend(handles=patch, fontsize=5)
-    if j == 0:
-      ax[i, j].set_ylabel(polite_name, size=8)
-    if i == 2:
-      ax[i, j].set_xlabel("Occurrences per Utterance", size=5)
+  # label = 0
+  bars = plt.barh(
+      ind + bar_height, [scores0[t] for t in order],
+      height=bar_height,
+      color=[colors["label=0"]],#type_colors[t]] for t in order],
+      ec=[ecs[type_colors[t]] for t in order],
+      tick_label=[order[t] for t in order],
+      align="edge")
+  bar_hatches = [hatches[type_colors[t]] for t in order]
+  for bar, hatch in zip(bars, bar_hatches):
+    bar.set_hatch(hatch)
 
-    if j == 1:
-      x_lim = 0.1
-      ax[i, j].set_xticks(np.arange(0, x_lim, 0.02))
-    else:
-      x_lim = 0.01
-      ax[i, j].set_xticks(np.arange(0, x_lim, 0.002))
-    ax[i, j].tick_params(labelsize=5)
-    #ax[i, j].tight_layout()
-    ax[i, j].xaxis.grid()
-    if x_lim != None:
-      ax[i, j].set_xlim(0, x_lim)
+  patch = make_patch()
+  plt.legend(handles=patch, fontsize=80)
+  plt.xlabel("Occurrences per Sentence", size=80)
 
-  polite_types = ["pos", "neg", "imp"]
-  polite_names = ["Positive politeness", "Negative politeness", "Impoliteness"]
-  polite_keys = [pos, neg, imp]
-  for i in range(3):
-    for j in range(2):
-      plot_subplots(i, j, polite_keys[i][j], polite_types[i], polite_names[i])
+  x_lim = 0.015
+  plt.xticks(np.arange(0, x_lim+0.005, 0.005))
+  plt.tick_params(labelsize=50)
+  #plt.tight_layout()
+  ax = plt.gca()
+  ax.xaxis.grid(True)
+  plt.xlim(0, x_lim)
+
   plt.savefig(file_name)
 
 
