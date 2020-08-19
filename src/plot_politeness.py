@@ -157,7 +157,7 @@ def save_plot(scores, file_name, x_lim):
   plt.legend(handles=patch, fontsize=80)
   plt.xlabel("Occurrences per Sentence", size=80)
 
-  x_lim = 0.015
+  x_lim = 0.025
   plt.xticks(np.arange(0, x_lim+0.005, 0.005))
   plt.tick_params(labelsize=50)
   #plt.tight_layout()
