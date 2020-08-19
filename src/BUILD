@@ -53,6 +53,7 @@ py_binary(
         ":fighting_words",
         requirement("langdetect"),
         requirement("pandas"),
+        requirement("scipy")
     ],
 )
 
