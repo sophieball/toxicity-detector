@@ -28,6 +28,7 @@ import pandas as pd
 import receive_data
 import spacy
 import text_cleaning
+from sklearn.feature_extraction.text import CountVectorizer
 
 from src import sep_ngram
 from src import plot_politeness
@@ -41,7 +42,8 @@ tokenizer = nltk.RegexpTokenizer(r"\w+")
 # compare ngram in toxic and non-toxic comments
 def word_freq(corpus):
   # fighting words
-  fw = fightingWords.FightingWords(ngram_range=(1, 6))
+  fw = fightingWords.FightingWords(
+      cv=CountVectorizer(min_df=2, ngram_range=(1, 6)), ngram_range=(1, 6))
   toxic_comments = lambda utt: utt.meta["label"] == 1.0
   non_toxic_comments = lambda utt: utt.meta["label"] == 0.0
   fw.fit(

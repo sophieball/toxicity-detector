@@ -113,6 +113,7 @@ py_binary(
         requirement("preshed"),
         requirement("python-dateutil"),
         requirement("pytz"),
+        requirement("sklearn"),
         requirement("spacy"),
         requirement("srsly"),
         requirement("thinc"),

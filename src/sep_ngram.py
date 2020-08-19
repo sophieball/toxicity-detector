@@ -1,10 +1,8 @@
 # Lint as: python3
-"""separate fighting words output into 3 cols
-"""
+"""separate fighting words output into 3 cols"""
 
 import pandas as pd
 import sys
-
 
 
 def convert_name(x):
@@ -38,6 +36,7 @@ def sep_ngram(dat, out_name, top_n):
     row = dat3.iloc[i]
     out.write("{},{},{}\n".format(row["ngram"], convert_name(row["class"]),
                                   row["abs_z-score"]))
+
 
 if __name__ == "__main__":
   if len(sys.argv) < 3:
