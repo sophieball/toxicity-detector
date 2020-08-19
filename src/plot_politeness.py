@@ -41,7 +41,6 @@ pos = {
     "Gratitude": "Gratitude",
     "Deference": "Deference",
     "Indirect_(greeting)": "Greeting",
-    "HASPOSITIVE": "Positive lexicon",
 }
 
 neg = {
@@ -59,7 +58,6 @@ neg = {
 
 imp = {
     "Factuality": "Factuality",
-    "HASNEGATIVE": "Negative lexicon",
     "Please_start": "Please start",
     "2nd_person_start": "2nd person start",
     "Direct_question": "Direct question",
