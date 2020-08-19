@@ -67,7 +67,7 @@ def cleanup_text(text):
   text = [
       w.replace("#", "").replace("&", "").replace("  ", " ")
       for w in text
-      if text_parser.is_ascii(w)
+      if w.isascii() and not w.isdigit()
   ]
   return text
 
@@ -110,6 +110,10 @@ def extract_features(total_comment_info):
     perspective_score = get_perspective_score(text, "en")
 
   # remove stop words and lemmatization
+  emoticon_r = " (:\)|;\)|;\-\)|:P|:D|:p)"
+  text, emoticon_n = re.subn(emoticon_r, "", text)
+  total_comment_info["num_emoticons"] = emoticon_n
+
   text = cleanup_text(text)
   total_comment_info["num_words"] = len(text)
   text = " ".join(text)

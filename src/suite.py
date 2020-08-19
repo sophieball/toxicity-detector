@@ -9,7 +9,9 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import RegexpTokenizer
 from nltk.tokenize import word_tokenize
 from sklearn import model_selection
-from sklearn.metrics import classification_report, fbeta_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, fbeta_score, roc_auc_score, roc_curve
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.svm import SVC
 from src import classifiers
@@ -37,6 +39,8 @@ sys.path.insert(0, "politeness3")
 num_subproc = 20
 model = 0
 
+se_file = open("src/data/SE_words_G.list")
+SE_words = [se_word.strip() for se_word in se_file.readlines()]
 
 def score(lexicon_dataframe, text):
   """Need to do stemming later"""
@@ -130,8 +134,7 @@ def clean_text(text):
 
   words = list(set(words))
   words = [
-      word for word in words
-      if not word.isalpha() or word.lower() in different_words
+      word for word in words if not word.isascii() or word.lower() in SE_words
   ]
 
   for word in set(words):
@@ -143,14 +146,9 @@ def clean_text(text):
 
   tokenizer = RegexpTokenizer(r"\w+")
   all_words = tokenizer.tokenize(text)
-  # Try removing all unknown words
-  for word in set(all_words):
-    if word.lower() not in counter and word_frequency(
-        word.lower(), "en") == 0 and len(word) > 2:
-      text = text.replace(word, "")
 
   result += [text]
-  return result
+  return emoticon_n, result
 
 
 # input: comment, trained model, features used, ?
@@ -164,11 +162,10 @@ def remove_SE_comment(row, model, features, tf_idf_counter):
   words = [a.strip(",.!?:; ") for a in words]
 
   words = list(set(words))
-  # different_words: words with a different distribution in SE context than in
+  # SE_words: words with a different distribution in SE context than in
   # normal EN context
   words = [
-      word for word in words
-      if not word.isalpha() or word.lower() in different_words
+      word for word in words if not word.isalpha() or word.lower() in SE_words
   ]
 
   # the comment was labeld to be toxic not because it contains SE words
@@ -192,11 +189,6 @@ def remove_SE_comment(row, model, features, tf_idf_counter):
 
   tokenizer = RegexpTokenizer(r"\w+")
   all_words = tokenizer.tokenize(text)
-  # Try removing all unknown words
-  for word in set(all_words):
-    if word.lower() not in counter and word_frequency(
-        word.lower(), "en") == 0 and len(word) > 2:
-      text = text.replace(word, "")
 
   if model.predict([new_features])[0] == 0:
     return 1
@@ -209,7 +201,6 @@ def remove_SE_comment(row, model, features, tf_idf_counter):
 class Suite:
 
   def __init__(self):
-    global different_words
     global counter
 
     self.features = []
@@ -220,17 +211,9 @@ class Suite:
     self.last_time = time.time()
     self.tf_idf_counter = 0
     self.use_filters = True
-    self.counter = pickle.load(open("src/pickles/github_words.p", "rb"))
-    counter = self.counter
-    self.our_words = dict([
-        (i, word_frequency(i, "en") * 10**9) for i in self.counter
-    ])
-    self.different_words = util.log_odds(
-        defaultdict(int, self.counter), defaultdict(int, self.our_words))
-    different_words = self.different_words
+
     self.anger_classifier = pickle.load(open("src/pickles/anger.p", "rb"))
     self.all_words = pickle.load(open("src/pickles/all_words.p", "rb"))
-    self.m = sum(self.counter.values())
     self.all_false = {word: False for word in self.all_words}
 
     start_time = time.time()
@@ -282,6 +265,12 @@ class Suite:
 
     return ret
 
+  def remove_emo(self, test_issues):
+    for i, row in test_issues.iterrows():
+      if row["num_emoticons"] > 0:
+        test_issues.loc[i, "prediction"] = 0
+    return test_issues
+
   def remove_I(self, test_issues):
     test_issues["self_angry"] = 0
 
@@ -322,15 +311,20 @@ class Suite:
     self.param_grid = grid
 
   # training the model on comments
-  def self_issue_classification_all(self, estimator_name):
+  def self_issue_classification_all(self, model_name, fid):
     # n-fold nested cross validation
     # https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html
     num_trials = 5
     n_splits = 10
     best_model = None
     best_score = 0
-    if estimator_name == "svm":
+    if model_name == "svm":
       estimator = SVC()
+    elif model_name == "rf":
+      estimator = RandomForestClassifier()
+    elif model_name == "lg":
+      estimator = LogisticRegression()
+
     for i in range(num_trials):
       # find the best paramter combination
       train_data = self.all_train_data
@@ -371,9 +365,33 @@ class Suite:
 
     self.all_train_data = self.remove_I(self.all_train_data)
     self.all_train_data = self.remove_SE(self.all_train_data)
+    logging.info("Features: {}".format(self.features))
     logging.info("Crossvalidation score after adjustment is\n{}".format(
         classification_report(self.all_train_data["label"].tolist(),
                               self.all_train_data["prediction"].tolist())))
+    logging.info("Area under the curve is\n{}".format(
+        roc_auc_score(self.all_train_data["label"].tolist(),
+                      self.all_train_data["prediction"].tolist())))
+    logging.info("The curve is\n{}".format(
+        roc_curve(self.all_train_data["label"].tolist(),
+                  self.all_train_data["prediction"].tolist())))
+    model_out = open(
+        "src/pickles/{}_model_{}_keep_emoticon.p".format(model_name.upper(), str(fid)),
+        "wb")
+    pickle.dump(self.model, model_out)
+    # remove emoticon
+    self.all_train_data = self.remove_emo(self.all_train_data)
+    logging.info("Negate prediction if it has emoticons")
+    logging.info("Features: {}".format(self.features))
+    logging.info("Crossvalidation score after adjustment is\n{}".format(
+        classification_report(self.all_train_data["label"].tolist(),
+                              self.all_train_data["prediction"].tolist())))
+    logging.info("Area under the curve is\n{}".format(
+        roc_auc_score(self.all_train_data["label"].tolist(),
+                      self.all_train_data["prediction"].tolist())))
+    logging.info("The curve is\n{}".format(
+        roc_curve(self.all_train_data["label"].tolist(),
+                  self.all_train_data["prediction"].tolist())))
     return model
 
   # applying the model to the test data

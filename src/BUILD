@@ -324,6 +324,7 @@ py_library(
     srcs = ["suite.py"],
     data = glob([
         "data/*.csv",
+        "data/SE_words_G.list",
         "pickles/*.p",
     ]),
     visibility = ["//visibility:public"],

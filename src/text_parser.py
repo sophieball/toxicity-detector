@@ -9,10 +9,6 @@ def percent_uppercase(text):
         return 0
     return sum([1 for i in text if i.isupper()])/len(text)
 
-def is_ascii(s):
-    """ Check if a character is ascii """
-    return all(ord(c) < 128 for c in s)
-
 
 # remove previously referenced comments
 #remove every line that starts with ">"
