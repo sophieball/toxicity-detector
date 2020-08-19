@@ -11,7 +11,7 @@ import logging
 import os
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, roc_curve
 from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -290,12 +290,13 @@ def run_pred(X, y, fnames, groups):
 
   acc = np.mean(y_pred == y)
   f1 = classification_report(y, y_pred)
+  roc = roc_curve(y, y_pred)
   pvalue = stats.binom_test(sum(y_pred == y), n=len(y), alternative="greater")
 
   coef_df = pd.DataFrame(feature_weights, index=fnames)
   coef_df["mean_coef"] = coef_df.apply(np.nanmean, axis=1)
   coef_df["std_coef"] = coef_df.apply(np.nanstd, axis=1)
-  return acc, f1, coef_df[["mean_coef", "std_coef"
+  return acc, f1, roc, coef_df[["mean_coef", "std_coef"
                       ]], scores, pd.DataFrame(hyperparameters), pvalue, chi2_df
 
 
@@ -353,12 +354,13 @@ def run_pipeline(feature_table, feature_set, train):
   y_train = feature_table["label"]
   y = LabelEncoder().fit_transform(y_train)
   logging.info("Running leave-one-page-out prediction...")
-  accuracy, f1, coefs, scores, hyperparams, pvalue, chi2_df = run_pred(
+  accuracy, f1, roc, coefs, scores, hyperparams, pvalue, chi2_df = run_pred(
       X, y, feature_names,
       feature_table.conversation_id)  #, labeled_pairs_df.page_id)
   logging.info("Accuracy:")
   logging.info(accuracy)
   logging.info(f1)
+  logging.info("ROC: {}".format(str(roc)))
   logging.info("p-value: %.4e", pvalue)
   logging.info("C (mode): %s", str(mode(hyperparams.logreg__C)))
   logging.info("Percent of features (mode): %s",

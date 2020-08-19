@@ -14,6 +14,7 @@ import warnings
 with warnings.catch_warnings():
   warnings.simplefilter("ignore")
 
+from src import receive_data
 from collections import defaultdict
 from functools import partial
 from multiprocessing import Pool
@@ -56,16 +57,20 @@ else:
   google = True
 
 # read in data
-comments = pd.read_csv("src/data/pr_body_comments.csv")
+comments = receive_data.receive_single_data()
+comments_10K = pd.read_csv("src/data/random_sample_10000_prs_body_comments.csv")
 # data from MongoDB contains duplicates
 comments = comments.drop_duplicates()
 # construct corpus and preprocess text
 speakers = conversation_struct.create_speakers(comments)
 corpus = conversation_struct.prepare_corpus(comments, speakers, google)
+speakers_10K = conversation_struct.create_speakers(comments_10K)
+corpus_10K = conversation_struct.prepare_corpus(comments_10K, speakers_10K, google)
 
 # parse the text with spacy
 parser = TextParser(verbosity=0)
 corpus = parser.transform(corpus)
+corpus_10K = parser.transform(corpus_10K)
 
 # prompt type
 N_TYPES = 6
@@ -81,12 +86,13 @@ pt = PromptTypeWrapper(
     max_dist=2.,
     random_state=1000)
 
-pt.load_models("main/pt_model_10K.files")
+#pt.load_models("main/pt_model_10K.files")
+pt.fit(corpus_10K)
+pt.dump_models("main/pt_model_10K.files")
 corpus = pt.transform(corpus)
 
-prompt_dist_df = pd.DataFrame(
-    index=corpus.vector_reprs["prompt_types__prompt_dists.6"]["keys"],
-    data=corpus.vector_reprs["prompt_types__prompt_dists.6"]["vects"])
+prompt_dist_df = corpus.get_vectors(name='prompt_types__prompt_dists.6',
+                                         as_dataframe=True)
 logging.info("len dist df:%d", len(prompt_dist_df))
 type_ids = np.argmin(prompt_dist_df.values, axis=1)
 mask = np.min(prompt_dist_df.values, axis=1) > 1.
@@ -114,7 +120,6 @@ prompt_type_assignment_df = prompt_type_assignment_df[
     prompt_type_assignment_df.columns[:-1]]
 
 prompt_type_assignment_df.columns = prompt_dist_df.columns
-prompt_type_assignment_df = prompt_type_assignment_df
 logging.info(prompt_type_assignment_df.shape)
 logging.info(prompt_type_assignment_df.head())
 
