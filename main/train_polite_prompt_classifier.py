@@ -86,9 +86,7 @@ pt = PromptTypeWrapper(
     max_dist=2.,
     random_state=1000)
 
-#pt.load_models("main/pt_model_10K.files")
 pt.fit(corpus_10K)
-pt.dump_models("main/pt_model_10K.files")
 corpus = pt.transform(corpus)
 
 prompt_dist_df = corpus.get_vectors(name='prompt_types__prompt_dists.6',
@@ -100,15 +98,6 @@ type_ids[mask] = 6
 prompt_dist_df.columns = ["km_%d_dist" % c for c in prompt_dist_df.columns]
 logging.info("num prompts with ids:%d", len(prompt_dist_df))
 
-#TYPE_NAMES = [
-#    "Prompt: Casual",
-#    "Prompt: Moderation",
-#    "Prompt: Coordination",
-#    "Prompt: Contention",
-#    "Prompt: Editing",
-#    "Prompt: Procedures",
-#    #"Prompt: Something", "Prompt: Anotherthing"
-#]
 prompt_type_assignments = np.zeros(
     (len(prompt_dist_df), prompt_dist_df.shape[1] + 1))
 prompt_type_assignments[np.arange(len(type_ids)), type_ids] = 1

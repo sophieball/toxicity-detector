@@ -356,7 +356,7 @@ def run_pipeline(feature_table, feature_set, train):
   logging.info("Running leave-one-page-out prediction...")
   accuracy, f1, roc, coefs, scores, hyperparams, pvalue, chi2_df = run_pred(
       X, y, feature_names,
-      feature_table.conversation_id)  #, labeled_pairs_df.page_id)
+      feature_table.conversation_id)
   logging.info("Accuracy:")
   logging.info(accuracy)
   logging.info(f1)
