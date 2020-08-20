@@ -12,6 +12,7 @@ import logging
 import numpy as np
 import pandas as pd
 import pickle
+from nltk.tokenize import sent_tokenize
 from sklearn import ensemble
 from sklearn import linear_model
 from sklearn import metrics
@@ -143,7 +144,7 @@ class PullRequest:
     if row["reply_to"] == "ROOT":  # initial PR description
       current_reply_to = None
       reply_to = None
-      utt_id = self.root_id # root comment doesn't need comment_id
+      utt_id = self.root_id  # root comment doesn't need comment_id
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
     elif row["reply_to"] == "NONE":
       # new thread of sub-conversation, on GH usually not a code review
@@ -156,7 +157,7 @@ class PullRequest:
           reply_to = self.find_reply_to(row)
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
       self.sub_conversation_id[str(row["comment_id"])] = str(row["comment_id"])
-    else: # numbers
+    else:  # numbers
       if self.comment_count == 1:
         reply_to = self.root_id
       else:
@@ -190,18 +191,21 @@ def preprocess_text(cur_text):
   cur_text = cur_text.replace("\n", " ")
   # remove code
   (alpha_text, _) = re.subn(r"```[\s|\S]+?```", "CODE", cur_text)
+  num_sentences = len(sent_tokenize(alpha_text))
   # remove punctuation - this will mess up urls
   alpha_text = alpha_text.translate(translator)
   # keep words with only letters
-  alpha_only = [x for x in alpha_text.split() if x.isascii() and not x.isdigit()]
-  return alpha_only
+  alpha_only = [
+      x for x in alpha_text.split() if x.isascii() and not x.isdigit()
+  ]
+  return num_sentences, alpha_only
 
 
 # input: pd.DataFrame, convokit.Speakers
 # output: convokit.Corpus
 def prepare_corpus(comments, corpus_speakers, google):
   comments = comments.sort_values(by=["_id", "created_at"])
-  comments["reply_to"] = comments["reply_to"].map(lambda x:str(x))
+  comments["reply_to"] = comments["reply_to"].map(lambda x: str(x))
   utterance_corpus = {}
   # keep track of the root of each code review
   # _id is owner_repo_prid, id is the numeric id of the comment
@@ -227,12 +231,28 @@ def prepare_corpus(comments, corpus_speakers, google):
 
     # group comments by their reply_to
     reply_to, utt_id = pr.add_comment(row, google)
+    if type(row["text"]) == str:
+      num_sentences, alpha_text = preprocess_text(row["text"])
+      num_words = len(alpha_text)
+      alpha_text = " ".join(alpha_text)
+    else:
+      alpha_text = ""
+      num_words = 0
+      num_sentences = 0
+
+    if num_sentences > 0:
+      sent_len = num_words / num_sentences
+    else:
+      sent_len = 0
 
     meta = {
         "owner": owner,
         "repo": repo,
         "code_review_id": CR_id,
         "pos_in_conversation": pr.get_comment_count(),
+        "num_sents": num_sentences,
+        "num_words": num_words,
+        "sent_len": sent_len,
         "original_text": row["text"],
     }
 
@@ -240,11 +260,6 @@ def prepare_corpus(comments, corpus_speakers, google):
     if "label" in comments.columns:
       meta["label"] = row["label"]
       conversation_label[pr.get_root_id()] = row["label"]
-
-    if type(row["text"]) == str:
-      alpha_text = " ".join(preprocess_text(row["text"]))
-    else:
-      alpha_text = ""
 
     utterance_corpus[utt_id] = Utterance(
         id=utt_id,

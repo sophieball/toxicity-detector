@@ -63,8 +63,23 @@ comments = comments.drop_duplicates()
 # construct corpus and preprocess text
 speakers = conversation_struct.create_speakers(comments)
 corpus = conversation_struct.prepare_corpus(comments, speakers, google)
+
 speakers_10K = conversation_struct.create_speakers(comments_10K)
 corpus_10K = conversation_struct.prepare_corpus(comments_10K, speakers_10K, google)
+# get avg word count, sent len
+total_words = 0
+total_sents = 0
+total_sent_lens = 0
+total_utt = 0
+for utt_id in corpus_10K.get_utterance_ids():
+  utt = corpus_10K.get_utterance(utt_id)
+  total_utt += 1
+  total_words += utt.meta["num_words"]
+  total_sents += utt.meta["num_sents"]
+  total_sent_lens += utt.meta["sent_len"]
+logging.info("Avg words per utt: {}".format(total_words/total_utt))
+logging.info("Avg sents per utt: {}".format(total_sents/total_utt))
+logging.info("Avg sent lens per utt: {}".format(total_sent_lens/total_utt))
 
 # parse the text with spacy
 parser = TextParser(verbosity=0)
