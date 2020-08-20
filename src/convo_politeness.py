@@ -4,20 +4,21 @@
 from src import download_data
 download_data.download_data()
 
-from convokit import Corpus, Speaker, Utterance
 from collections import defaultdict
-from convokit.text_processing import TextParser
+from convokit import Corpus, Speaker, Utterance
 from convokit import PolitenessStrategies
-import logging
-import numpy as np
-import pandas as pd
-import pickle
+from convokit.text_processing import TextParser
+from nltk.tokenize import sent_tokenize
 from sklearn import ensemble
 from sklearn import linear_model
 from sklearn import metrics
 from sklearn import model_selection
-import sklearn
 from src import receive_data
+import logging
+import numpy as np
+import pandas as pd
+import pickle
+import sklearn
 
 test_size = 0.2
 
@@ -31,8 +32,10 @@ def prepare_corpus(comments):
 
   utterance_corpus = {}
   for idx, row in comments.iterrows():
-    # training data
+    num_sentences = len(sent_tokenize(row["text"]))
     alpha_text = " ".join([x for x in row["text"].split(" ") if x.isalpha()])
+
+    # training data
     if "label" in comments.columns:
       utterance_corpus[row["_id"]] = Utterance(
           id=row["_id"],
@@ -40,6 +43,7 @@ def prepare_corpus(comments):
           text=alpha_text,
           meta={
               "id": row["_id"],
+              "num_sents": num_sentences,
               "label": row["label"]
           })
     else:
@@ -47,7 +51,10 @@ def prepare_corpus(comments):
           id=row["_id"],
           speaker=corpus_speakers[row["_id"]],
           text=alpha_text,
-          meta={"id": row["_id"]})
+          meta={
+              "id": row["_id"],
+              "num_sents": num_sentences
+          })
 
   utterance_list = utterance_corpus.values()
   corpus = Corpus(utterances=utterance_list)
@@ -120,9 +127,8 @@ def transform_features(X):
 def pick_features(X):
   X = transform_features(X)
   return X[[
-        "HASHEDGE", "2nd_person", "HASNEGATIVE", "1st_person",
-        "2nd_person_start"
-    ]]
+      "HASHEDGE", "2nd_person", "HASNEGATIVE", "1st_person", "2nd_person_start"
+  ]]
 
 
 # split data to do cross validation
