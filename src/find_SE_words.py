@@ -11,7 +11,7 @@ from src import receive_data
 # https://stackoverflow.com/questions/34293875/how-to-remove-punctuation-marks-from-a-string-in-python-3-x-using-translate
 translator = str.maketrans("", "", string.punctuation)
 
-NGRAM = 4
+NGRAM = 1
 reviews = receive_data.receive_single_data()
 
 
@@ -52,7 +52,7 @@ results.extend(result)
 results_df = pd.DataFrame(results, columns=["ngram", "z-score"])
 results_df = results_df.loc[results_df["z-score"] >= 1.96]
 results_df = results_df.sort_values("z-score", ascending=False)
-results_df.to_csv("SE_words_GH_zscores.csv", index=False)
+results_df.to_csv("SE_words_G_zscores.csv", index=False)
 words = list(set(results_df["ngram"].to_list()))
-out = open("SE_words_GH.list", "w")
+out = open("SE_words_G.list", "w")
 out.write("\n".join(words))
