@@ -57,8 +57,7 @@ else:
   google = True
 
 # read in data
-comments = receive_data.receive_single_data()
-comments_10K = pd.read_csv("src/data/random_sample_10000_prs_body_comments.csv")
+[comments, comments_10K] = receive_data.receive_random_data()
 # data from MongoDB contains duplicates
 comments = comments.drop_duplicates()
 # construct corpus and preprocess text
