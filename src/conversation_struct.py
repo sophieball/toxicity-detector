@@ -1,9 +1,6 @@
 # Lint as: python3
 """Use ConvoKit to construct Conversation"""
 
-from src import download_data
-download_data.download_data()
-
 from collections import defaultdict
 from convokit import Corpus, Speaker, Utterance
 from convokit.text_processing import TextParser
@@ -18,7 +15,6 @@ from sklearn import linear_model
 from sklearn import metrics
 from sklearn import model_selection
 import sklearn
-from src import receive_data
 import re
 import markdown
 import string
@@ -53,9 +49,15 @@ def create_speakers(comments):
       count += 1
     else:
       speaker_meta[login]["num_comments"] += 1
-    speaker_meta[login]["associations"].add(
-        ("_____".join(row["_id"].split("____")[:-1]),
-         row["author_association"]))
+    try:
+      # add tuple (owner_____repo, association)
+      speaker_meta[login]["associations"].add(
+          ("_____".join(row["_id"].split("_____")[:-1]),
+           row["author_association"]))
+    except:
+      speaker_meta[login]["associations"].add(
+          (row["_id"], row["author_association"]))
+
   corpus_speakers = {k: Speaker(id=k, meta=v) for k, v in speaker_meta.items()}
 
   # I can sort speakers by the number of comments and verify if the uses with
@@ -71,8 +73,10 @@ def create_speakers(comments):
 class PullRequest:
 
   def __init__(self, root_id, first_comment_id):
-    self.root_id = root_id
+    self.root_id = str(root_id)
+    print(self.root_id)
     self.comment_count = 0
+    # first_comment_id is the root comment's id
     self.first_comment_id = first_comment_id
     # {"reply_to_1": latest_id_1, "reply_to_2": latest_id_2}:
     self.sub_conversation_id = {root_id: self.first_comment_id}
@@ -130,7 +134,6 @@ class PullRequest:
     if type(row["text"]) == str:
       self.comment_text[str(row["comment_id"])] = row["text"]
     else:
-      # to record what's the last comment by this author - find quote reply
       self.authors[row["author"]] = str(row["comment_id"])
       self.comment_count += 1
       reply_to = self.root_id
@@ -147,7 +150,7 @@ class PullRequest:
       utt_id = self.root_id  # root comment doesn't need comment_id
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
     elif row["reply_to"] == "NONE":
-      # new thread of sub-conversation, on GH usually not a code review
+      # discussion comments, on GH usually not a code review
       if self.comment_count == 1:
         reply_to = self.root_id
       else:
@@ -158,13 +161,27 @@ class PullRequest:
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
       self.sub_conversation_id[str(row["comment_id"])] = str(row["comment_id"])
     else:  # numbers
-      if self.comment_count == 1:
-        reply_to = self.root_id
-      else:
-        if google:
-          reply_to = self.root_id + "_____" + row["reply_to"]
+      # on GH: code comments, a subthread
+      # on G: all reply_to are nums,
+      #   replying to first_comment_id -> new subthread
+      if not google:
+        if self.comment_count == 1:
+          # conversation structure doesn't store root comment id
+          # also in our later analysis, we ignore this root comment
+          reply_to = self.root_id
         else:
           reply_to = self.find_reply_to(row)
+      else:
+        if row["reply_to"] == self.first_comment_id:
+          # parallel subthreads
+          reply_to = self.root_id
+        else:
+          # in a subthread
+          reply_to = self.root_id + "_____" + row["reply_to"]
+
+      # these are used for GH: non-code-review comments have replyto as NONE,
+      # also, code comments all have reply_to point to the root of the
+      # subthread, so I use the dict to record what's the latest comment id in that thread
       self.sub_conversation_id[reply_to] = str(row["comment_id"])
       self.sub_conversation_id[row["reply_to"].replace(".0", "")] = str(
           row["comment_id"])
@@ -172,6 +189,7 @@ class PullRequest:
     self.prev_id = utt_id
     self.authors[row["author"]] = str(row["comment_id"])
     self.comment_count += 1
+    print(utt_id)
     return reply_to, utt_id
 
   def get_comment_count(self):

@@ -1,0 +1,11 @@
+_id,created_at,training,author,author_association,comment_id,reply_to,text
+"1",200001,1,R1,NONE,200001,0,hahaha
+"1",200002,1,A,NONE,200002,200001,hahaha
+"1",1,1,R0,NONE,1,0,hahaha
+"1",2,1,A,NONE,2,1,hahaha
+"1",400001,1,R2,NONE,400001,0,hahaha
+"1",400002,1,A,NONE,400002,400001,hahaha
+"1",400003,1,R2,NONE,400003,400002,hahaha
+"1",400004,1,A,NONE,400004,400003,hahaha
+"1",500001,1,R2,NONE,500001,0,
+"1",0,1,A,none,0,ROOT,hahaha
