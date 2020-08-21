@@ -32,14 +32,23 @@ def preprocess_text(cur_text):
   # keep words with only letters
   alpha_only = " ".join(
       [x for x in alpha_text.split() if x.isascii() and not x.isdigit()])
-  if len(alpha_only) == 0 or langdetect.detect(alpha_only) != "en":
+  try:
+    comment_lang = langdetect.detect(alpha_only)
+  except langdetect.lang_detect_exception.LangDetectException:
+    comment_lang = ""
+  if len(alpha_only.strip()) == 0 or comment_lang != "en":
     return ""
   return alpha_only
 
 
 review_comments = [preprocess_text(x) for x in reviews["text"].to_list()]
 other_comments = pd.read_csv("src/data/kaggle_toxicity_subset.csv")
-other_comments = other_comments.sample(len(review_comments))
+num_review = len(review_comments)
+num_kaggle = len(other_comments)
+if num_kaggle > num_review:
+  other_comments = other_comments.sample(num_review)
+elif num_review > num_kaggle:
+  review_comments = review_comments.sample(num_kaggle)
 other_comments = [
     preprocess_text(x) for x in other_comments["comment_text"].to_list()
 ]
