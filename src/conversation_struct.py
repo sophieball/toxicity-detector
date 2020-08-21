@@ -74,7 +74,6 @@ class PullRequest:
 
   def __init__(self, root_id, first_comment_id):
     self.root_id = str(root_id)
-    print(self.root_id)
     self.comment_count = 0
     # first_comment_id is the root comment's id
     self.first_comment_id = first_comment_id
@@ -189,7 +188,6 @@ class PullRequest:
     self.prev_id = utt_id
     self.authors[row["author"]] = str(row["comment_id"])
     self.comment_count += 1
-    print(utt_id)
     return reply_to, utt_id
 
   def get_comment_count(self):
