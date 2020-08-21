@@ -6,6 +6,7 @@ exports_files(
     glob([
         "data/*.csv",
         "pickles/*.p",
+        "pickles/pt_model_10K.files/*",
     ]),
     visibility = ["//visibility:public"],
 )
