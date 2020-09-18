@@ -15,6 +15,10 @@ NGRAM = 1
 reviews = receive_data.receive_single_data()
 
 
+def isascii(s):
+  return all(ord(c) < 128 for c in s)
+
+
 # input: a string
 # output: an array of word tokens
 def preprocess_text(cur_text):
@@ -31,7 +35,7 @@ def preprocess_text(cur_text):
   alpha_text = alpha_text.translate(translator)
   # keep words with only letters
   alpha_only = " ".join(
-      [x for x in alpha_text.split() if x.isascii() and not x.isdigit()])
+      [x for x in alpha_text.split() if isascii(x) and not x.isdigit()])
   try:
     comment_lang = langdetect.detect(alpha_only)
   except langdetect.lang_detect_exception.LangDetectException:
@@ -41,17 +45,19 @@ def preprocess_text(cur_text):
   return alpha_only
 
 
-review_comments = [preprocess_text(x) for x in reviews["text"].to_list()]
+# load comments from other fields
 other_comments = pd.read_csv("src/data/kaggle_toxicity_subset.csv")
-num_review = len(review_comments)
+num_review = len(reviews)
 num_kaggle = len(other_comments)
+# downsample one of the dataset to make the two sets same length
 if num_kaggle > num_review:
   other_comments = other_comments.sample(num_review)
 elif num_review > num_kaggle:
-  review_comments = review_comments.sample(num_kaggle)
+  reviews = reviews.sample(num_kaggle)
 other_comments = [
     preprocess_text(x) for x in other_comments["comment_text"].to_list()
 ]
+review_comments = [preprocess_text(x) for x in reviews["text"].to_list()]
 
 # compare ngram in comments and English
 results = []
