@@ -62,6 +62,25 @@ py_binary(
     ],
 )
 
+py_binary(
+    name = "train_polite_prompt_classifier",
+    srcs = ["train_polite_prompt_classifier.py"],
+    data = [
+        "pt_model_10K.files",
+    ],
+    deps = [
+        "//src:conversation_struct",
+        "//src:download_data",
+        "//src:predict_bad_conver_helpers",
+        requirement("convokit"),
+        requirement("numpy"),
+        requirement("pandas"),
+        requirement("sklearn"),
+        requirement("spacy"),
+    ],
+)
+
+
 load(
     "@com_grail_rules_r//R:defs.bzl",
     "r_binary",
@@ -151,8 +170,8 @@ r_binary(
         "//src:convo_word_freq_diff",
         "//src:find_SE_words",
         "//src:data/both_t_data_subset.csv",
-        "//src:data/pr_body_comments.csv",
         "//main:train_prompt_types",
+        "//main:train_polite_prompt_classifier",
     ],
     deps = [
         ":politeness_logi",

@@ -106,7 +106,7 @@ perspective.API_KEY = "" perspective.get_perspective_score("Sentence")`
 The current script has been adapted to run with data from csv files, rather than
 from MongoDB.
 
-Before you can run the script, you should first create a file `config.py`, which should contain the perspective API key:
+Before you can run the script, you should first create a file `config.py`, which should contain the [perspective API](https://www.perspectiveapi.com/) key:
 
 ```perspective_api_key = "API_KEY"```
 

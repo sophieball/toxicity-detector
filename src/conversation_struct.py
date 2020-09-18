@@ -1,9 +1,6 @@
 # Lint as: python3
 """Use ConvoKit to construct Conversation"""
 
-from src import download_data
-download_data.download_data()
-
 from collections import defaultdict
 from convokit import Corpus, Speaker, Utterance
 from convokit import PolitenessStrategies
@@ -56,9 +53,15 @@ def create_speakers(comments):
       count += 1
     else:
       speaker_meta[login]["num_comments"] += 1
-    speaker_meta[login]["associations"].add(
-        ("_____".join(row["_id"].split("____")[:-1]),
-         row["author_association"]))
+    try:
+      # add tuple (owner_____repo, association)
+      speaker_meta[login]["associations"].add(
+          ("_____".join(row["_id"].split("_____")[:-1]),
+           row["author_association"]))
+    except:
+      speaker_meta[login]["associations"].add(
+          (row["_id"], row["author_association"]))
+
   corpus_speakers = {k: Speaker(id=k, meta=v) for k, v in speaker_meta.items()}
 
   # I can sort speakers by the number of comments and verify if the uses with
@@ -74,8 +77,9 @@ def create_speakers(comments):
 class PullRequest:
 
   def __init__(self, root_id, first_comment_id):
-    self.root_id = root_id
+    self.root_id = str(root_id)
     self.comment_count = 0
+    # first_comment_id is the root comment's id
     self.first_comment_id = first_comment_id
     # {"reply_to_1": latest_id_1, "reply_to_2": latest_id_2}:
     self.sub_conversation_id = {root_id: self.first_comment_id}
@@ -133,7 +137,6 @@ class PullRequest:
     if type(row["text"]) == str:
       self.comment_text[str(row["comment_id"])] = row["text"]
     else:
-      # to record what's the last comment by this author - find quote reply
       self.authors[row["author"]] = str(row["comment_id"])
       self.comment_count += 1
       reply_to = self.root_id
@@ -147,10 +150,10 @@ class PullRequest:
     if row["reply_to"] == "ROOT":  # initial PR description
       current_reply_to = None
       reply_to = None
-      utt_id = self.root_id # root comment doesn't need comment_id
+      utt_id = self.root_id  # root comment doesn't need comment_id
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
     elif row["reply_to"] == "NONE":
-      # new thread of sub-conversation, on GH usually not a code review
+      # discussion comments, on GH usually not a code review
       if self.comment_count == 1:
         reply_to = self.root_id
       else:
@@ -160,14 +163,28 @@ class PullRequest:
           reply_to = self.find_reply_to(row)
       self.sub_conversation_id[self.root_id] = str(row["comment_id"])
       self.sub_conversation_id[str(row["comment_id"])] = str(row["comment_id"])
-    else: # numbers
-      if self.comment_count == 1:
-        reply_to = self.root_id
-      else:
-        if google:
-          reply_to = self.root_id + "_____" + row["reply_to"]
+    else:  # numbers
+      # on GH: code comments, a subthread
+      # on G: all reply_to are nums,
+      #   replying to first_comment_id -> new subthread
+      if not google:
+        if self.comment_count == 1:
+          # conversation structure doesn't store root comment id
+          # also in our later analysis, we ignore this root comment
+          reply_to = self.root_id
         else:
           reply_to = self.find_reply_to(row)
+      else:
+        if row["reply_to"] == self.first_comment_id:
+          # parallel subthreads
+          reply_to = self.root_id
+        else:
+          # in a subthread
+          reply_to = self.root_id + "_____" + row["reply_to"]
+
+      # these are used for GH: non-code-review comments have replyto as NONE,
+      # also, code comments all have reply_to point to the root of the
+      # subthread, so I use the dict to record what's the latest comment id in that thread
       self.sub_conversation_id[reply_to] = str(row["comment_id"])
       self.sub_conversation_id[row["reply_to"].replace(".0", "")] = str(
           row["comment_id"])
@@ -194,6 +211,7 @@ def preprocess_text(cur_text):
   cur_text = cur_text.replace("\n", " ")
   # remove code
   (alpha_text, _) = re.subn(r"```[\s|\S]+?```", "CODE", cur_text)
+  num_sentences = len(sent_tokenize(alpha_text))
   # remove punctuation - this will mess up urls
   alpha_text = alpha_text.translate(translator)
   # keep words with only letters
@@ -201,11 +219,12 @@ def preprocess_text(cur_text):
   return alpha_only
 
 
+
 # input: pd.DataFrame, convokit.Speakers
 # output: convokit.Corpus
 def prepare_corpus(comments, corpus_speakers, google):
   comments = comments.sort_values(by=["_id", "created_at"])
-  comments["reply_to"] = comments["reply_to"].map(lambda x:str(x))
+  comments["reply_to"] = comments["reply_to"].map(lambda x: str(x))
   utterance_corpus = {}
   # keep track of the root of each code review
   # _id is owner_repo_prid, id is the numeric id of the comment
@@ -231,12 +250,28 @@ def prepare_corpus(comments, corpus_speakers, google):
 
     # group comments by their reply_to
     reply_to, utt_id = pr.add_comment(row, google)
+    if type(row["text"]) == str:
+      num_sentences, alpha_text = preprocess_text(row["text"])
+      num_words = len(alpha_text)
+      alpha_text = " ".join(alpha_text)
+    else:
+      alpha_text = ""
+      num_words = 0
+      num_sentences = 0
+
+    if num_sentences > 0:
+      sent_len = num_words / num_sentences
+    else:
+      sent_len = 0
 
     meta = {
         "owner": owner,
         "repo": repo,
         "code_review_id": CR_id,
         "pos_in_conversation": pr.get_comment_count(),
+        "num_sents": num_sentences,
+        "num_words": num_words,
+        "sent_len": sent_len,
         "original_text": row["text"],
     }
 
@@ -244,11 +279,6 @@ def prepare_corpus(comments, corpus_speakers, google):
     if "label" in comments.columns:
       meta["label"] = row["label"]
       conversation_label[pr.get_root_id()] = row["label"]
-
-    if type(row["text"]) == str:
-      alpha_text = " ".join(preprocess_text(row["text"]))
-    else:
-      alpha_text = ""
 
     utterance_corpus[utt_id] = Utterance(
         id=utt_id,

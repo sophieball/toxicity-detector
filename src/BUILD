@@ -6,6 +6,7 @@ exports_files(
     glob([
         "data/*.csv",
         "pickles/*.p",
+        "pickles/pt_model_10K.files/*",
     ]),
     visibility = ["//visibility:public"],
 )
@@ -96,6 +97,22 @@ py_library(
     ],
 )
 
+py_library(
+    name = "plot_politeness",
+    srcs = ["plot_politeness.py"],
+    deps = [
+        requirement("matplotlib"),
+        requirement("numpy"),
+        requirement("pandas"),
+    ],
+)
+
+py_library(
+    name = "sep_ngram",
+    srcs = ["sep_ngram.py"],
+    deps = [requirement("pandas")],
+)
+
 py_binary(
     name = "convo_word_freq_diff",
     srcs = ["convo_word_freq_diff.py"],
@@ -104,6 +121,8 @@ py_binary(
     deps = [
         ":download_data",
         ":receive_data",
+        ":plot_politeness",
+        ":sep_ngram",
         requirement("blis"),
         requirement("catalogue"),
         requirement("convokit"),
@@ -122,6 +141,7 @@ py_binary(
         requirement("preshed"),
         requirement("python-dateutil"),
         requirement("pytz"),
+        requirement("sklearn"),
         requirement("spacy"),
         requirement("srsly"),
         requirement("thinc"),

@@ -1,6 +1,5 @@
 # Lint as: python3
-"""
-Helper functions for predicting conversation faillure
+"""Helper functions for predicting conversation faillure
 """
 
 from src import download_data
@@ -8,7 +7,11 @@ download_data.download_data()
 import numpy as np
 import pandas as pd
 from scipy import stats
+import logging
+import os
+import matplotlib.pyplot as plt
 
+from sklearn.metrics import classification_report, roc_curve
 from sklearn.preprocessing import LabelEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -24,9 +27,6 @@ from convokit import download
 from convokit.prompt_types import PromptTypeWrapper
 from convokit import PolitenessStrategies
 from convokit import Corpus
-
-import os
-import matplotlib.pyplot as plt
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -289,12 +289,14 @@ def run_pred(X, y, fnames, groups):
       hyperparameters[param].append(hyperparams_i[param])
 
   acc = np.mean(y_pred == y)
+  f1 = classification_report(y, y_pred)
+  roc = roc_curve(y, y_pred)
   pvalue = stats.binom_test(sum(y_pred == y), n=len(y), alternative="greater")
 
   coef_df = pd.DataFrame(feature_weights, index=fnames)
   coef_df["mean_coef"] = coef_df.apply(np.nanmean, axis=1)
   coef_df["std_coef"] = coef_df.apply(np.nanstd, axis=1)
-  return acc, coef_df[["mean_coef", "std_coef"
+  return acc, f1, roc, coef_df[["mean_coef", "std_coef"
                       ]], scores, pd.DataFrame(hyperparameters), pvalue, chi2_df
 
 
@@ -321,8 +323,7 @@ def get_labeled_pairs(pairs_df):
 
 
 def get_feature_subset(feature_table, feature_list):
-  prompt_type_names = ["km_%d_dist" % i for i in range(6)
-                      ] + ["km_%d_dist_second" % i for i in range(6)]
+  prompt_type_names = ["km_%d_dist" % i for i in range(6)]
   politeness_names = [
       f for f in feature_table.columns if f not in prompt_type_names
   ]
@@ -338,26 +339,33 @@ def get_feature_subset(feature_table, feature_list):
   return feature_subset, features_to_use
 
 
-def run_pipeline(feature_table, feature_set):
-  logging.info("Running prediction task for feature set", "+".join(feature_set))
+def run_pipeline(feature_table, feature_set, train):
+  logging.info("Running prediction task for feature set %s", "+".join(feature_set))
   logging.info("Generating labels...")
-  logging.info("Computing paired features...")
-  X, feature_names = get_feature_subset(
-      feature_table.drop(columns=["conversation_id", "slug", "label"], axis=1),
-      feature_set)
-  #X = X_c1 - X_c0
-  logging.info("Using", X.shape[1], "features")
+  if train:
+    X, feature_names = get_feature_subset(
+        feature_table.drop(columns=["conversation_id", "label"], axis=1),
+        feature_set)
+  else:
+    X, feature_names = get_feature_subset(
+        feature_table.drop(columns=["conversation_id"], axis=1), feature_set)
+  logging.info("Using %d %s", X.shape[1], "features")
   #y = labeled_pairs_df.first_convo_toxic.values
   y_train = feature_table["label"]
   y = LabelEncoder().fit_transform(y_train)
   logging.info("Running leave-one-page-out prediction...")
-  accuracy, coefs, scores, hyperparams, pvalue, chi2_df = run_pred(
-      X, y, feature_names, feature_table.slug)  #, labeled_pairs_df.page_id)
-  logging.info("Accuracy:", accuracy)
-  logging.info("p-value: %.4e" % pvalue)
-  logging.info("C (mode):", mode(hyperparams.logreg__C))
-  logging.info("Percent of features (mode):", mode(hyperparams.featselect__percentile))
-  logging.info("Coefficents:")
-  coefs.join(chi2_df).sort_values(by="mean_coef").round(3).to_csv("_".join(feature_set) +
-                                                         ".csv")
+  accuracy, f1, roc, coefs, scores, hyperparams, pvalue, chi2_df = run_pred(
+      X, y, feature_names,
+      feature_table.conversation_id)
+  logging.info("Accuracy:")
+  logging.info(accuracy)
+  logging.info(f1)
+  logging.info("ROC: {}".format(str(roc)))
+  logging.info("p-value: %.4e", pvalue)
+  logging.info("C (mode): %s", str(mode(hyperparams.logreg__C)))
+  logging.info("Percent of features (mode): %s",
+               str(mode(hyperparams.featselect__percentile)))
+  #logging.info("Coefficents:")
+  coefs.join(chi2_df).sort_values(
+      by="mean_coef").round(3).to_csv("_".join(feature_set) + ".csv")
   return accuracy
