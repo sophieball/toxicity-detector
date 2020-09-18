@@ -21,6 +21,11 @@ import time
 wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
 
+
+def isascii(s):
+  return all(ord(c) < 128 for c in s)
+
+
 # number of multiprocess
 num_proc = 14
 
@@ -67,7 +72,7 @@ def cleanup_text(text):
   text = [
       w.replace("#", "").replace("&", "").replace("  ", " ")
       for w in text
-      if w.isascii() and not w.isdigit()
+      if isascii(w) and not w.isdigit()
   ]
   return text
 

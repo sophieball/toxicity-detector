@@ -134,7 +134,6 @@ if __name__ == "__main__":
     trained_model = train_model(training)
     trained_model = train_model(training, model_name="rf")
     trained_model = train_model(training, model_name="lg")
-    #predict_unlabeled(unlabeled, trained_model, feature_set[0])
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
   logging.info(

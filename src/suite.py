@@ -36,6 +36,11 @@ import sys
 sys.path.insert(0, "politeness3")
 #import politeness3.model
 
+
+def isascii(s):
+  return all(ord(c) < 128 for c in s)
+
+
 num_subproc = 20
 model = 0
 
@@ -134,7 +139,7 @@ def clean_text(text):
 
   words = list(set(words))
   words = [
-      word for word in words if not word.isascii() or word.lower() in SE_words
+      word for word in words if not isascii(word) or word.lower() in SE_words
   ]
 
   for word in set(words):
