@@ -8,6 +8,7 @@ ftfy
 gensim
 imblearn
 importlib_metadata
+joblib
 kiwisolver
 langdetect
 markdown

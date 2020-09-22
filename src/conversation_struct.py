@@ -3,21 +3,25 @@
 
 from collections import defaultdict
 from convokit import Corpus, Speaker, Utterance
-from convokit.text_processing import TextParser
 from convokit import PolitenessStrategies
-import logging
-import numpy as np
-import pandas as pd
-import pickle
-from nltk.tokenize import sent_tokenize
+from convokit.text_processing import TextParser
 from sklearn import ensemble
 from sklearn import linear_model
 from sklearn import metrics
 from sklearn import model_selection
-import sklearn
-import re
+from src import receive_data
+import logging
 import markdown
+import numpy as np
+import pandas as pd
+import pickle
+import re
 import string
+
+
+def isascii(s):
+  return all(ord(c) < 128 for c in s)
+
 
 # https://stackoverflow.com/questions/34293875/how-to-remove-punctuation-marks-from-a-string-in-python-3-x-using-translate
 translator = str.maketrans("", "", string.punctuation)
@@ -211,10 +215,9 @@ def preprocess_text(cur_text):
   # remove punctuation - this will mess up urls
   alpha_text = alpha_text.translate(translator)
   # keep words with only letters
-  alpha_only = [
-      x for x in alpha_text.split() if x.isascii() and not x.isdigit()
-  ]
-  return num_sentences, alpha_only
+  alpha_only = [x for x in alpha_text.split() if isascii(x) and not x.isdigit()]
+  return alpha_only
+
 
 
 # input: pd.DataFrame, convokit.Speakers

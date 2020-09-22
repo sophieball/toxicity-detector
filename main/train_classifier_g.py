@@ -17,7 +17,10 @@ import numpy as np
 import sys
 import time
 
-features = ["perspective_score", "num_url", "politeness"]
+feature_set = [["perspective_score", "politeness"],
+               ["perspective_score", "length", "politeness"],
+               ["perspective_score", "num_url", "politeness"],
+               ["perspective_score", "num_emoticons", "politeness"]]
 
 
 # train the classifier using the result of a SQL query
@@ -47,35 +50,44 @@ def train_model(training_data, model_name="svm", pretrain=False):
                     [int(x) for x in np.linspace(start=200, stop=2000, num=10)])
     s.add_parameter("max_features", ["auto", "sqrt"])
     s.add_parameter("max_depth", [int(x) for x in np.linspace(10, 110, num=11)])
+  elif model_name == "lg":
+    s.set_model_function(classifiers.logistic_model)
+    # RF params
+    s.add_parameter("penalty", ["l1", "l2"])
+    s.add_parameter("C", np.logspace(-4, 4, 20))
 
   # select features
-  s.features = features
-  s.nice_features = features
-  logging.info("Features: {}".format(", ".join(features)))
+  for fid, features in enumerate(feature_set):
+    s.features = features
+    s.nice_features = features
+    logging.info("Features: {}".format(", ".join(features)))
 
-  # train the model, test all combinations of hyper parameter
-  model = s.self_issue_classification_all("svm")
-  # save the model
-  if pretrain:
-    model_out = open(
-        "src/pickles/" + model_name.upper() + "_pretrained_model.p", "wb")
-  else:
-    model_out = open("src/pickles/" + model_name.upper() + "_model.p", "wb")
-  pickle.dump(model, model_out)
-  model_out.close()
-  logging.info("Model is stored at {}.".format(
-      str(pathlib.Path(__file__).parent.name) + "/src/pickles/"))
-  result = s.all_train_data
-  logging.info("Number of 1's in raw prediction: {}.".format(
-      sum(result["raw_prediction"])))
-  logging.info("Number of data flipped due to SE: {}.".format(
-      len(result.loc[result["is_SE"] == 1])))
-  logging.info("Number of data flipped due to self angry: {}.".format(
-      len(result.loc[result["self_angry"] == "self"])))
+    # train the model, test all combinations of hyper parameter
+    model = s.self_issue_classification_all(model_name, fid)
+    # save the model
+    if pretrain:
+      model_out = open(
+          "src/pickles/{}_pretrained_model_{}.p".format(model_name.upper(),
+                                                        str(fid)), "wb")
+    else:
+      model_out = open(
+          "src/pickles/{}_model_{}.p".format(model_name.upper(), str(fid)),
+          "wb")
+    pickle.dump(model, model_out)
+    model_out.close()
+    logging.info("Model is stored at {}.".format(
+        str(pathlib.Path(__file__).parent.name) + "/src/pickles/"))
+    result = s.all_train_data
+    logging.info("Number of 1's in raw prediction: {}.".format(
+        sum(result["raw_prediction"])))
+    logging.info("Number of data flipped due to SE: {}.".format(
+        len(result.loc[result["is_SE"] == 1])))
+    logging.info("Number of data flipped due to self angry: {}.".format(
+        len(result.loc[result["self_angry"] == "self"])))
   return model
 
 
-def predict_unlabeled(unlabeled_data, trained_model, G_data=True):
+def predict_unlabeled(unlabeled_data, trained_model, features, G_data=True):
   s = suite.Suite()
   # 3 columns: _id, text, training(0)
   s.set_unlabeled_set(unlabeled_data)
@@ -120,7 +132,8 @@ if __name__ == "__main__":
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data()
     trained_model = train_model(training)
-    predict_unlabeled(unlabeled, trained_model)
+    trained_model = train_model(training, model_name="rf")
+    trained_model = train_model(training, model_name="lg")
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
   logging.info(
