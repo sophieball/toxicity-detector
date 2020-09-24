@@ -66,8 +66,6 @@ NGRAM = 6
 # compare ngram in toxic and non-toxic comments
 def word_freq(corpus):
   # fighting words
-  #fw = fightingWords.FightingWords(
-      #cv=CountVectorizer(min_df=2, ngram_range=(1, 6)), ngram_range=(1, 6))
   # extract text
   toxic_comments_fn = lambda utt: utt.meta["label"] == 1.0
   non_toxic_comments_fn = lambda utt: utt.meta["label"] == 0.0
@@ -86,9 +84,6 @@ def word_freq(corpus):
   non_toxic_comments = [clean_str(obj.text) for obj in non_toxic_comments]
 
   # find words
-  #fw.fit(
-      #corpus=corpus, class1_func=toxic_comments, class2_func=non_toxic_comments)
-  #summary = fw.summarize(corpus)
   summary = fighting_words_py3.bayes_compare_language(toxic_comments,
                                                      non_toxic_comments,
                                                      NGRAM)
