@@ -1,4 +1,5 @@
 # source: https://github.com/jmhessel/FightingWords/blob/master/fighting_words_py3.py
+import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer as CV
 import string
@@ -12,7 +13,7 @@ def basic_sanitize(in_string):
   in_string = " ".join(in_string.split())
   return in_string
 
-
+find_class = lambda x: ["class2", "class1"][int(x)]
 def bayes_compare_language(l1, l2, ngram=1, prior=.01, cv=None):
   """
     Arguments: - l1, l2; a list of strings from each language sample - ngram; an
@@ -74,5 +75,11 @@ def bayes_compare_language(l1, l2, ngram=1, prior=.01, cv=None):
   sorted_indices = np.argsort(z_scores)
   return_list = []
   for i in sorted_indices:
-    return_list.append((index_to_term[i], z_scores[i]))
-  return return_list
+    return_list.append({
+            "ngram": index_to_term[i],
+            "z-score": z_scores[i],
+            "class": find_class(z_scores[i] >= 0),
+            "count_in_class1": int(count_matrix[0, i]),
+            "count_in_class2": int(count_matrix[1, i])
+    })
+  return pd.DataFrame(return_list)

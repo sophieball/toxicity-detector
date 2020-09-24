@@ -24,19 +24,28 @@ def sep_ngram(dat, out_name, top_n):
 
   out = open(out_name, "w")
   out.write(
-      "unigram,label,abs(z-score),bigram,label,abs(z-score),ngram,label,abs(z-score)\n"
-  )
+      "unigram,label,abs(z-score),count_in_class1,count_in_class2,")
+  out.write("bigram,label,abs(z-score),count_in_class1,count_in_class2,")
+  out.write("ngram,label,abs(z-score),count_in_class1,count_in_class2\n")
+  print(len(dat1))
+  top_n = min(top_n, len(dat3))
+  print(top_n)
   for i in range(top_n):
     row = dat1.iloc[i]
-    out.write("{},{},{},".format(row["ngram"], convert_name(row["class"]),
-                                 row["abs_z-score"]))
+    out.write("{},{},{},{},{},".format(row["ngram"], convert_name(row["class"]),
+                                 row["abs_z-score"],
+                                 row["count_in_class1"],
+                                 row["count_in_class2"]))
     row = dat2.iloc[i]
-    out.write("{},{},{},".format(row["ngram"], convert_name(row["class"]),
-                                 row["abs_z-score"]))
+    out.write("{},{},{},{},{},".format(row["ngram"], convert_name(row["class"]),
+                                 row["abs_z-score"],
+                                 row["count_in_class1"],
+                                 row["count_in_class2"]))
     row = dat3.iloc[i]
-    out.write("{},{},{}\n".format(row["ngram"], convert_name(row["class"]),
-                                  row["abs_z-score"]))
-
+    out.write("{},{},{},{},{}\n".format(row["ngram"], convert_name(row["class"]),
+                                 row["abs_z-score"],
+                                 row["count_in_class1"],
+                                 row["count_in_class2"]))
 
 if __name__ == "__main__":
   if len(sys.argv) < 3:
