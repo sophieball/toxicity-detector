@@ -18,6 +18,15 @@ def receive_data():
   data["label"] = data["label"].map({True: 1, False: 0})
   data["training"] = data["training"].map({True: 1, False: 0})
 
+  # change `issue_id` or `pr_id` into `thread_id`
+  if "issue_id" in data.columns:
+    data["thread_id"] = data["issue_id"]
+  elif "pr_id" in data.columns:
+    data["thread_id"] = data["pr_id"]
+  else:
+    # what was G's like?
+    data["thread_id"] = data["id"]
+
   training = data.loc[data["training"] == 1]
   unlabeled = data.loc[data["training"] == 0].drop(["label"], axis = 1)
   return [training, unlabeled]
