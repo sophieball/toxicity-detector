@@ -230,7 +230,7 @@ class Suite:
     self.model_function = None
     self.model = None
 
-    self.set_label = lambda x: x > 0
+    self._set_label = lambda x: x > 0
 
   def set_model_function(self, model_function):
     self.model_function = model_function
@@ -308,7 +308,7 @@ class Suite:
 
   def _agg_comments(self, comment_labels):
     res = comment_labels.groupby(["thread_id"]).sum()
-    res["thread_label"] = self.set_label(res["thread_label"])
+    res["thread_label"] = self._set_label(res["label"])
     return res["thread_label"].tolist()
 
   def classify_test(self):
@@ -382,7 +382,7 @@ class Suite:
     if not G_data:
       thread_label = self._agg_comments(self.all_train_data[[
               "thread_id", 
-              "thread_label"
+              "label"
           ]])
       thread_prediction = self._agg_comments(self.all_train_data[[
               "thread_id", 
