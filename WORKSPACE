@@ -8,22 +8,13 @@ http_archive(
     sha256 = "b6d46438523a3ec0f3cead544190ee13223a52f6a6765a29eae7b7cc24cc83a0",
 )
 
-load("@rules_python//python:repositories.bzl", "py_repositories")
-
-py_repositories()
-
-# Only needed if using the packaging rules.
-load("@rules_python//python:pip.bzl", "pip_repositories")
-
-pip_repositories()
-
 load("@rules_python//python:pip.bzl", "pip_install")
 
 # Create a central repo that knows about the dependencies needed for
 # requirements.txt.
 pip_install(
    name = "deps",
-   requirements = "requirements.txt",
+   requirements = "//:requirements.txt",
 )
 
 #######
