@@ -230,6 +230,8 @@ class Suite:
     self.model_function = None
     self.model = None
 
+    self._set_label = lambda x: x > 0
+
   def set_model_function(self, model_function):
     self.model_function = model_function
 
@@ -304,6 +306,11 @@ class Suite:
 
     return data
 
+  def _agg_comments(self, comment_labels):
+    res = comment_labels.groupby(["thread_id"]).sum()
+    res["thread_label"] = self._set_label(res["label"])
+    return res["thread_label"].tolist()
+
   def classify_test(self):
     return classifiers.classify(self.model, self.train_data, self.test_data,
                                 self.features)
@@ -371,6 +378,18 @@ class Suite:
     self.all_train_data = self.remove_I(self.all_train_data)
     self.all_train_data = self.remove_SE(self.all_train_data)
     logging.info("Features: {}".format(self.features))
+
+    if not G_data:
+      thread_label = self._agg_comments(self.all_train_data[[
+              "thread_id", 
+              "label"
+          ]])
+      thread_prediction = self._agg_comments(self.all_train_data[[
+              "thread_id", 
+              "prediction"
+          ]])
+
+
     logging.info("Crossvalidation score after adjustment is\n{}".format(
         classification_report(self.all_train_data["label"].tolist(),
                               self.all_train_data["prediction"].tolist())))
