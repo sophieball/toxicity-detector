@@ -7,45 +7,58 @@ import sys
 
 def convert_name(x):
   if x == "class1":
-    return "label==1"
+    return "pushback issue"
   else:
-    return "label==0"
+    return "non-pushback issue"
 
 
 # input: pd.DataFrame, str, int
 def sep_ngram(dat, out_name, top_n):
   x = lambda a: len(str(a).split(" "))
-  print(dat.columns)
   dat["n"] = dat["ngram"].map(x)
-  dat = dat.sort_values(["n", "abs_z-score"], ascending=False)
+  dat = dat.sort_values(["z-score"], ascending=False)
   dat1 = dat.loc[dat["n"] == 1]
   dat2 = dat.loc[dat["n"] == 2]
   dat3 = dat.loc[dat["n"] >= 3]
 
   out = open(out_name, "w")
   out.write(
-      "unigram,label,abs(z-score),count_in_class1,count_in_class2,")
-  out.write("bigram,label,abs(z-score),count_in_class1,count_in_class2,")
-  out.write("ngram,label,abs(z-score),count_in_class1,count_in_class2\n")
-  print(len(dat1))
+      "unigram,label,z-score,count in class1,count in class2,")
+  out.write("bigram,label,z-score,count in class1,count in class2,")
+  out.write("ngram,label,z-score,count in class1,count in class2\n")
   top_n = min(top_n, len(dat3))
-  print(top_n)
-  for i in range(top_n):
+  for i in range(int(top_n/2)):
     row = dat1.iloc[i]
     out.write("{},{},{},{},{},".format(row["ngram"], convert_name(row["class"]),
-                                 row["abs_z-score"],
-                                 row["count_in_class1"],
-                                 row["count_in_class2"]))
+                                 row["z-score"],
+                                 row["count in class1"],
+                                 row["count in class2"]))
     row = dat2.iloc[i]
     out.write("{},{},{},{},{},".format(row["ngram"], convert_name(row["class"]),
-                                 row["abs_z-score"],
-                                 row["count_in_class1"],
-                                 row["count_in_class2"]))
+                                 row["z-score"],
+                                 row["count in class1"],
+                                 row["count in class2"]))
     row = dat3.iloc[i]
     out.write("{},{},{},{},{}\n".format(row["ngram"], convert_name(row["class"]),
-                                 row["abs_z-score"],
-                                 row["count_in_class1"],
-                                 row["count_in_class2"]))
+                                 row["z-score"],
+                                 row["count in class1"],
+                                 row["count in class2"]))
+  for i in range(int(top_n/2), 0, -1):
+    row = dat1.iloc[-i]
+    out.write("{},{},{},{},{},".format(row["ngram"], convert_name(row["class"]),
+                                 row["z-score"],
+                                 row["count in class1"],
+                                 row["count in class2"]))
+    row = dat2.iloc[-i]
+    out.write("{},{},{},{},{},".format(row["ngram"], convert_name(row["class"]),
+                                 row["z-score"],
+                                 row["count in class1"],
+                                 row["count in class2"]))
+    row = dat3.iloc[-i]
+    out.write("{},{},{},{},{}\n".format(row["ngram"], convert_name(row["class"]),
+                                 row["z-score"],
+                                 row["count in class1"],
+                                 row["count in class2"]))
 
 if __name__ == "__main__":
   if len(sys.argv) < 3:
