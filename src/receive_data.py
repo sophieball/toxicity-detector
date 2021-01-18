@@ -12,6 +12,7 @@ def receive_data():
   data = pd.read_csv(io.StringIO(sys.stdin.read()), sep=",")
   # rename id column -> CMU MongoDB uses _id as unique comment id
   data = data.rename(columns={"id": "_id"})
+
   # convert _id to str, because convokit requires id to be str
   data["_id"] = data["_id"].apply(str)
   # convert T/F to 1/0 because other parts of the code use 1/0
@@ -25,9 +26,10 @@ def receive_data():
     data["thread_id"] = data["pr_id"]
   else:
     # what was G's like?
-    data["thread_id"] = data["id"]
+    data["thread_id"] = data["_id"]
 
   training = data.loc[data["training"] == 1]
+  print(len(training))
   unlabeled = data.loc[data["training"] == 0].drop(["label"], axis = 1)
   return [training, unlabeled]
 
