@@ -23,7 +23,7 @@ load("@rules_python//python:pip.bzl", "pip_install")
 # requirements.txt.
 pip_install(
    name = "deps",
-   requirements = "//path/to:requirements.txt",
+   requirements = "requirements.txt",
 )
 
 #######
