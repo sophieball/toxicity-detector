@@ -17,7 +17,6 @@ addons:
         sourceline: "ppa:marutter/rrutter"
 script:
   - "R --version"
-  - "bazel build //src:convo_word_freq_diff"
   - "bazel run //main:feed_data"
   - "bazel test //tests:main_test"
   - "bazel test //tests:test_GH_model"
