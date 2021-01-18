@@ -11,7 +11,6 @@ download_data.download_data()
 from cleantext import clean
 from collections import defaultdict, Counter
 from convokit import Corpus, Speaker, Utterance
-from convokit.fighting_words import fightingWords
 from convokit import PolitenessStrategies
 from convokit import TextParser
 from convokit import download
@@ -22,7 +21,7 @@ from pandas import DataFrame
 from typing import List, Dict, Set
 import convokit
 import convo_politeness
-import fighting_words_py3
+import fighting_words_sq
 import nltk
 import numpy as np
 import os
@@ -84,19 +83,23 @@ def word_freq(corpus):
   non_toxic_comments = [clean_str(obj.text) for obj in non_toxic_comments]
 
   # find words
-  summary = fighting_words_py3.bayes_compare_language(toxic_comments,
-                                                     non_toxic_comments,
-                                                     NGRAM)
-  summary["abs_z-score"] = abs(summary["z-score"])
-  summary = summary.sort_values(by="abs_z-score", ascending=False)
+  fw = fighting_words_sq.FightingWords(ngram_range=(1,NGRAM))
+  fw.fit(corpus, class1_func=toxic_comments_fn,
+               class2_func=non_toxic_comments_fn,)
+  df = fw.summarize(corpus, plot=True, class1_name='pushback code reviews',
+                class2_name='non-pushback code reviews')
+
+
+  summary = fw.get_word_counts()
+  summary = summary.sort_values(by="z-score", ascending=False)
   summary = summary.round(3)
   out = open("fighting_words_freq.csv", "w")
   summary.to_csv("fighting_words_freq.csv", index=False)
   sep_ngram.sep_ngram(summary.reset_index(), "fighting_words_sorted.csv", 20)
-  print(
+  logging.info(
       "raw output are stored in the bazel binary's runfiles folder with the name `fighting_words_freq.csv`.\n"
   )
-  print(
+  logging.info(
       "sorted by ngram version is stored in the bazel binary's runfiles folder with the name `fighting_words_sorted.csv`.\n"
   )
 
@@ -104,11 +107,11 @@ def word_freq(corpus):
 def pl_summarize(corpus, selector):
   utts = list(corpus.iter_utterances(selector))
   if "politeness_markers" not in utts[0].meta:
-    print(
+    logging.info(
         "Could not find politeness markers metadata. Running transform() on corpus first...",
         end="")
     self.transform(corpus, markers=True)
-    print("Done.")
+    logging.info("Done.")
 
   counts = {
       k[21:len(k) - 2]: 0 for k in utts[0].meta["politeness_markers"].keys()
@@ -192,14 +195,15 @@ def politeness_hist(corpus):
       out.write(str(each_word) + ",")
     out.write("\n")
   out.close()
-  print(
-      "politeness words counts are stored in the bazel binary's runfiles folder with the name `polite_strategies_label_x.csv`, x = {{0, 1}}\n"
+  logging.info("Log-odds ratio plot is saved in the bazel binary's runfiles folder with the name `log-odds_ratio.PNG`\n")
+  logging.info(
+      "politeness words counts are stored in the same folder with the name `polite_strategies_label_x.csv`, x = {{0, 1}}\n"
   )
-  print(
-      "politeness words lists are stored in the bazel binary's runfiles folder with the name `politeness_words_marked_sorted.txt`\n"
+  logging.info(
+      "politeness words lists are stored in the same folder with the name `politeness_words_marked_sorted.txt`\n"
   )
-  print(
-      "politeness words plots are stored in the bazel binary's runfiles folder with the name `labelx_politeness.pdf`, x = {{0, 1}}\n"
+  logging.info(
+      "politeness words plots are stored in the same folder with the name `labelx_politeness.pdf`, x = {{0, 1}}\n"
   )
 
 

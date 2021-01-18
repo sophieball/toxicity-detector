@@ -35,9 +35,8 @@ py_library(
 
 py_library(
     name = "fighting_words",
-    srcs = ["fighting_words_py3.py"],
+    srcs = ["fighting_words_sq.py"],
     deps = [
-        ":receive_data",
         requirement("numpy"),
         requirement("sklearn"),
     ],
@@ -304,6 +303,7 @@ py_library(
         ":text_parser",
         ":util",
         requirement("pandas"),
+        requirement("emoji"),
         requirement("nltk"),
     ],
 )
@@ -364,6 +364,7 @@ py_library(
         requirement("smart_open"),
         requirement("textblob"),
         requirement("wordfreq"),
+        requirement("Pillow"),
     ],
 )
 

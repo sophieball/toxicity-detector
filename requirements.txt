@@ -1,4 +1,4 @@
-Pillow
+Cython
 catalogue
 catalogue
 convokit
@@ -17,6 +17,7 @@ murmurhash
 nltk
 numpy
 pandas
+Pillow
 plac
 plac
 preshed
