@@ -11,7 +11,6 @@ py_binary(
         "//src:receive_data",
         "//src:suite",
         requirement("pandas"),
-        requirement("typing_extensions"),
     ],
 )
 
