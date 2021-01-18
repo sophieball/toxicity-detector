@@ -364,7 +364,7 @@ py_library(
         requirement("smart_open"),
         requirement("textblob"),
         requirement("wordfreq"),
-        requirement("pillow"),
+        requirement("Pillow"),
     ],
 )
 
