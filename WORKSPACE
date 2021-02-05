@@ -2,37 +2,20 @@
 # For python
 ############
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
 http_archive(
     name = "rules_python",
-    sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
-    strip_prefix = "rules_python-0.0.2",
-    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.1.0/rules_python-0.1.0.tar.gz",
+    sha256 = "b6d46438523a3ec0f3cead544190ee13223a52f6a6765a29eae7b7cc24cc83a0",
 )
 
-load("@rules_python//python:repositories.bzl", "py_repositories")
-
-py_repositories()
-
-# Only needed if using the packaging rules.
-load("@rules_python//python:pip.bzl", "pip_repositories")
-
-pip_repositories()
-
-load("@rules_python//python:pip.bzl", "pip3_import")
+load("@rules_python//python:pip.bzl", "pip_install")
 
 # Create a central repo that knows about the dependencies needed for
 # requirements.txt.
-pip3_import(
-    name = "deps",
-    requirements = "//:requirements.txt",
+pip_install(
+   name = "deps",
+   requirements = "//:requirements.txt",
 )
-
-# Load the central repo's install function from its `//:requirements.bzl` file,
-# and call it.
-load("@deps//:requirements.bzl", "pip_install")
-
-pip_install()
 
 #######
 # for R
@@ -56,6 +39,9 @@ r_repository_list(
     name = "r_repositories_bzl",
     package_list = "//:r_packages.csv",
     remote_repos = {
+        "BioCsoft": "https://bioconductor.org/packages/3.11/bioc",
+        "BioCann": "https://bioconductor.org/packages/3.11/data/annotation",
+        "BioCexp": "https://bioconductor.org/packages/3.11/data/experiment",
         "CREAB": "https://cloud.r-project.org",
     },
 )

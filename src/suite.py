@@ -320,7 +320,7 @@ class Suite:
     # n-fold nested cross validation
     # https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html
     num_trials = 5
-    n_splits = 10
+    n_splits = 5
     best_model = None
     best_score = 0
     if model_name == "svm":
@@ -339,7 +339,7 @@ class Suite:
           estimator=estimator,
           param_grid=self.param_grid,
           scoring="f1_weighted",
-          n_jobs=14,  # parallel
+          n_jobs=num_subproc,  # parallel
           cv=StratifiedKFold(n_splits=n_splits, shuffle=True),
           verbose=0)
       model.fit(X_train, y_train)
@@ -370,33 +370,57 @@ class Suite:
 
     self.all_train_data = self.remove_I(self.all_train_data)
     self.all_train_data = self.remove_SE(self.all_train_data)
+
+    print(sum(self.all_train_data["prediction"]))
     logging.info("Features: {}".format(self.features))
-    logging.info("Crossvalidation score after adjustment is\n{}".format(
+    logging.info("Crossvalidation score for comments after adjustment is\n{}".format(
         classification_report(self.all_train_data["label"].tolist(),
                               self.all_train_data["prediction"].tolist())))
-    logging.info("Area under the curve is\n{}".format(
-        roc_auc_score(self.all_train_data["label"].tolist(),
-                      self.all_train_data["prediction"].tolist())))
-    logging.info("The curve is\n{}".format(
-        roc_curve(self.all_train_data["label"].tolist(),
-                  self.all_train_data["prediction"].tolist())))
+
     model_out = open(
         "src/pickles/{}_model_{}_keep_emoticon.p".format(model_name.upper(), str(fid)),
         "wb")
     pickle.dump(self.model, model_out)
+
     # remove emoticon
     self.all_train_data = self.remove_emo(self.all_train_data)
+    predicted_thread_label = self.all_train_data.groupby("thread_id")["prediction"].sum()
+    predicted_thread_label =predicted_thread_label.reset_index()
+
+    # if any comment is predicted as 1(toxic) then the whole thread is consider
+    # toxic
+    #predicted_thread_label["prediction"] = predicted_thread_label["prediction"].map(lambda x:x > 0)
+    predicted_thread_label = predicted_thread_label.set_index("thread_id").to_dict("index")
+    self.all_train_data["prediction"] = False
+    for i, row in self.all_train_data.iterrows():
+      self.all_train_data["prediction"] = predicted_thread_label[row["thread_id"]]["prediction"]
+    predicted_thread_label = self.all_train_data["prediction"].to_list()
+
     logging.info("Negate prediction if it has emoticons")
     logging.info("Features: {}".format(self.features))
     logging.info("Crossvalidation score after adjustment is\n{}".format(
         classification_report(self.all_train_data["label"].tolist(),
                               self.all_train_data["prediction"].tolist())))
-    logging.info("Area under the curve is\n{}".format(
-        roc_auc_score(self.all_train_data["label"].tolist(),
-                      self.all_train_data["prediction"].tolist())))
-    logging.info("The curve is\n{}".format(
-        roc_curve(self.all_train_data["label"].tolist(),
-                  self.all_train_data["prediction"].tolist())))
+    logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
+        classification_report(true_thread_label.tolist(),
+                              predicted_thread_label)))
+    #logging.info("Area under the curve is\n{}".format(
+    #    roc_auc_score(self.all_train_data["label"].tolist(),
+    #                  self.all_train_data["prediction"].tolist())))
+    #logging.info("The curve is\n{}".format(
+    #    roc_curve(self.all_train_data["label"].tolist(),
+    #              self.all_train_data["prediction"].tolist())))
+
+    logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
+        classification_report(true_thread_label.tolist(),
+                              predicted_thread_label)))
+    #logging.info("Area under the curve is\n{}".format(
+    #    roc_auc_score(true_thread_label.tolist(),
+    #                  predicted_thread_label)))
+    #logging.info("The curve is\n{}".format(
+    #    roc_curve(true_thread_label.tolist(),
+    #                  predicted_thread_label)))
+
     return model
 
   # applying the model to the test data

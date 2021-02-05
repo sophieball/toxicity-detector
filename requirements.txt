@@ -1,6 +1,5 @@
 Pillow
 catalogue
-catalogue
 convokit
 cycler
 cymem
@@ -18,7 +17,6 @@ nltk
 numpy
 pandas
 plac
-plac
 preshed
 python-dateutil
 pytz
@@ -27,12 +25,11 @@ regex
 scipy
 setuptools
 sklearn
-spacy==2.2.4
-srsly
+spacy
 srsly
 textblob
-thinc
-thinc
+thinc==7.4.0
+pip
 threadpoolctl
 wasabi
 wordfreq

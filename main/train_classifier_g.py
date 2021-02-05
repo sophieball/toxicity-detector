@@ -17,10 +17,37 @@ import numpy as np
 import sys
 import time
 
-feature_set = [["perspective_score", "politeness"],
-               ["perspective_score", "length", "politeness"],
-               ["perspective_score", "num_url", "politeness"],
-               ["perspective_score", "num_emoticons", "politeness"]]
+feature_set = [["perspective_score", "politeness"]]#, # the only working
+#               ["perspective_score", "length", "politeness"],
+#               ["perspective_score", "num_url", "politeness"],
+feature_set = [["perspective_score", 
+                "num_emoticons", 
+                "politeness",
+                #"Please", 
+                #"Please_start", 
+                "HASHEDGE", 
+                #"Indirect_(btw)", 
+                #"Hedges", 
+                #"Factuality",
+       					#"Deference", 
+                #"Gratitude", 
+                #"Apologizing", 
+                #"1st_person_pl.", 
+                "1st_person",
+       					#"1st_person_start", 
+                "2nd_person", 
+                "2nd_person_start",
+       					#"Indirect_(greeting)", 
+                #"Direct_question", 
+                #"Direct_start", 
+                #"HASPOSITIVE",
+       					"HASNEGATIVE", 
+                #"SUBJUNCTIVE", 
+                #"INDICATIVE"
+                #"num_words", 
+                "length"
+              ]]
+#feature_set = [["perspective_score", "politeness"]]#,
 
 
 # train the classifier using the result of a SQL query
@@ -37,11 +64,11 @@ def train_model(training_data, model_name="svm", pretrain=False):
     s.set_model_function(classifiers.svm_model)
 
     # list the set of parameters you want to try out
-    s.set_ratios([1, 5, 10])
+    s.set_ratios([1, 2, 3, 5, 10])
     s.set_parameters({
-        "C": [0.05, 0.1, 0.5, 1, 10, 20],
-        "gamma": [1, 2, 2.5, 3],
-        "kernel": ["sigmoid"]
+        "C": [0.05, 0.1, 0.5, 1, 10, 20, 25, 30, 50],
+        "gamma": [1, 2, 2.5, 3, 5],
+        "kernel": ["sigmoid", "rbf"]
     })
   elif model_name == "rf":
     s.set_model_function(classifiers.random_forest_model)
@@ -53,8 +80,8 @@ def train_model(training_data, model_name="svm", pretrain=False):
   elif model_name == "lg":
     s.set_model_function(classifiers.logistic_model)
     # RF params
-    s.add_parameter("penalty", ["l1", "l2"])
-    s.add_parameter("C", np.logspace(-4, 4, 20))
+    s.add_parameter("penalty", ["l1", "l2", "13", "20", "5"])
+    s.add_parameter("C", np.logspace(-4, 4, 60))
 
   # select features
   for fid, features in enumerate(feature_set):
@@ -133,7 +160,7 @@ if __name__ == "__main__":
     [training, unlabeled] = receive_data.receive_data()
     trained_model = train_model(training)
     trained_model = train_model(training, model_name="rf")
-    trained_model = train_model(training, model_name="lg")
+    #trained_model = train_model(training, model_name="lg")
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
   logging.info(

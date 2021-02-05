@@ -306,6 +306,9 @@ py_library(
         requirement("pandas"),
         requirement("nltk"),
     ],
+    data = [
+        "data/training_data_label_cleaned.csv"
+    ],
 )
 
 py_library(

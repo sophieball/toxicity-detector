@@ -27,7 +27,11 @@ def isascii(s):
 
 
 # number of multiprocess
-num_proc = 14
+num_proc = 24
+
+if config.perspective_api_key == "TODO:FILL_THIS_IN":
+  print("need perspective score API key.")
+  exit()
 
 url = ("https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze" +    \
       "?key=" + config.perspective_api_key)
@@ -159,8 +163,13 @@ def create_features(comments_df, training):
   pool.close()
   features_df = pd.DataFrame(features)
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
+  features_df = features_df.dropna()
+
   logging.info("Total number of {} data: {}.".format(training,
                                                      len(features_df)))
+  logging.info("Total number of {} positive data: {}.".format(training,
+                                                     sum(features_df["label"])))
+  comments_df["label"].to_csv("pos_labels.csv")
   if training == "training":
     logging.info(
         "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
@@ -182,6 +191,36 @@ def create_features(comments_df, training):
         .format(
             training, features_df.loc[features_df["label"] == 0,
                                       "politeness"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 1,
+                                      "HASHEDGE"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 0,
+                                      "HASHEDGE"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 1,
+                                      "HASNEGATIVE"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 0,
+                                      "HASNEGATIVE"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 1,
+                                      "2nd_person"].describe()))
+    logging.info(
+        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
+        .format(
+            training, features_df.loc[features_df["label"] == 0,
+                                      "2nd_person"].describe()))
 
   else:
     logging.info(
