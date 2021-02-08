@@ -229,6 +229,10 @@ class Suite:
     self.train_data = None
     self.model_function = None
     self.model = None
+    self.Google = False
+
+  def set_G(self, G):
+    self.Google = G
 
   def set_model_function(self, model_function):
     self.model_function = model_function
@@ -371,12 +375,28 @@ class Suite:
     self.all_train_data = self.remove_I(self.all_train_data)
     self.all_train_data = self.remove_SE(self.all_train_data)
 
-    print(sum(self.all_train_data["prediction"]))
     logging.info("Features: {}".format(self.features))
     logging.info("Crossvalidation score for comments after adjustment is\n{}".format(
         classification_report(self.all_train_data["label"].tolist(),
                               self.all_train_data["prediction"].tolist())))
+    
+    if not self.G:
+      # if any comment is predicted as 1(toxic) then the whole thread is consider
+      # toxic
+      true_thread_label = self.all_train_data["thread_label"]
+      predicted_thread_label = self.all_train_data.groupby("thread_id")["prediction"].sum()
+      predicted_thread_label = predicted_thread_label.reset_index()
+      predicted_thread_label = predicted_thread_label.set_index("thread_id").to_dict("index")
 
+      self.all_train_data["thread_prediction"] = False
+      for i, row in self.all_train_data.iterrows():
+        self.all_train_data["thread_prediction"] = predicted_thread_label[row["thread_id"]]["prediction"]
+      predicted_thread_label = self.all_train_data["prediction"].to_list()
+
+      logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
+          classification_report(true_thread_label.tolist(),
+                                predicted_thread_label)))
+    
     model_out = open(
         "src/pickles/{}_model_{}_keep_emoticon.p".format(model_name.upper(), str(fid)),
         "wb")
@@ -387,39 +407,24 @@ class Suite:
     predicted_thread_label = self.all_train_data.groupby("thread_id")["prediction"].sum()
     predicted_thread_label =predicted_thread_label.reset_index()
 
-    # if any comment is predicted as 1(toxic) then the whole thread is consider
-    # toxic
-    #predicted_thread_label["prediction"] = predicted_thread_label["prediction"].map(lambda x:x > 0)
-    predicted_thread_label = predicted_thread_label.set_index("thread_id").to_dict("index")
-    self.all_train_data["prediction"] = False
-    for i, row in self.all_train_data.iterrows():
-      self.all_train_data["prediction"] = predicted_thread_label[row["thread_id"]]["prediction"]
-    predicted_thread_label = self.all_train_data["prediction"].to_list()
+    if not self.G:
+      # if any comment is predicted as 1(toxic) then the whole thread is consider
+      # toxic
+      predicted_thread_label = predicted_thread_label.set_index("thread_id").to_dict("index")
+      self.all_train_data["prediction"] = False
+      for i, row in self.all_train_data.iterrows():
+        self.all_train_data["prediction"] = predicted_thread_label[row["thread_id"]]["prediction"]
+      predicted_thread_label = self.all_train_data["prediction"].to_list()
 
-    logging.info("Negate prediction if it has emoticons")
-    logging.info("Features: {}".format(self.features))
-    logging.info("Crossvalidation score after adjustment is\n{}".format(
-        classification_report(self.all_train_data["label"].tolist(),
-                              self.all_train_data["prediction"].tolist())))
-    logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
-        classification_report(true_thread_label.tolist(),
-                              predicted_thread_label)))
-    #logging.info("Area under the curve is\n{}".format(
-    #    roc_auc_score(self.all_train_data["label"].tolist(),
-    #                  self.all_train_data["prediction"].tolist())))
-    #logging.info("The curve is\n{}".format(
-    #    roc_curve(self.all_train_data["label"].tolist(),
-    #              self.all_train_data["prediction"].tolist())))
+      logging.info("Negate prediction if it has emoticons")
+      logging.info("Features: {}".format(self.features))
+      logging.info("Crossvalidation score after adjustment is\n{}".format(
+          classification_report(self.all_train_data["label"].tolist(),
+                                self.all_train_data["prediction"].tolist())))
 
-    logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
-        classification_report(true_thread_label.tolist(),
-                              predicted_thread_label)))
-    #logging.info("Area under the curve is\n{}".format(
-    #    roc_auc_score(true_thread_label.tolist(),
-    #                  predicted_thread_label)))
-    #logging.info("The curve is\n{}".format(
-    #    roc_curve(true_thread_label.tolist(),
-    #                  predicted_thread_label)))
+      logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
+          classification_report(true_thread_label.tolist(),
+                                predicted_thread_label)))
 
     return model
 
