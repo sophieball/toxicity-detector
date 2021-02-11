@@ -16,7 +16,6 @@ from convokit import PolitenessStrategies
 from convokit import TextParser
 from convokit import download
 from nltk import tokenize
-from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from pandas import DataFrame
 from typing import List, Dict, Set
@@ -29,13 +28,19 @@ import os
 import pandas as pd
 import receive_data
 import spacy
-import text_cleaning
+import text_parser
 from sklearn.feature_extraction.text import CountVectorizer
 
 from src import sep_ngram
 from src import plot_politeness
 
-clean_str = lambda s: clean(s,
+se_file = open("src/data/SE_words_G.list")
+SE_words = [se_word.strip() for se_word in se_file.readlines()]
+print(len(SE_words))
+print(SE_words[:10])
+
+remove_SE_words = lambda x:" ".join([w for w in tokenize.word_tokenize(x) if not w in SE_words])
+clean_str = lambda s: clean(remove_SE_words(text_parser.remove_inline_code(s)),
     fix_unicode=True,               # fix various unicode errors
     to_ascii=True,                  # transliterate to closest ASCII representation
     lower=True,                     # lowercase text
@@ -57,10 +62,9 @@ clean_str = lambda s: clean(s,
     )
 
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
-stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 tokenizer = nltk.RegexpTokenizer(r"\w+")
-NGRAM = 6
+NGRAM = 4
 
 
 # compare ngram in toxic and non-toxic comments
@@ -68,7 +72,8 @@ def word_freq(corpus):
   # fighting words
   # extract text
   toxic_comments_fn = lambda utt: utt.meta["label"] == 1.0
-  non_toxic_comments_fn = lambda utt: utt.meta["label"] == 0.0
+  non_toxic_comments_fn = lambda utt: utt.meta["label"] == 0.0 and utt.meta["thread_label"] == 0.0
+
   toxic_comments, non_toxic_comments = [], []
   for uid in corpus.get_utterance_ids():
     obj = corpus.get_utterance(uid)
@@ -80,15 +85,15 @@ def word_freq(corpus):
       raise ValueError("class1_func returned 0 valid corpus components.")
   if len(non_toxic_comments) == 0:
       raise ValueError("class2_func returned 0 valid corpus components.")
-  toxic_comments = [clean_str(obj.text) for obj in toxic_comments]
-  non_toxic_comments = [clean_str(obj.text) for obj in non_toxic_comments]
+  #toxic_comments = [clean_str(obj.text) for obj in toxic_comments]
+  #non_toxic_comments = [clean_str(obj.text) for obj in non_toxic_comments]
 
   # find words
   fw = fighting_words_sq.FightingWords(ngram_range=(1,NGRAM))
   fw.fit(corpus, class1_func=toxic_comments_fn,
                class2_func=non_toxic_comments_fn,)
-  df = fw.summarize(corpus, plot=True, class1_name='pushback code reviews',
-                class2_name='non-pushback code reviews')
+  df = fw.summarize(corpus, plot=True, class1_name='pushback OSS code review comments',
+                class2_name='non-pushback OSS code review comments')
 
 
   summary = fw.get_word_counts()
@@ -157,7 +162,7 @@ def politeness_hist(corpus):
   count_df.to_csv("polite_strategies.csv")
 
   # plot the histogram
-  plot_politeness.save_plot(count_df, "label1_politeness.pdf", 0.2)
+  plot_politeness.save_plot(count_df, "politeness.pdf", 0.2)
 
   # individual politeness strategies
   out = open("politeness_words_marked_sorted.txt", "w")
@@ -209,7 +214,8 @@ def politeness_hist(corpus):
 
 if __name__ == "__main__":
   [comments, _] = receive_data.receive_data()
-  comments = comments.dropna()
+  comments["text"] = comments["text"].replace(np.nan, "-")
+  comments["text"] = comments["text"].map(clean_str)
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
   politeness_hist(corpus)

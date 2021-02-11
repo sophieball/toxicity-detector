@@ -244,6 +244,7 @@ def prepare_corpus(comments, corpus_speakers, google):
   pr = PullRequest(prev_repo, str(prev_repo))
 
   conversation_label = {}
+  conversation_thread_label = {}
   for idx, row in comments.iterrows():
     try:
       [owner, repo, CR_id] = row["thread_id"].split("/")
@@ -290,7 +291,9 @@ def prepare_corpus(comments, corpus_speakers, google):
     # for training data
     if "label" in comments.columns:
       meta["label"] = row["label"]
+      meta["thread_label"] = row["thread_label"]
       conversation_label[pr.get_root_id()] = row["label"]
+      conversation_thread_label[pr.get_root_id()] = row["thread_label"]
 
     utterance_corpus[utt_id] = Utterance(
         id=utt_id,
@@ -310,6 +313,7 @@ def prepare_corpus(comments, corpus_speakers, google):
     convo_id = convo.get_id()
     if convo_id in conversation_label:
       convo.meta["label"] = conversation_label[convo_id]
+      convo.meat["thread_label"] = conversation_thread_label[convo_id]
       cur_conv_utts = convo.get_utterance_ids()
       rounds = len(cur_conv_utts)
       convo.meta["rounds"] = rounds
