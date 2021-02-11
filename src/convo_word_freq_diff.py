@@ -22,7 +22,7 @@ from pandas import DataFrame
 from typing import List, Dict, Set
 import convokit
 import convo_politeness
-import fighting_words_py3
+import fighting_words_sq
 import nltk
 import numpy as np
 import os
@@ -56,7 +56,7 @@ clean_str = lambda s: clean(s,
     lang="en"
     )
 
-nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 tokenizer = nltk.RegexpTokenizer(r"\w+")
@@ -84,11 +84,15 @@ def word_freq(corpus):
   non_toxic_comments = [clean_str(obj.text) for obj in non_toxic_comments]
 
   # find words
-  summary = fighting_words_py3.bayes_compare_language(toxic_comments,
-                                                     non_toxic_comments,
-                                                     NGRAM)
-  summary["abs_z-score"] = abs(summary["z-score"])
-  summary = summary.sort_values(by="abs_z-score", ascending=False)
+  fw = fighting_words_sq.FightingWords(ngram_range=(1,NGRAM))
+  fw.fit(corpus, class1_func=toxic_comments_fn,
+               class2_func=non_toxic_comments_fn,)
+  df = fw.summarize(corpus, plot=True, class1_name='pushback code reviews',
+                class2_name='non-pushback code reviews')
+
+
+  summary = fw.get_word_counts()
+  summary = summary.sort_values(by="z-score", ascending=False)
   summary = summary.round(3)
   out = open("fighting_words_freq.csv", "w")
   summary.to_csv("fighting_words_freq.csv", index=False)
@@ -192,14 +196,14 @@ def politeness_hist(corpus):
       out.write(str(each_word) + ",")
     out.write("\n")
   out.close()
-  print(
-      "politeness words counts are stored in the bazel binary's runfiles folder with the name `polite_strategies_label_x.csv`, x = {{0, 1}}\n"
+  logging.info("Log-odds ratio plot is saved in the bazel binary's runfiles folder with the name `log-odds_ratio.PNG`\n")
+  logging.info(
+      "politeness words counts are stored in the same folder with the name `polite_strategies_label_x.csv`, x = {{0, 1}}\n")
+  logging.info(
+      "politeness words lists are stored in the same folder with the name `politeness_words_marked_sorted.txt`\n"
   )
-  print(
-      "politeness words lists are stored in the bazel binary's runfiles folder with the name `politeness_words_marked_sorted.txt`\n"
-  )
-  print(
-      "politeness words plots are stored in the bazel binary's runfiles folder with the name `labelx_politeness.pdf`, x = {{0, 1}}\n"
+  logging.info(
+      "politeness words plots are stored in the same folder with the name `labelx_politeness.pdf`, x = {{0, 1}}\n"
   )
 
 

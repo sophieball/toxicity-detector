@@ -1,4 +1,9 @@
 Pillow
+text_unidecode
+statsmodels
+Keras
+emoji
+h5py
 catalogue
 convokit
 cycler
@@ -28,7 +33,7 @@ sklearn
 spacy
 srsly
 textblob
-thinc==7.4.0
+thinc
 pip
 threadpoolctl
 wasabi
