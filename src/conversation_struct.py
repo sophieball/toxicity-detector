@@ -5,6 +5,7 @@ from collections import defaultdict
 from convokit import Corpus, Speaker, Utterance
 from convokit import PolitenessStrategies
 from convokit.text_processing import TextParser
+from datetime import datetime
 from nltk.tokenize import sent_tokenize
 from sklearn import ensemble
 from sklearn import linear_model
@@ -22,6 +23,13 @@ import string
 
 def isascii(s):
   return all(ord(c) < 128 for c in s)
+
+
+convert = lambda x:datetime.strptime(x, "%Y-%m-%dT%H:%M:%SZ")
+seconds = lambda x: timedelta(days=0,
+                    seconds=x.seconds, 
+                    microseconds=x.microseconds).total_seconds()/60 if x.days < 0 \
+                    else x.total_seconds()/60 
 
 
 # https://stackoverflow.com/questions/34293875/how-to-remove-punctuation-marks-from-a-string-in-python-3-x-using-translate
@@ -88,6 +96,8 @@ class PullRequest:
     self.authors = {}  # author_id: id
     self.comment_text = {}  # id: text
     self.prev_id = root_id
+    self.rounds = 0
+    self.shepherd_time = 0
 
   # only needed for GH
   def find_reply_to(self, row):
@@ -300,6 +310,16 @@ def prepare_corpus(comments, corpus_speakers, google):
     convo_id = convo.get_id()
     if convo_id in conversation_label:
       convo.meta["label"] = conversation_label[convo_id]
+      cur_conv_utts = convo.get_utterance_ids()
+      rounds = len(cur_conv_utts)
+      convo.meta["rounds"] = rounds
+      first_comment = convo.get_utterance(cur_conv_utts[0])
+      last_comment = convo.get_utterance(cur_conv_utts[-1])
+      shepherd_time = convert(last_comment.timestamp) \
+                    - convert(first_comment.timestamp)
+      convo.meta["shepherd_time"] = seconds(shepherd_time)
+
+      print(shepherd_time)
 
   # print out the conversation structure of the first conversation
   first_conv = corpus.get_conversation(corpus.get_conversation_ids()[0])
