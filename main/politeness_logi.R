@@ -43,6 +43,7 @@ m_pol <- glm(label ~
             + (INDICATIVE > 0)
             + log(1 + rounds)
             + log(1 + shepherd_time)
+            + log(1 + review_time)
             , data = dat
             , family = "binomial")
 
