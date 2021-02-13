@@ -360,6 +360,7 @@ class FightingWords(Transformer):
 
     config = {'top_k': 30, 'annot_method': 'top_k'}# if config is None else config
 
+
     if self.ngram_zscores is None:
       raise ValueError("fit() must be run on a corpus first.")
 
@@ -401,6 +402,7 @@ class FightingWords(Transformer):
     fig, ax = plt.subplots(figsize=(9, 6), dpi=200)
     ax.set_title("Weighted log-odds ratio vs. Frequency of word within class")
     plt.rcParams.update({'font.size': 10})
+
 
     ax.scatter(class1['x'], class1['y'], c=pos_color, s=class1['size'], label=class1_name)
     ax.scatter(class2['x'], class2['y'], c=neg_color, s=class2['size'], label=class2_name)

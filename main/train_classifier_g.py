@@ -17,42 +17,122 @@ import numpy as np
 import sys
 import time
 
-feature_set = [["perspective_score", "politeness"]]#, # the only working
-#               ["perspective_score", "length", "politeness"],
-#               ["perspective_score", "num_url", "politeness"],
-feature_set = [["perspective_score", 
-                "num_emoticons", 
+feature_set = [["perspective_score", "politeness"], 
+               ["perspective_score", "identity_attack", "politeness", "rounds", "shepherd_time"],
+               ["rounds", "shepherd_time"],
+               ["perspective_score", 
+                "identity_attack",
                 "politeness",
-                #"Please", 
-                #"Please_start", 
+                "Please", 
+                "Please_start", 
                 "HASHEDGE", 
                 #"Indirect_(btw)", 
                 #"Hedges", 
                 #"Factuality",
        					#"Deference", 
-                #"Gratitude", 
+                "Gratitude", 
                 #"Apologizing", 
                 #"1st_person_pl.", 
                 "1st_person",
-       					#"1st_person_start", 
+       					"1st_person_start", 
                 "2nd_person", 
                 "2nd_person_start",
        					#"Indirect_(greeting)", 
                 #"Direct_question", 
                 #"Direct_start", 
-                #"HASPOSITIVE",
+                "HASPOSITIVE",
        					"HASNEGATIVE", 
                 #"SUBJUNCTIVE", 
-                #"INDICATIVE"
+                #"INDICATIVE",
                 #"num_words", 
                 "length"
-              ]]
-#feature_set = [["perspective_score", "politeness"]]#,
+              ],
+
+              ["perspective_score", 
+                "identity_attack",
+                "Please", 
+                "Please_start", 
+                "HASHEDGE", 
+                #"Indirect_(btw)", 
+                #"Hedges", 
+                #"Factuality",
+       					#"Deference", 
+                "Gratitude", 
+                #"Apologizing", 
+                #"1st_person_pl.", 
+                "1st_person",
+       					"1st_person_start", 
+                "2nd_person", 
+                "2nd_person_start",
+       					#"Indirect_(greeting)", 
+                #"Direct_question", 
+                #"Direct_start", 
+                "HASPOSITIVE",
+       					"HASNEGATIVE", 
+                #"SUBJUNCTIVE", 
+                #"INDICATIVE",
+                "length"
+              ],
+
+              ["perspective_score", 
+                "identity_attack",
+                "Please", 
+                "Please_start", 
+                "HASHEDGE", 
+                #"Indirect_(btw)", 
+                #"Hedges", 
+                #"Factuality",
+       					#"Deference", 
+                "Gratitude", 
+                #"Apologizing", 
+                #"1st_person_pl.", 
+                "1st_person",
+       					"1st_person_start", 
+                "2nd_person", 
+                "2nd_person_start",
+       					#"Indirect_(greeting)", 
+                #"Direct_question", 
+                #"Direct_start", 
+                "HASPOSITIVE",
+       					"HASNEGATIVE", 
+                #"SUBJUNCTIVE", 
+                #"INDICATIVE",
+              ],
+
+              ["perspective_score", 
+                "identity_attack",
+                "Please", 
+                "Please_start", 
+                "HASHEDGE", 
+                #"Indirect_(btw)", 
+                #"Hedges", 
+                #"Factuality",
+       					#"Deference", 
+                "Gratitude", 
+                #"Apologizing", 
+                #"1st_person_pl.", 
+                "1st_person",
+       					"1st_person_start", 
+                "2nd_person", 
+                "2nd_person_start",
+       					#"Indirect_(greeting)", 
+                #"Direct_question", 
+                #"Direct_start", 
+                "HASPOSITIVE",
+       					"HASNEGATIVE", 
+                #"SUBJUNCTIVE", 
+                #"INDICATIVE",
+                "rounds",
+                "shepherd_time",
+                "review_time"
+              ],
+              ]
 
 
 # train the classifier using the result of a SQL query
-def train_model(training_data, model_name="svm", pretrain=False):
+def train_model(training_data, model_name="svm", pretrain=False, G=False):
   s = suite.Suite()
+  s.set_G(G)
 
   logging.info("Loading data.")
   # 4 columns: _id, text, label(0/1), training(1)
@@ -138,28 +218,18 @@ def predict_unlabeled(unlabeled_data, trained_model, features, G_data=True):
 if __name__ == "__main__":
   start_time = time.time()
   if len(sys.argv) > 1:
-    if sys.argv[1] == "pretrain":
-      logging.info("Training on GH data.")
-      [training, _] = receive_data.receive_data()
-      train_model(training, pretrain=True)
-    if sys.argv[1] == "test":
-      logging.info("Applying pre-trained GH model.")
-      if len(sys.argv) >= 2:
-        # set model
-        model_file = open(sys.argv[2], "rb")
-        trained_model = pickle.load(model_file)
-        model_file.close()
-        [_, unlabeled] = receive_data.receive_data()
-        predict_unlabeled(unlabeled, trained_model)
-      else:
-        logging.info("Please povide the name of the model's pickle file.")
-        logging.info(
-            "The file should be among the data dependencies in the BUILD file.")
+    logging.info("Training the model and predicting labels.")
+    [training, unlabeled] = receive_data.receive_data()
+    trained_model = train_model(training, G=False)
+    trained_model = train_model(training, model_name="rf", G=False)
+    #trained_model = train_model(training, model_name="lg")
+    logging.info("Trained model saved in {}".format("`" + os.getcwd() +
+                                                    "/src/pickles/"))
   else:
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data()
-    trained_model = train_model(training)
-    trained_model = train_model(training, model_name="rf")
+    trained_model = train_model(training, G=True)
+    trained_model = train_model(training, model_name="rf", G=True)
     #trained_model = train_model(training, model_name="lg")
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))

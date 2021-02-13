@@ -314,6 +314,7 @@ def prepare_corpus(comments, corpus_speakers, google):
     if convo_id in conversation_label:
       convo.meta["label"] = conversation_label[convo_id]
       convo.meta["thread_label"] = conversation_thread_label[convo_id]
+
       cur_conv_utts = convo.get_utterance_ids()
       rounds = len(cur_conv_utts)
       convo.meta["rounds"] = rounds
@@ -322,7 +323,6 @@ def prepare_corpus(comments, corpus_speakers, google):
       shepherd_time = convert(last_comment.timestamp) \
                     - convert(first_comment.timestamp)
       convo.meta["shepherd_time"] = seconds(shepherd_time)
-
 
   # print out the conversation structure of the first conversation
   first_conv = corpus.get_conversation(corpus.get_conversation_ids()[0])
