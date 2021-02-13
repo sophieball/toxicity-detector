@@ -41,6 +41,8 @@ m_pol <- glm(label ~
             + log(1 + HASNEGATIVE)
             + (SUBJUNCTIVE > 0)
             + (INDICATIVE > 0)
+            + log(1 + rounds)
+            + log(1 + shepherd_time)
             , data = dat
             , family = "binomial")
 

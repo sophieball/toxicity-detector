@@ -4,11 +4,12 @@
 from src import download_data
 download_data.download_data()
 
+from cleantext import clean
 from collections import defaultdict
 from convokit import Corpus, Speaker, Utterance
 from convokit import PolitenessStrategies
 from convokit.text_processing import TextParser
-from nltk.tokenize import sent_tokenize
+from nltk.tokenize import sent_tokenize, word_tokenize
 from sklearn import ensemble
 from sklearn import linear_model
 from sklearn import metrics
@@ -19,9 +20,35 @@ import numpy as np
 import pandas as pd
 import pickle
 import sklearn
+from src import text_parser
 
 test_size = 0.2
 
+
+se_file = open("src/data/SE_words_G.list")
+SE_words = [se_word.strip() for se_word in se_file.readlines()]
+
+remove_SE_words = lambda x:" ".join([w for w in word_tokenize(x) if not w in SE_words])
+clean_str = lambda s: clean(remove_SE_words(text_parser.remove_inline_code(s)),
+    fix_unicode=True,               # fix various unicode errors
+    to_ascii=True,                  # transliterate to closest ASCII representation
+    lower=True,                     # lowercase text
+    no_line_breaks=True,           # fully strip line breaks as opposed to only normalizing them
+    no_urls=True,                  # replace all URLs with a special token
+    no_emails=True,                # replace all email addresses with a special token
+    no_phone_numbers=True,         # replace all phone numbers with a special token
+    no_numbers=False,               # replace all numbers with a special token
+    no_digits=False,                # replace all digits with a special token
+    no_currency_symbols=True,      # replace all currency symbols with a special token
+    no_punct=False,                 # fully remove punctuation
+    replace_with_url="<URL>",
+    replace_with_email="<EMAIL>",
+    replace_with_phone_number="<PHONE>",
+    replace_with_number="<NUMBER>",
+    replace_with_digit="0",
+    replace_with_currency_symbol="<CUR>",
+    lang="en"
+    )
 
 # Creating corpus from the list of utterances
 def prepare_corpus(comments):
@@ -33,7 +60,8 @@ def prepare_corpus(comments):
   utterance_corpus = {}
   for idx, row in comments.iterrows():
     num_sentences = len(sent_tokenize(row["text"]))
-    alpha_text = " ".join([x for x in row["text"].split(" ") if x.isalpha()])
+    alpha_text = clean_str(row["text"])
+    #alpha_text = " ".join([x for x in row["text"].split(" ") if x.isalpha()])
 
     # training data
     if "label" in comments.columns:
@@ -44,7 +72,8 @@ def prepare_corpus(comments):
           meta={
               "id": row["_id"],
               "num_sents": num_sentences,
-              "label": row["label"]
+              "label": row["label"],
+              "thread_label": row["thread_label"]
           })
     else:
       utterance_corpus[row["_id"]] = Utterance(
@@ -94,6 +123,7 @@ def polite_score(corpus):
     # training data
     if "label" in utt.meta:
       ret["label"] = utt.meta["label"]
+      ret["thread_label"] = utt.meta["thread_label"]
     scores.append(ret)
   return pd.DataFrame(scores)
 
@@ -185,7 +215,12 @@ def get_politeness_score(comments):
 
 if __name__ == "__main__":
   [comments, _] = receive_data.receive_data()
-  comments = comments.dropna()
+  comments["text"] = comments["text"].replace(np.nan, "-")
   corpus = transform_politeness(prepare_corpus(comments))
   scores = polite_score(corpus)
+  try:
+    scores["rounds"] = comments["rounds"]
+    scores["shepherd_time"] = comments["shepherd_time"]
+  except:
+    pass
   scores.to_csv("politeness_features.csv", index=False)
