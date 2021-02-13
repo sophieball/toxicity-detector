@@ -18,6 +18,7 @@ from src import classifiers
 from src import convo_politeness
 from src import create_features
 from src import text_modifier
+from src import text_parser
 from src import util
 from wordfreq import word_frequency
 import itertools
@@ -76,7 +77,8 @@ def rescore(row, features, tf_idf_counter):
 
   if "perspective_score" in features:
     persp_score = create_features.get_perspective_score(new_sentence, "en")
-    new_features_dict["perspective_score"] = persp_score
+    new_features_dict["perspective_score"] = persp_score[0]
+    new_features_dict["identity_attack"] = persp_score[1]
 
   if "politeness" in features:
     polite_df = convo_politeness.get_politeness_score(
@@ -380,7 +382,7 @@ class Suite:
         classification_report(self.all_train_data["label"].tolist(),
                               self.all_train_data["prediction"].tolist())))
     
-    if not self.G:
+    if not self.Google:
       # if any comment is predicted as 1(toxic) then the whole thread is consider
       # toxic
       true_thread_label = self.all_train_data["thread_label"]
@@ -401,30 +403,6 @@ class Suite:
         "src/pickles/{}_model_{}_keep_emoticon.p".format(model_name.upper(), str(fid)),
         "wb")
     pickle.dump(self.model, model_out)
-
-    # remove emoticon
-    self.all_train_data = self.remove_emo(self.all_train_data)
-    predicted_thread_label = self.all_train_data.groupby("thread_id")["prediction"].sum()
-    predicted_thread_label =predicted_thread_label.reset_index()
-
-    if not self.G:
-      # if any comment is predicted as 1(toxic) then the whole thread is consider
-      # toxic
-      predicted_thread_label = predicted_thread_label.set_index("thread_id").to_dict("index")
-      self.all_train_data["prediction"] = False
-      for i, row in self.all_train_data.iterrows():
-        self.all_train_data["prediction"] = predicted_thread_label[row["thread_id"]]["prediction"]
-      predicted_thread_label = self.all_train_data["prediction"].to_list()
-
-      logging.info("Negate prediction if it has emoticons")
-      logging.info("Features: {}".format(self.features))
-      logging.info("Crossvalidation score after adjustment is\n{}".format(
-          classification_report(self.all_train_data["label"].tolist(),
-                                self.all_train_data["prediction"].tolist())))
-
-      logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
-          classification_report(true_thread_label.tolist(),
-                                predicted_thread_label)))
 
     return model
 
