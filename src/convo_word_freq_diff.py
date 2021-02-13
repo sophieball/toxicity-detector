@@ -56,7 +56,7 @@ clean_str = lambda s: clean(s,
     lang="en"
     )
 
-nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 tokenizer = nltk.RegexpTokenizer(r"\w+")
@@ -205,7 +205,7 @@ def politeness_hist(corpus):
 
 if __name__ == "__main__":
   [comments, _] = receive_data.receive_data()
-  comments = comments.dropna()
+  comments["text"] = comments["text"].replace(np.nan, "-")
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
   politeness_hist(corpus)
