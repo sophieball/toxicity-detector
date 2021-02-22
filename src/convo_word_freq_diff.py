@@ -46,7 +46,7 @@ def word_freq(corpus):
   # fighting words
   # extract text
   toxic_comments_fn = lambda utt: utt.meta["label"] == 1.0
-  non_toxic_comments_fn = lambda utt: utt.meta["label"] == 0.0 and utt.meta["thread_label"] == 0.0
+  non_toxic_comments_fn = lambda utt: utt.meta["label"] == 0.0
 
   toxic_comments, non_toxic_comments = [], []
   for uid in corpus.get_utterance_ids():
