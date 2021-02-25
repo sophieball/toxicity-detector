@@ -234,7 +234,7 @@ def preprocess_text(cur_text):
 # input: pd.DataFrame, convokit.Speakers
 # output: convokit.Corpus
 def prepare_corpus(comments, corpus_speakers, google):
-  comments = comments.dropna()
+  comments["text"] = comments["text"].replace(np.nan, "-")
   comments = comments.sort_values(by=["thread_id", "created_at"])
   comments["reply_to"] = comments["reply_to"].map(lambda x: str(x))
   utterance_corpus = {}
@@ -313,7 +313,8 @@ def prepare_corpus(comments, corpus_speakers, google):
     convo_id = convo.get_id()
     if convo_id in conversation_label:
       convo.meta["label"] = conversation_label[convo_id]
-      convo.meat["thread_label"] = conversation_thread_label[convo_id]
+      convo.meta["thread_label"] = conversation_thread_label[convo_id]
+
       cur_conv_utts = convo.get_utterance_ids()
       rounds = len(cur_conv_utts)
       convo.meta["rounds"] = rounds
@@ -322,8 +323,6 @@ def prepare_corpus(comments, corpus_speakers, google):
       shepherd_time = convert(last_comment.timestamp) \
                     - convert(first_comment.timestamp)
       convo.meta["shepherd_time"] = seconds(shepherd_time)
-
-      print(shepherd_time)
 
   # print out the conversation structure of the first conversation
   first_conv = corpus.get_conversation(corpus.get_conversation_ids()[0])
