@@ -11,9 +11,9 @@ df <- read.csv("src/data/pr_body_comments.csv")
 df <- rename(df, c("X_id" = "id"))
 
 # I leave them as comment here so I can easily switch
-system2("main/train_classifier_g",
+#system2("main/train_classifier_g",
 #system2("src/find_SE_words",
-#system2("main/politeness_logi",
+system2("main/politeness_logi",
 #system2("src/convo_word_freq_diff",
         args = "GH",
         stdout = "",

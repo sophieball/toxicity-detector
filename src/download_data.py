@@ -31,8 +31,3 @@ def download_data():
     spacy.load("en")
   except IOError:
     spacy.cli.download("en")
-
-  try:
-    spacy.load("en_core_web_md")
-  except IOError:
-    spacy.cli.download("en_core_web_md")

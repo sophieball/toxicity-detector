@@ -56,7 +56,7 @@ clean_str = lambda s: clean(s,
     lang="en"
     )
 
-nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 tokenizer = nltk.RegexpTokenizer(r"\w+")

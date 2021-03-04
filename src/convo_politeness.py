@@ -64,17 +64,26 @@ def prepare_corpus(comments):
     #alpha_text = " ".join([x for x in row["text"].split(" ") if x.isalpha()])
 
     # training data
+    if "thread_label" in comments.columns:
+      meta={
+          "id": row["_id"],
+          "num_sents": num_sentences,
+          "label": row["label"],
+          "thread_label": row["thread_label"]
+      }
+    else:
+      meta={
+          "id": row["_id"],
+          "num_sents": num_sentences,
+          "label": row["label"],
+      }
     if "label" in comments.columns:
       utterance_corpus[row["_id"]] = Utterance(
           id=row["_id"],
           speaker=corpus_speakers[row["_id"]],
           text=alpha_text,
-          meta={
-              "id": row["_id"],
-              "num_sents": num_sentences,
-              "label": row["label"],
-              "thread_label": row["thread_label"]
-          })
+          meta = meta
+      )
     else:
       utterance_corpus[row["_id"]] = Utterance(
           id=row["_id"],
@@ -123,7 +132,8 @@ def polite_score(corpus):
     # training data
     if "label" in utt.meta:
       ret["label"] = utt.meta["label"]
-      ret["thread_label"] = utt.meta["thread_label"]
+      if "thread_label" in utt.meta:
+        ret["thread_label"] = utt.meta["thread_label"]
     scores.append(ret)
   return pd.DataFrame(scores)
 
