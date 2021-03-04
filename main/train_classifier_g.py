@@ -164,7 +164,7 @@ def train_model(training_data, model_name="svm", pretrain=False, G=False):
     s.add_parameter("C", np.logspace(-4, 4, 60))
 
   # select features
-  for fid, features in enumerate(feature_set):
+  for fid, features in enumerate(feature_set[:1]):
     s.features = features
     s.nice_features = features
     logging.info("Features: {}".format(", ".join(features)))
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data()
     trained_model = train_model(training, G=False)
-    trained_model = train_model(training, model_name="rf", G=False)
+    #trained_model = train_model(training, model_name="rf", G=False)
     #trained_model = train_model(training, model_name="lg")
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
