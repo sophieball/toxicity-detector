@@ -65,24 +65,28 @@ def prepare_corpus(comments):
 
     # training data
     if "thread_label" in comments.columns:
-      meta={
-          "id": row["_id"],
-          "num_sents": num_sentences,
-          "label": row["label"],
-          "thread_label": row["thread_label"]
-      }
-    else:
-      meta={
-          "id": row["_id"],
-          "num_sents": num_sentences,
-          "label": row["label"],
-      }
-    if "label" in comments.columns:
       utterance_corpus[row["_id"]] = Utterance(
           id=row["_id"],
           speaker=corpus_speakers[row["_id"]],
           text=alpha_text,
-          meta = meta
+          meta={
+              "id": row["_id"],
+              "num_sents": num_sentences,
+              "thread_id": row["thread_id"],
+              "thread_label": row["thread_label"],
+              "label": row["label"],
+          }
+      )
+    elif "label" in comments.columns:
+      utterance_corpus[row["_id"]] = Utterance(
+          id=row["_id"],
+          speaker=corpus_speakers[row["_id"]],
+          text=alpha_text,
+          meta={
+              "id": row["_id"],
+              "num_sents": num_sentences,
+              "label": row["label"],
+          }
       )
     else:
       utterance_corpus[row["_id"]] = Utterance(
@@ -134,6 +138,7 @@ def polite_score(corpus):
       ret["label"] = utt.meta["label"]
       if "thread_label" in utt.meta:
         ret["thread_label"] = utt.meta["thread_label"]
+        ret["thread_id"] = utt.meta["thread_id"]
     scores.append(ret)
   return pd.DataFrame(scores)
 
@@ -228,9 +233,25 @@ if __name__ == "__main__":
   comments["text"] = comments["text"].replace(np.nan, "-")
   corpus = transform_politeness(prepare_corpus(comments))
   scores = polite_score(corpus)
+  scores = scores.loc[(scores["thread_label"] == True) | (scores["thread_label"] == False)]
   try:
+    print("here")
     scores["rounds"] = comments["rounds"]
+    max_round = max(scores["rounds"].tolist())
+    scores["rounds"] = scores["rounds"].map(lambda x: x / max_round)
+
     scores["shepherd_time"] = comments["shepherd_time"]
+    min_sheph = min(scores["shepherd_time"].tolist())
+    scores["shepherd_time"] = scores["shepherd_time"].map(lambda x: x / max_sheph)
   except:
     pass
-  scores.to_csv("politeness_features.csv", index=False)
+  # Google
+  try:
+    scores["review_time"] = comments["review_time"]
+    min_review = min(scores["review_time"].tolist())
+    scores["review_time"] = scores["review_time"].map(lambda x: x / max_review)
+  except:
+    pass
+
+  scores_thread = scores.groupby("thread_id").mean().reset_index()
+  scores_thread.to_csv("politeness_features.csv", index=False)

@@ -10,24 +10,24 @@ def download_data():
   try:
     nltk.data.find("tokenizers/punkt")
   except LookupError:
-    nltk.download("punkt")
+    nltk.download("punkt", quiet=True)
 
   try:
     nltk.data.find("corpora/words")
   except LookupError:
-    nltk.download("words")
+    nltk.download("words", quiet=True)
 
   try:
     nltk.data.find("corpora/wordnet")
   except LookupError:
-    nltk.download("wordnet")
+    nltk.download("wordnet", quiet=True)
 
   try:
     nltk.data.find("corpora/stopwords")
   except LookupError:
-    nltk.download("stopwords")
+    nltk.download("stopwords", quiet=True)
 
   try:
-    spacy.load("en")
-  except IOError:
-    spacy.cli.download("en")
+    spacy.load("en_core_web_sm")
+  except LookupError:
+    nltk.download("en_core_web_sm", quiet=True)

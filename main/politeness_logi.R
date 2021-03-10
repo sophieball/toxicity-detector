@@ -11,7 +11,6 @@ dat <- read.csv("/dev/stdin")
 assert(length(dat) > 0)
 # collect counts of marked politness words and store them in a file
 system2("src/convo_politeness",
-        stdout = "politeness_features.csv",
         input = format_csv(dat))
 
 # read python's output from file
@@ -24,7 +23,6 @@ m_pol <- glm(label ~
             + log(1 + HASHEDGE)
             + (Please > 0)
             + (Please_start > 0)
-            + (Indirect_.btw. > 0)
             + (Factuality > 0)
             + (Deference > 0)
             + (Gratitude > 0)

@@ -30,7 +30,7 @@ requests
 scipy
 setuptools
 sklearn
-spacy
+spacy==2.3.0
 srsly
 statsmodels
 text_unidecode
