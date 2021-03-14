@@ -1,4 +1,4 @@
-keras
+Keras
 Pillow
 catalogue
 convokit
@@ -12,6 +12,7 @@ imblearn
 importlib_metadata
 joblib
 kiwisolver
+langcodes
 langdetect
 markdown
 matplotlib
