@@ -17,116 +17,60 @@ import numpy as np
 import sys
 import time
 
-feature_set = [["perspective_score", "politeness"], 
-               ["perspective_score", "identity_attack", "politeness", "rounds", "shepherd_time"],
-               ["rounds", "shepherd_time"],
-               ["perspective_score", 
-                "identity_attack",
-                "politeness",
-                "Please", 
-                "Please_start", 
-                "HASHEDGE", 
-                #"Indirect_(btw)", 
-                #"Hedges", 
-                #"Factuality",
-       					#"Deference", 
-                "Gratitude", 
-                #"Apologizing", 
-                #"1st_person_pl.", 
-                "1st_person",
-       					"1st_person_start", 
-                "2nd_person", 
-                "2nd_person_start",
-       					#"Indirect_(greeting)", 
-                #"Direct_question", 
-                #"Direct_start", 
-                "HASPOSITIVE",
-       					"HASNEGATIVE", 
-                #"SUBJUNCTIVE", 
-                #"INDICATIVE",
-                #"num_words", 
+feature_set = [ 
+               #["rounds", "shepherd_time"], # logs
+               #["rounds", "shepherd_time", "length"], # logs+length
+              ["perspective_score", "identity_attack",
+                "Please", "Please_start", "HASHEDGE", 
+                "Indirect_(btw)", 
+                "Hedges", 
+                "Factuality", "Deference", "Gratitude", "Apologizing", 
+                "1st_person_pl.", "1st_person", "1st_person_start", 
+                "2nd_person", "2nd_person_start",
+       					"Indirect_(greeting)", "Direct_question", "Direct_start", 
+                "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
                 "length"
               ],
-
-              ["perspective_score", 
-                "identity_attack",
-                "Please", 
-                "Please_start", 
-                "HASHEDGE", 
-                #"Indirect_(btw)", 
-                #"Hedges", 
-                #"Factuality",
-       					#"Deference", 
-                "Gratitude", 
-                #"Apologizing", 
-                #"1st_person_pl.", 
-                "1st_person",
-       					"1st_person_start", 
-                "2nd_person", 
-                "2nd_person_start",
-       					#"Indirect_(greeting)", 
-                #"Direct_question", 
-                #"Direct_start", 
-                "HASPOSITIVE",
-       					"HASNEGATIVE", 
-                #"SUBJUNCTIVE", 
-                #"INDICATIVE",
-                "length"
+              ["perspective_score", "identity_attack",
+                "Please", "Please_start", "HASHEDGE", 
+                "Indirect_(btw)", 
+                "Hedges", 
+                "Factuality", "Deference", "Gratitude", "Apologizing", 
+                "1st_person_pl.", "1st_person", "1st_person_start", 
+                "2nd_person", "2nd_person_start",
+       					"Indirect_(greeting)", "Direct_question", "Direct_start", 
+                "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
               ],
+            ]
 
-              ["perspective_score", 
-                "identity_attack",
-                "Please", 
-                "Please_start", 
-                "HASHEDGE", 
-                #"Indirect_(btw)", 
-                #"Hedges", 
-                #"Factuality",
-       					#"Deference", 
-                "Gratitude", 
-                #"Apologizing", 
-                #"1st_person_pl.", 
-                "1st_person",
-       					"1st_person_start", 
-                "2nd_person", 
-                "2nd_person_start",
-       					#"Indirect_(greeting)", 
-                #"Direct_question", 
-                #"Direct_start", 
-                "HASPOSITIVE",
-       					"HASNEGATIVE", 
-                #"SUBJUNCTIVE", 
-                #"INDICATIVE",
+"""
+              ["perspective_score", "identity_attack",
+                "Please", "Please_start", "HASHEDGE", 
+                "Indirect_(btw)", 
+                "Hedges", 
+                "Factuality", "Deference", "Gratitude", "Apologizing", 
+                "1st_person_pl.", "1st_person", "1st_person_start", 
+                "2nd_person", "2nd_person_start",
+       					"Indirect_(greeting)", "Direct_question", "Direct_start", 
+                "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
+                "rounds", "shepherd_time",
+                #"review_time"
               ],
-
-              ["perspective_score", 
-                "identity_attack",
-                "Please", 
-                "Please_start", 
-                "HASHEDGE", 
-                #"Indirect_(btw)", 
-                #"Hedges", 
-                #"Factuality",
-       					#"Deference", 
-                "Gratitude", 
-                #"Apologizing", 
-                #"1st_person_pl.", 
-                "1st_person",
-       					"1st_person_start", 
-                "2nd_person", 
-                "2nd_person_start",
-       					#"Indirect_(greeting)", 
-                #"Direct_question", 
-                #"Direct_start", 
-                "HASPOSITIVE",
-       					"HASNEGATIVE", 
-                #"SUBJUNCTIVE", 
-                #"INDICATIVE",
-                "rounds",
-                "shepherd_time",
-                "review_time"
+              ["perspective_score", "identity_attack",
+                "Please", "Please_start", "HASHEDGE", 
+                "Indirect_(btw)", 
+                "Hedges", 
+                "Factuality", "Deference", "Gratitude", "Apologizing", 
+                "1st_person_pl.", "1st_person", "1st_person_start", 
+                "2nd_person", "2nd_person_start",
+       					"Indirect_(greeting)", "Direct_question", "Direct_start", 
+                "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
+                "length",
+                "rounds", "shepherd_time",
+                #"review_time"
               ],
               ]
+"""
 
 
 # train the classifier using the result of a SQL query
@@ -138,6 +82,9 @@ def train_model(training_data, model_name="svm", pretrain=False, G=False):
   # 4 columns: _id, text, label(0/1), training(1)
   # this will later be split into train/test data
   s.set_train_set(training_data)
+  logging.info(
+        "Prepared training dataset, it took {} seconds".format(time.time() - \
+                                                               start_time))
 
   # select model
   if model_name == "svm":
@@ -184,13 +131,6 @@ def train_model(training_data, model_name="svm", pretrain=False, G=False):
     model_out.close()
     logging.info("Model is stored at {}.".format(
         str(pathlib.Path(__file__).parent.name) + "/src/pickles/"))
-    result = s.all_train_data
-    logging.info("Number of 1's in raw prediction: {}.".format(
-        sum(result["raw_prediction"])))
-    logging.info("Number of data flipped due to SE: {}.".format(
-        len(result.loc[result["is_SE"] == 1])))
-    logging.info("Number of data flipped due to self angry: {}.".format(
-        len(result.loc[result["self_angry"] == "self"])))
   return model
 
 
@@ -233,9 +173,6 @@ if __name__ == "__main__":
     #trained_model = train_model(training, model_name="lg")
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
-  logging.info(
-        "Prepared training dataset, it took {} seconds".format(time.time() - \
-                                                               start_time))
   print("Log saved in {}".format("`" + os.getcwd() + "/train_classifier.log`"))
   print("Prediction result saved in {}".format("`" + os.getcwd() +
                                                "/classification_results.csv`"))

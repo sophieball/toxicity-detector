@@ -1,6 +1,7 @@
 # input: a pandas dataframe
 # output: a pandas dataframe
 
+from cleantext import clean
 from convokit import Corpus
 from convokit import PolitenessStrategies
 from convokit import download
@@ -14,6 +15,7 @@ from convokit.text_processing import TextToArcs
 from src import receive_data
 from src import sentimoji_classify
 from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
 from src import convo_politeness
 from src import text_modifier
 from src import text_parser
@@ -34,6 +36,27 @@ nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
 from src import conversation_struct
 from src import predict_bad_conver_helpers as hp
+
+clean_str = lambda s: clean(s,
+              fix_unicode=True,         # fix various unicode errors
+              to_ascii=True,          # transliterate to closest ASCII representation
+              lower=True,           # lowercase text
+              no_line_breaks=True,       # fully strip line breaks as opposed to only normalizing them
+              no_urls=True,          # replace all URLs with a special token
+              no_emails=True,        # replace all email addresses with a special token
+              no_phone_numbers=True,     # replace all phone numbers with a special token
+              no_numbers=False,         # replace all numbers with a special token
+              no_digits=False,        # replace all digits with a special token
+              no_currency_symbols=True,    # replace all currency symbols with a special token
+              no_punct=False,         # fully remove punctuation
+              replace_with_url="<URL>",
+              replace_with_email="<EMAIL>",
+              replace_with_phone_number="<PHONE>",
+              replace_with_number="<NUMBER>",
+              replace_with_digit="0",
+              replace_with_currency_symbol="<CUR>",
+              lang="en"
+              )
 
 VERBOSITY = 10000
 
@@ -89,39 +112,16 @@ def get_perspective_score(text, det_lang):
       return [-1, -1]
 
 
-def cleanup_text(text):
-  if len(text) == 0:
-    return ""
-
-  text = nlp(text.lower().strip())
-  # Stem Non-Urls/non-Stop Words/Non Punctuation/symbol/numbers
-  text = [token.lemma_ for token in text]
-  # Remove ampersands
-  text = [re.sub(r"&[^\w]+", "", i) for i in text]
-  # Remove symbols
-  text = [
-      w.replace("#", "").replace("&", "").replace("  ", " ")
-      for w in text
-      if isascii(w) and not w.isdigit()
-  ]
-  return text
-
 
 # input: pd.DataFrame (comment)
 # output: dict (features)
 def extract_features(total_comment_info):
   text = total_comment_info["text"]
-  total_comment_info["original_text"] = text
+  total_comment_info["original_text"] = total_comment_info["text"]
   if not isinstance(text, (str, list, dict)) or text is None:
-    text = ""
-
-  # count ?
-  num_q = text.count("?")
-  # count !
-  num_exclamation = text.count("!")
+    text = "-"
 
   uppercase = text_parser.percent_uppercase(text)
-  c_length = len(text)
 
   num_reference = text_parser.count_reference_line(text)
   text = text_parser.remove_reference(text)
@@ -131,7 +131,7 @@ def extract_features(total_comment_info):
 
   num_emoji = text_parser.count_emoji(text)
   text = text_parser.remove_emoji_marker(
-      text)  # remove the two semi-colons on two sides of emoji
+      text)  # emove the two semi-colons on two sides of emoji
   text = text_parser.remove_newline(text)
 
   num_mention = text_parser.count_mention(text)
@@ -139,22 +139,15 @@ def extract_features(total_comment_info):
   num_plus_one = text_parser.count_plus_one(text)
   text = text_parser.sub_PlusOne(text)
 
+  text = clean_str(total_comment_info["text"])
+  c_length = len(word_tokenize(text))
+  total_comment_info["length"] = c_length
+
   if text == "":
     perspective_score = [-1, -1]
   else:
     perspective_score = get_perspective_score(text, "en")
 
-  # remove stop words and lemmatization
-  emoticon_r = " (:\)|;\)|;\-\)|:P|:D|:p)"
-  text, emoticon_n = re.subn(emoticon_r, "", text)
-  total_comment_info["num_emoticons"] = emoticon_n
-
-  text = cleanup_text(text)
-  total_comment_info["num_words"] = len(text)
-  text = " ".join(text)
-
-  total_comment_info["num_q_marks"] = num_q
-  total_comment_info["num_e_marks"] = num_exclamation
   total_comment_info["percent_uppercase"] = uppercase
   total_comment_info["num_reference"] = num_reference
   total_comment_info["num_url"] = num_url
@@ -244,11 +237,11 @@ def get_prompt_types(comments):
 # output: pd.DataFrame
 def create_features(comments_df, training):
   # remove invalide toxicity scores or empty comments
-  comments_df = comments_df.dropna()
-  comments_df = comments_df.replace(np.nan, "-")
+  comments_df["text"] = comments_df["text"].replace(np.nan, "-")
+  comments_df["text"] = comments_df["text"].map(text_parser.remove_reference)
   comments_df["text"] = comments_df["text"].map(text_parser.remove_inline_code)
   comments_df["text"] = comments_df["text"].map( \
-                    lambda x: "-" if (len(x.strip()) == 0) else x)
+              lambda x: "-" if (len(x.strip()) == 0) else x)
 
   # get politeness scores for all comments
   comments_df = convo_politeness.get_politeness_score(
@@ -259,7 +252,8 @@ def create_features(comments_df, training):
 
 
   # remove comments longer than 300 characters (perspective limit)
-  comments_df = util.remove_large_comments(comments_df)
+  comments_df = comments_df.loc[comments_df["length"] <= 300]
+  #comments_df = util.remove_large_comments(comments_df)
 
   ## get sentimoji
   # it's not working yet...
@@ -280,12 +274,31 @@ def create_features(comments_df, training):
   pool.close()
   features_df = pd.DataFrame(features)
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
-  features_df = features_df.dropna()
+  logging.info("length {}".format(len(features_df)))
+  features_df = features_df.replace(np.nan, 0)
+
+  features = [
+        "Please", "Please_start", "HASHEDGE", "Indirect_(btw)", "Hedges",
+        "Factuality", "Deference", "Gratitude", "Apologizing", "1st_person_pl.",
+        "1st_person", "1st_person_start", "2nd_person", "2nd_person_start",
+        "Indirect_(greeting)", "Direct_question", "Direct_start", "HASPOSITIVE",
+        "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE", "num_words", "length",
+        "percent_uppercase", "num_reference", "num_url", "num_emoji",
+        "num_mention", "num_plus_one", "perspective_score", "identity_attack"]
+  for feature in features:
+    max_f = max(features_df[feature].tolist())
+    if max_f != 0:
+      features_df[feature] = features_df[feature].map(lambda x: x/max_f)
+
 
   logging.info("Total number of {} data: {}.".format(training,
                                                      len(features_df)))
-  logging.info("Total number of {} positive data: {}.".format(training,
+  try:
+    logging.info("Total number of {} positive data: {}.".format(training,
                                                      sum(features_df["label"])))
+  except:
+    pass
+
   comments_df["label"].to_csv("pos_labels.csv")
   if training == "training":
     logging.info(
@@ -298,16 +311,16 @@ def create_features(comments_df, training):
         .format(
             training, features_df.loc[features_df["label"] == 0,
                                       "perspective_score"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 politeness scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "politeness"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 politeness scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "politeness"].describe()))
+    #logging.info(
+    #    "Some descriptive statistics of {} data label == 1 politeness scores:\n{}"
+    #    .format(
+    #        training, features_df.loc[features_df["label"] == 1,
+    #                                  "politeness"].describe()))
+    #logging.info(
+    #    "Some descriptive statistics of {} data label == 0 politeness scores:\n{}"
+    #    .format(
+    #        training, features_df.loc[features_df["label"] == 0,
+    #                                  "politeness"].describe()))
     logging.info(
         "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
         .format(
@@ -321,7 +334,7 @@ def create_features(comments_df, training):
     logging.info(
         "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
         .format(
-            training, features_df.loc[features_df["label"] == 1,
+            training, features_df.loc[features_df["label"] == 1,#
                                       "HASNEGATIVE"].describe()))
     logging.info(
         "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
