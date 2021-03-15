@@ -10,7 +10,7 @@ import os
 from src import receive_data
 from src import classifiers
 from src import suite
-import feature_set as fs
+import get_feature_set as fs
 import pandas as pd
 import pathlib
 import pickle
@@ -26,7 +26,7 @@ def train_model(training_data, model_name="svm", pretrain=False, G=False):
   if G:
     what_data = "G"
   else:
-    what_data = "issues"
+    what_data = "prs"
   feature_set = fs.get_feature_set(what_data)
 
   logging.info("Loading data.")
