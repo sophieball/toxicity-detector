@@ -74,7 +74,7 @@ def get_feature_set(dat):
                 ],
               ]
 
-  elif dat == "pr":
+  elif dat == "prs":
     feature_set = [
                  ["rounds", "shepherd_time"], # logs
                  ["rounds", "shepherd_time", "length"], # logs+length

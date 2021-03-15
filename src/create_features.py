@@ -13,7 +13,6 @@ from convokit.text_processing import TextParser
 from convokit.text_processing import TextToArcs
 
 from src import receive_data
-from src import sentimoji_classify
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from src import convo_politeness
@@ -252,7 +251,7 @@ def create_features(comments_df, training):
 
 
   # remove comments longer than 300 characters (perspective limit)
-  comments_df = comments_df.loc[comments_df["length"] <= 300]
+  #comments_df = comments_df.loc[comments_df["length"] <= 300]
   #comments_df = util.remove_large_comments(comments_df)
 
   ## get sentimoji
