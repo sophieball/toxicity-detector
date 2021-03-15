@@ -10,6 +10,7 @@ import os
 from src import receive_data
 from src import classifiers
 from src import suite
+import feature_set as fs
 import pandas as pd
 import pathlib
 import pickle
@@ -17,66 +18,16 @@ import numpy as np
 import sys
 import time
 
-feature_set = [ 
-               #["rounds", "shepherd_time"], # logs
-               #["rounds", "shepherd_time", "length"], # logs+length
-              ["perspective_score", "identity_attack",
-                "Please", "Please_start", "HASHEDGE", 
-                "Indirect_(btw)", 
-                "Hedges", 
-                "Factuality", "Deference", "Gratitude", "Apologizing", 
-                "1st_person_pl.", "1st_person", "1st_person_start", 
-                "2nd_person", "2nd_person_start",
-       					"Indirect_(greeting)", "Direct_question", "Direct_start", 
-                "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
-                "length"
-              ],
-              ["perspective_score", "identity_attack",
-                "Please", "Please_start", "HASHEDGE", 
-                "Indirect_(btw)", 
-                "Hedges", 
-                "Factuality", "Deference", "Gratitude", "Apologizing", 
-                "1st_person_pl.", "1st_person", "1st_person_start", 
-                "2nd_person", "2nd_person_start",
-       					"Indirect_(greeting)", "Direct_question", "Direct_start", 
-                "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
-              ],
-            ]
-
-"""
-              ["perspective_score", "identity_attack",
-                "Please", "Please_start", "HASHEDGE", 
-                "Indirect_(btw)", 
-                "Hedges", 
-                "Factuality", "Deference", "Gratitude", "Apologizing", 
-                "1st_person_pl.", "1st_person", "1st_person_start", 
-                "2nd_person", "2nd_person_start",
-       					"Indirect_(greeting)", "Direct_question", "Direct_start", 
-                "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
-                "rounds", "shepherd_time",
-                #"review_time"
-              ],
-              ["perspective_score", "identity_attack",
-                "Please", "Please_start", "HASHEDGE", 
-                "Indirect_(btw)", 
-                "Hedges", 
-                "Factuality", "Deference", "Gratitude", "Apologizing", 
-                "1st_person_pl.", "1st_person", "1st_person_start", 
-                "2nd_person", "2nd_person_start",
-       					"Indirect_(greeting)", "Direct_question", "Direct_start", 
-                "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
-                "length",
-                "rounds", "shepherd_time",
-                #"review_time"
-              ],
-              ]
-"""
-
-
 # train the classifier using the result of a SQL query
 def train_model(training_data, model_name="svm", pretrain=False, G=False):
   s = suite.Suite()
   s.set_G(G)
+
+  if G:
+    what_data = "G"
+  else:
+    what_data = "issues"
+  feature_set = fs.get_feature_set(what_data)
 
   logging.info("Loading data.")
   # 4 columns: _id, text, label(0/1), training(1)
