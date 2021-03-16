@@ -33,9 +33,6 @@ import time
 wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
-from src import conversation_struct
-from src import predict_bad_conver_helpers as hp
-
 clean_str = lambda s: clean(s,
               fix_unicode=True,         # fix various unicode errors
               to_ascii=True,          # transliterate to closest ASCII representation
@@ -160,78 +157,6 @@ def extract_features(total_comment_info):
   return total_comment_info
 
 
-def get_prompt_types(comments):
-# read in data
-  comments_10K = pd.read_csv("src/data/random_sample_10000_prs_body_comments.csv")
-  print(len(comments_10K))
-  # data from MongoDB contains duplicates
-  comments = comments.drop_duplicates()
-  # construct corpus and preprocess text
-  speakers = conversation_struct.create_speakers(comments)
-  corpus = conversation_struct.prepare_corpus(comments, speakers, google)
-
-  speakers_10K = conversation_struct.create_speakers(comments_10K)
-  corpus_10K = conversation_struct.prepare_corpus(comments_10K, speakers_10K, google)
-  # get avg word count, sent len
-  total_words = 0
-  total_sents = 0
-  total_sent_lens = 0
-  total_utt = 0
-  for utt_id in corpus_10K.get_utterance_ids():
-    utt = corpus_10K.get_utterance(utt_id)
-    total_utt += 1
-    total_words += utt.meta["num_words"]
-    total_sents += utt.meta["num_sents"]
-    total_sent_lens += utt.meta["sent_len"]
-  logging.info("Avg words per utt: {}".format(total_words/total_utt))
-  logging.info("Avg sents per utt: {}".format(total_sents/total_utt))
-  logging.info("Avg sent lens per utt: {}".format(total_sent_lens/total_utt))
-
-  # parse the text with spacy
-  parser = TextParser(verbosity=0)
-  corpus = parser.transform(corpus)
-  corpus_10K = parser.transform(corpus_10K)
-
-  # prompt type
-  N_TYPES = 6
-  pt = PromptTypeWrapper(
-      n_types=N_TYPES,
-      use_prompt_motifs=False,
-      root_only=False,
-      questions_only=False,
-      enforce_caps=False,
-      min_support=2,
-      min_df=2,
-      svd__n_components=50,
-      max_dist=2.,
-      random_state=1000)
-
-  pt.fit(corpus_10K)
-  corpus = pt.transform(corpus)
-
-  prompt_dist_df = corpus.get_vectors(name='prompt_types__prompt_dists.6',
-                                           as_dataframe=True)
-  logging.info("len dist df:%d", len(prompt_dist_df))
-  type_ids = np.argmin(prompt_dist_df.values, axis=1)
-  mask = np.min(prompt_dist_df.values, axis=1) > 1.
-  type_ids[mask] = 6
-  prompt_dist_df.columns = ["km_%d_dist" % c for c in range(len(prompt_dist_df.columns))]
-  logging.info("num prompts with ids:%d", len(prompt_dist_df))
-
-  prompt_type_assignments = np.zeros(
-      (len(prompt_dist_df), prompt_dist_df.shape[1] + 1))
-  prompt_type_assignments[np.arange(len(type_ids)), type_ids] = 1
-  prompt_type_assignment_df = pd.DataFrame(
-      columns=np.arange(prompt_dist_df.shape[1] + 1),
-      index=prompt_dist_df.index,
-      data=prompt_type_assignments)
-  prompt_type_assignment_df = prompt_type_assignment_df[
-      prompt_type_assignment_df.columns[:-1]]
-  
-  prompt_type_assignment_df.columns = prompt_dist_df.columns
-  return prompt_type_assignment_df.reset_index()
-  
-
 # input: pd.DataFrame
 # output: pd.DataFrame
 def create_features(comments_df, training):
@@ -246,14 +171,6 @@ def create_features(comments_df, training):
   comments_df = convo_politeness.get_politeness_score(
       comments_df)
   
-  #prompt_types = get_prompt_types(comments_df)
-  #comments_df = comments_df.join(prompt_types)
-
-
-  # remove comments longer than 300 characters (perspective limit)
-  #comments_df = comments_df.loc[comments_df["length"] <= 300]
-  #comments_df = util.remove_large_comments(comments_df)
-
   ## get sentimoji
   # it's not working yet...
   #comments_df = sentimoji_classify.sentimoji(

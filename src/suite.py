@@ -163,6 +163,7 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
   words = [
       word for word in words if not word.isalpha() or word.lower() in SE_words
   ]
+  logging.info("removed SE words: {}\n".format(words))
 
   # the comment was labeld to be toxic not because it contains SE words
   if len(words) == 0:
@@ -344,7 +345,7 @@ class Suite:
     clf = ExtraTreesClassifier(n_estimators=50)
     clf = clf.fit(X_train, y_train)
     logging.info("Feature importance: {}, {}".format(self.features,
-            clf.feature_importances_))
+            [round(x, 3) for x in clf.feature_importances_]))
 
     # train model
     X_train = train_data[self.features]
