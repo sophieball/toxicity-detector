@@ -9,7 +9,7 @@ import re
 import spacy
 import time
 
-nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 ps = PorterStemmer()
 words = set(nltk.corpus.words.words())
 
