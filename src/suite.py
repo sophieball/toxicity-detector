@@ -163,7 +163,6 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
   words = [
       word for word in words if not word.isalpha() or word.lower() in SE_words
   ]
-  logging.info("removed SE words: {}\n".format(words))
 
   # the comment was labeld to be toxic not because it contains SE words
   if len(words) == 0:
