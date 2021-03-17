@@ -74,9 +74,6 @@ def rescore(row, features, tf_idf_counter):
   for f in features:
     new_features_dict[f] = row[f]
 
-  if "length" in features:
-    new_features_dict["length"] = len(new_sentence)
-
   if "perspective_score" in features:
     persp_score = create_features.get_perspective_score(new_sentence, "en")
     new_features_dict["perspective_score"] = persp_score[0]
@@ -343,8 +340,9 @@ class Suite:
     y_train = self.all_train_data["label"]
     clf = ExtraTreesClassifier(n_estimators=50)
     clf = clf.fit(X_train, y_train)
-    logging.info("Feature importance: {}, {}".format(self.features,
-            [round(x, 3) for x in clf.feature_importances_]))
+    logging.info("Feature importance: {}\n".format(
+            [(self.features[i], round(x, 3)) 
+              for (i, x) in enumerate(clf.feature_importances_)]))
 
     # train model
     X_train = train_data[self.features]
