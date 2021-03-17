@@ -4,6 +4,9 @@
 from src import download_data
 download_data.download_data()
 
+from sklearn.metrics import classification_report, fbeta_score, roc_auc_score, roc_curve
+from nltk.classify.scikitlearn import SklearnClassifier
+from sklearn.svm import LinearSVC
 from collections import defaultdict
 from convokit import Corpus, Speaker, Utterance
 from convokit import PolitenessStrategies
@@ -23,15 +26,25 @@ import sklearn
 test_size = 0.2
 
 
+# load bot list
+f = open("src/data/speakers_bots_full.list")
+bots = [l.strip() for l in f.readlines()]
+f.close()
+
+
 # Creating corpus from the list of utterances
 def prepare_corpus(comments):
   speaker_meta = {}
   for i, row in comments.iterrows():
+    if "author" in comments.columns and row["author"] in bots:
+      continue
     speaker_meta[row["_id"]] = {"id": row["_id"]}
   corpus_speakers = {k: Speaker(id=k, meta=v) for k, v in speaker_meta.items()}
 
   utterance_corpus = {}
   for idx, row in comments.iterrows():
+    if "author" in comments.columns and row["author"] in bots:
+      continue
     num_sentences = len(sent_tokenize(row["text"]))
     alpha_text = " ".join([x for x in row["text"].split(" ") if x.isalpha()])
 
@@ -44,7 +57,23 @@ def prepare_corpus(comments):
           meta={
               "id": row["_id"],
               "num_sents": num_sentences,
-              "label": row["label"]
+              "label": row["label"],
+              "thread_label": row["thread_label"],
+              "thread_id": row["thread_id"],
+          })
+    elif "rounds" in comments.columns:
+      utterance_corpus[row["_id"]] = Utterance(
+          id=row["_id"],
+          speaker=corpus_speakers[row["_id"]],
+          text=alpha_text,
+          meta={
+              "id": row["_id"],
+              "num_sents": num_sentences,
+              "rounds": row["rounds"],
+              "shepherd_time": row["shepherd_time"],
+              "label": row["label"],
+              "thread_label": row["thread_label"],
+              "thread_id": row["thread_id"],
           })
     else:
       utterance_corpus[row["_id"]] = Utterance(
@@ -77,6 +106,7 @@ def polite_score(corpus):
       corpus.get_utterance(
           corpus.get_utterance_ids()[0]).meta["politeness_strategies"])
   scores = []
+
   for x in corpus.get_utterance_ids():
     ret = {"_id": x}
     utt = corpus.get_utterance(x)
@@ -94,7 +124,15 @@ def polite_score(corpus):
     # training data
     if "label" in utt.meta:
       ret["label"] = utt.meta["label"]
+      ret["thread_label"] = utt.meta["thread_label"]
+      ret["thread_id"] = utt.meta["thread_id"]
+    if "is_pr" in utt.meta:
+      ret["is_pr"] = utt.meta["is_pr"]
+    if "rounds" in utt.meta:
+      ret["rounds"] = utt.meta["rounds"]
+      ret["shepherd_time"] = utt.meta["shepherd_time"]
     scores.append(ret)
+
   return pd.DataFrame(scores)
 
 
@@ -126,9 +164,9 @@ def transform_features(X):
 # These features are picked based on a logistic regression
 def pick_features(X):
   X = transform_features(X)
-  return X[[
-      "HASHEDGE", "2nd_person", "HASNEGATIVE", "1st_person", "2nd_person_start"
-  ]]
+  return X.drop(columns=["Indirect_(btw)", "Indirect_(greeting)",
+  "Direct_start", "Gratitude", "Apologizing", "Direct_start",
+  "SUBJUNCTIVE", "INDICATIVE"])
 
 
 # split data to do cross validation
@@ -156,10 +194,15 @@ def train_polite(comments):
   scores = polite_score(corpus)
   y = scores["label"]
   X = pick_features(scores)
-  X = X.drop(columns=["_id", "label"], axis=1)
-  clf = linear_model.LogisticRegression(random_state=0).fit(X, y)
+  X = X.drop(columns=["_id", "label", "thread_label"], axis=1)
+  clf = LinearSVC(random_state=0, max_iter=10000)
+  clf = clf.fit(X, y)
+  pred = clf.predict(X)
+  print(classification_report(y,
+                              pred))
   # save the model
   out = open("src/pickles/politeness.p", "wb")
+  print(clf.coef_)
   pickle.dump(clf, out)
   out.close()
 
@@ -168,15 +211,9 @@ def train_polite(comments):
 # output: a pandas dataframe: _id, text, politeness
 def get_politeness_score(comments):
   corpus = transform_politeness(prepare_corpus(comments))
-  # Calculate politeness score
   scores = polite_score(corpus)
-  X = pick_features(scores)
-  # Load the model
-  clf = pickle.load(open("src/pickles/politeness.p", "rb"))
-  y = clf.predict_proba(X)
-  comments["politeness"] = y[:, 1]
   if "label" in scores:
-    scores = scores.drop(["_id", "label"], axis=1)
+    scores = scores.drop(["_id", "label", "thread_label"], axis=1)
   else:
     scores = scores.drop(["_id"], axis=1)
   comments = pd.concat([comments, scores], axis=1)
@@ -185,7 +222,8 @@ def get_politeness_score(comments):
 
 if __name__ == "__main__":
   [comments, _] = receive_data.receive_data()
-  comments = comments.dropna()
+  comments["text"] = comments["text"].replace(np.nan, "-")
   corpus = transform_politeness(prepare_corpus(comments))
   scores = polite_score(corpus)
-  scores.to_csv("politeness_features.csv", index=False)
+  scores_thread = scores.groupby("thread_id").sum().reset_index()
+  scores_thread.to_csv("politeness_features.csv", index=False)
