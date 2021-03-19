@@ -30,6 +30,10 @@ import requests
 import spacy
 import sys
 import time
+
+from src import conversation_struct
+from src import predict_bad_conver_helpers as hp
+
 wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
@@ -55,13 +59,6 @@ clean_str = lambda s: clean(s,
               )
 
 VERBOSITY = 10000
-
-if len(sys.argv) > 1:
-  google = False
-else:
-  google = True
-
-
 
 def isascii(s):
   return all(ord(c) < 128 for c in s)
@@ -157,9 +154,80 @@ def extract_features(total_comment_info):
   return total_comment_info
 
 
+def get_prompt_types(comments, G):
+# read in data
+  comments_10K = pd.read_csv("src/data/random_sample_10000_prs_body_comments.csv")
+  # data from MongoDB contains duplicates
+  comments = comments.drop_duplicates()
+  # construct corpus and preprocess text
+  speakers = conversation_struct.create_speakers(comments)
+  corpus = conversation_struct.prepare_corpus(comments, speakers, G)
+
+  speakers_10K = conversation_struct.create_speakers(comments_10K)
+  corpus_10K = conversation_struct.prepare_corpus(comments_10K, speakers_10K, G)
+  # get avg word count, sent len
+  total_words = 0
+  total_sents = 0
+  total_sent_lens = 0
+  total_utt = 0
+  for utt_id in corpus_10K.get_utterance_ids():
+    utt = corpus_10K.get_utterance(utt_id)
+    total_utt += 1
+    total_words += utt.meta["num_words"]
+    total_sents += utt.meta["num_sents"]
+    total_sent_lens += utt.meta["sent_len"]
+  logging.info("Avg words per utt: {}".format(total_words/total_utt))
+  logging.info("Avg sents per utt: {}".format(total_sents/total_utt))
+  logging.info("Avg sent lens per utt: {}".format(total_sent_lens/total_utt))
+
+  # parse the text with spacy
+  parser = TextParser(verbosity=0)
+  corpus = parser.transform(corpus)
+  corpus_10K = parser.transform(corpus_10K)
+
+  # prompt type
+  N_TYPES = 4
+  pt = PromptTypeWrapper(
+      n_types=N_TYPES,
+      use_prompt_motifs=False,
+      root_only=False,
+      questions_only=False,
+      enforce_caps=False,
+      min_support=2,
+      min_df=2,
+      svd__n_components=50,
+      max_dist=2.,
+      random_state=1000)
+
+  pt.fit(corpus_10K)
+  corpus = pt.transform(corpus)
+
+  prompt_dist_df = corpus.get_vectors(name='prompt_types__prompt_dists.'+str(N_TYPES),
+                                           as_dataframe=True)
+  logging.info("len dist df:%d", len(prompt_dist_df))
+  type_ids = np.argmin(prompt_dist_df.values, axis=1)
+  mask = np.min(prompt_dist_df.values, axis=1) > 1.
+  type_ids[mask] = N_TYPES
+  prompt_dist_df.columns = ["km_%d_dist" % c for c in range(len(prompt_dist_df.columns))]
+  logging.info("num prompts with ids:%d", len(prompt_dist_df))
+
+  prompt_type_assignments = np.zeros(
+      (len(prompt_dist_df), prompt_dist_df.shape[1] + 1))
+  prompt_type_assignments[np.arange(len(type_ids)), type_ids] = 1
+  prompt_type_assignment_df = pd.DataFrame(
+      columns=np.arange(prompt_dist_df.shape[1] + 1),
+      index=prompt_dist_df.index,
+      data=prompt_type_assignments)
+  prompt_type_assignment_df = prompt_type_assignment_df[
+      prompt_type_assignment_df.columns[:-1]]
+
+  prompt_type_assignment_df.columns = prompt_dist_df.columns
+  return prompt_type_assignment_df.reset_index()
+  
+
 # input: pd.DataFrame
 # output: pd.DataFrame
-def create_features(comments_df, training):
+def create_features(comments_df, training, G):
   # remove invalide toxicity scores or empty comments
   comments_df["text"] = comments_df["text"].replace(np.nan, "-")
   comments_df["text"] = comments_df["text"].map(text_parser.remove_reference)
@@ -169,7 +237,10 @@ def create_features(comments_df, training):
 
   # get politeness scores for all comments
   comments_df = convo_politeness.get_politeness_score(
-      comments_df)
+      comments_df, G)
+
+  #prompt_types = get_prompt_types(comments_df, G)
+  #comments_df = comments_df.join(prompt_types)
   
   ## get sentimoji
   # it's not working yet...
@@ -193,18 +264,23 @@ def create_features(comments_df, training):
   logging.info("length {}".format(len(features_df)))
   features_df = features_df.replace(np.nan, 0)
 
+  # we need to normalize features
   features = [
         "Please", "Please_start", "HASHEDGE", "Indirect_(btw)", "Hedges",
         "Factuality", "Deference", "Gratitude", "Apologizing", "1st_person_pl.",
         "1st_person", "1st_person_start", "2nd_person", "2nd_person_start",
         "Indirect_(greeting)", "Direct_question", "Direct_start", "HASPOSITIVE",
-        "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE", "num_words", "length",
+        "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE", 
+        "num_words", "length", # length
         "percent_uppercase", "num_reference", "num_url", "num_emoji",
-        "num_mention", "num_plus_one", "perspective_score", "identity_attack"]
+        "num_mention", "num_plus_one", 
+        "perspective_score", "identity_attack", # perspective
+        "rounds", "sheperd_time", "review_time"] # logs-based
   for feature in features:
-    max_f = max(features_df[feature].tolist())
-    if max_f != 0:
-      features_df[feature] = features_df[feature].map(lambda x: x/max_f)
+    if feature in features_df.columns:
+      max_f = max(features_df[feature].tolist())
+      if max_f != 0:
+        features_df[feature] = features_df[feature].map(lambda x: x/max_f)
 
 
   logging.info("Total number of {} data: {}.".format(training,
@@ -227,16 +303,6 @@ def create_features(comments_df, training):
         .format(
             training, features_df.loc[features_df["label"] == 0,
                                       "perspective_score"].describe()))
-    #logging.info(
-    #    "Some descriptive statistics of {} data label == 1 politeness scores:\n{}"
-    #    .format(
-    #        training, features_df.loc[features_df["label"] == 1,
-    #                                  "politeness"].describe()))
-    #logging.info(
-    #    "Some descriptive statistics of {} data label == 0 politeness scores:\n{}"
-    #    .format(
-    #        training, features_df.loc[features_df["label"] == 0,
-    #                                  "politeness"].describe()))
     logging.info(
         "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
         .format(

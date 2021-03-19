@@ -33,7 +33,7 @@ f.close()
 
 
 # Creating corpus from the list of utterances
-def prepare_corpus(comments):
+def prepare_corpus(comments, G):
   speaker_meta = {}
   for i, row in comments.iterrows():
     if "author" in comments.columns and row["author"] in bots:
@@ -49,7 +49,7 @@ def prepare_corpus(comments):
     alpha_text = " ".join([x for x in row["text"].split(" ") if x.isalpha()])
 
     # training data
-    if "label" in comments.columns:
+    if G:
       utterance_corpus[row["_id"]] = Utterance(
           id=row["_id"],
           speaker=corpus_speakers[row["_id"]],
@@ -58,32 +58,46 @@ def prepare_corpus(comments):
               "id": row["_id"],
               "num_sents": num_sentences,
               "label": row["label"],
-              "thread_label": row["thread_label"],
-              "thread_id": row["thread_id"],
-          })
-    elif "rounds" in comments.columns:
-      utterance_corpus[row["_id"]] = Utterance(
-          id=row["_id"],
-          speaker=corpus_speakers[row["_id"]],
-          text=alpha_text,
-          meta={
-              "id": row["_id"],
-              "num_sents": num_sentences,
               "rounds": row["rounds"],
               "shepherd_time": row["shepherd_time"],
-              "label": row["label"],
-              "thread_label": row["thread_label"],
-              "thread_id": row["thread_id"],
+              "review_time": row["review_time"]
           })
     else:
-      utterance_corpus[row["_id"]] = Utterance(
-          id=row["_id"],
-          speaker=corpus_speakers[row["_id"]],
-          text=alpha_text,
-          meta={
-              "id": row["_id"],
-              "num_sents": num_sentences
-          })
+      if "label" in comments.columns: # training
+        utterance_corpus[row["_id"]] = Utterance(
+            id=row["_id"],
+            speaker=corpus_speakers[row["_id"]],
+            text=alpha_text,
+            meta={
+                "id": row["_id"],
+                "num_sents": num_sentences,
+                "label": row["label"],
+                "thread_label": row["thread_label"],
+                "thread_id": row["thread_id"],
+            })
+      elif "rounds" in comments.columns: # prs
+        utterance_corpus[row["_id"]] = Utterance(
+            id=row["_id"],
+            speaker=corpus_speakers[row["_id"]],
+            text=alpha_text,
+            meta={
+                "id": row["_id"],
+                "num_sents": num_sentences,
+                "rounds": row["rounds"],
+                "shepherd_time": row["shepherd_time"],
+                "label": row["label"],
+                "thread_label": row["thread_label"],
+                "thread_id": row["thread_id"],
+            })
+      else:
+        utterance_corpus[row["_id"]] = Utterance(
+            id=row["_id"],
+            speaker=corpus_speakers[row["_id"]],
+            text=alpha_text,
+            meta={
+                "id": row["_id"],
+                "num_sents": num_sentences
+            })
 
   utterance_list = utterance_corpus.values()
   corpus = Corpus(utterances=utterance_list)
@@ -122,7 +136,7 @@ def polite_score(corpus):
     ret["num_words"] = len(utt.text.split(" "))
     ret["length"] = len(utt.text)
     # training data
-    if "label" in utt.meta:
+    if "thread_label" in utt.meta:
       ret["label"] = utt.meta["label"]
       ret["thread_label"] = utt.meta["thread_label"]
       ret["thread_id"] = utt.meta["thread_id"]
@@ -131,6 +145,7 @@ def polite_score(corpus):
     if "rounds" in utt.meta:
       ret["rounds"] = utt.meta["rounds"]
       ret["shepherd_time"] = utt.meta["shepherd_time"]
+      ret["review_time"] = utt.meta["review_time"]
     scores.append(ret)
 
   return pd.DataFrame(scores)
@@ -171,7 +186,7 @@ def pick_features(X):
 
 # split data to do cross validation
 def cross_validate(comments):
-  corpus = transform_politeness(prepare_corpus(comments))
+  corpus = transform_politeness(prepare_corpus(comments, G=False))
   scores = polite_score(corpus)
   y = scores["label"]
   X = pick_features(scores)
@@ -189,7 +204,7 @@ def cross_validate(comments):
 
 # train a logistic regression model using all training data
 def train_polite(comments):
-  corpus = transform_politeness(prepare_corpus(comments))
+  corpus = transform_politeness(prepare_corpus(comments, G=False))
   # get only politeness strategy markers counts
   scores = polite_score(corpus)
   y = scores["label"]
@@ -209,11 +224,11 @@ def train_polite(comments):
 
 # input: a pandas dataframe: _id, text
 # output: a pandas dataframe: _id, text, politeness
-def get_politeness_score(comments):
-  corpus = transform_politeness(prepare_corpus(comments))
+def get_politeness_score(comments, G):
+  corpus = transform_politeness(prepare_corpus(comments, G))
   scores = polite_score(corpus)
   if "thread_label" in scores:
-    scores = scores.drop(["_id", "label", "thread_label"], axis=1)
+    scores = scores.drop(["_id", "thread_id", "label", "thread_label"], axis=1)
   elif "label" in scores:
     scores = scores.drop(["_id", "label"], axis=1)
   else:
@@ -223,6 +238,7 @@ def get_politeness_score(comments):
 
 
 if __name__ == "__main__":
+  # this should be called with OSS data (because those data have threads)
   [comments, _] = receive_data.receive_data()
   comments["text"] = comments["text"].replace(np.nan, "-")
   corpus = transform_politeness(prepare_corpus(comments))

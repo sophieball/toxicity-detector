@@ -239,7 +239,7 @@ class Suite:
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
     self.all_train_data = create_features.create_features(
-        train_collection, "training")
+        train_collection, "training", self.Google)
     logging.info(
         "Prepared training dataset, it took {} seconds".format(time.time() - \
                                                                self.last_time))
@@ -248,7 +248,8 @@ class Suite:
   def set_unlabeled_set(self, test_collection):
     self.test_collection = test_collection
     self.test_data = create_features.create_features(test_collection,
-                                                     "unlabeled")
+                                                     "unlabeled",
+                                                     self.Google)
     logging.info(
         "Prepared unlabeled dataset, it took {} seconds".format(time.time() - \
                                                               self.last_time))
