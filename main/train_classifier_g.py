@@ -19,14 +19,16 @@ import sys
 import time
 
 # train the classifier using the result of a SQL query
-def train_model(training_data, model_name="svm", pretrain=False, G=False):
+def train_model(training_data, model_name="svm", pretrain=False, what_data="issues"):
   s = suite.Suite()
+  if what_data == "G":
+    G = True
+    training_data["thread_label"] = training_data["label"]
+    training_data["thread_id"] = training_data["_id"]
+  else:
+    G = False
   s.set_G(G)
 
-  if G:
-    what_data = "G"
-  else:
-    what_data = "prs"
   feature_set = fs.get_feature_set(what_data)
 
   logging.info("Loading data.")
@@ -109,19 +111,21 @@ def predict_unlabeled(unlabeled_data, trained_model, features, G_data=True):
 if __name__ == "__main__":
   start_time = time.time()
   if len(sys.argv) > 1:
+    what_data = sys.argv[1]
+    print(what_data)
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data()
-    trained_model = train_model(training, G=False)
-    trained_model = train_model(training, model_name="rf", G=False)
-    #trained_model = train_model(training, model_name="lg")
+    trained_model = train_model(training, model_name="rf", what_data=what_data)
+    trained_model = train_model(training, what_data=what_data)
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
   else:
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data()
-    trained_model = train_model(training, G=True)
-    trained_model = train_model(training, model_name="rf", G=True)
-    #trained_model = train_model(training, model_name="lg")
+    training["thread_label"] = training["label"]
+    training["thread_id"] = training["_id"]
+    trained_model = train_model(training, what_data="G")
+    trained_model = train_model(training, model_name="rf", what_data="G")
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
   print("Log saved in {}".format("`" + os.getcwd() + "/train_classifier.log`"))

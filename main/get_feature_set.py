@@ -62,6 +62,7 @@ def get_feature_set(dat):
                   "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
                   "length"
                 ],
+
                 ["perspective_score", "identity_attack",
                   "Please", "Please_start", "HASHEDGE", 
                   "Indirect_(btw)", 
@@ -76,6 +77,30 @@ def get_feature_set(dat):
 
   elif dat == "prs":
     feature_set = [
+                ["perspective_score", "identity_attack",
+                  "Please", "Please_start", "HASHEDGE", 
+                  "Indirect_(btw)", 
+                  "Hedges", 
+                  "Factuality", "Deference", "Gratitude", "Apologizing", 
+                  "1st_person_pl.", "1st_person", "1st_person_start", 
+                  "2nd_person", "2nd_person_start",
+         					"Indirect_(greeting)", "Direct_question", "Direct_start", 
+                  "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
+                  "length",
+                  "rounds", "shepherd_time"
+                ],
+                ["perspective_score", "identity_attack",
+                  "Please", "Please_start", "HASHEDGE", 
+                  "Indirect_(btw)", 
+                  "Hedges", 
+                  "Factuality", "Deference", "Gratitude", "Apologizing", 
+                  "1st_person_pl.", "1st_person", "1st_person_start", 
+                  "2nd_person", "2nd_person_start",
+         					"Indirect_(greeting)", "Direct_question", "Direct_start", 
+                  "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
+                  "length",
+                  "rounds", "shepherd_time"
+                ],
                  ["rounds", "shepherd_time"], # logs
                  ["rounds", "shepherd_time", "length"], # logs+length
                 ["perspective_score", "identity_attack",
@@ -109,18 +134,6 @@ def get_feature_set(dat):
          					"Indirect_(greeting)", "Direct_question", "Direct_start", 
                   "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
                   "rounds", "shepherd_time" # logs-based
-                ],
-                ["perspective_score", "identity_attack",
-                  "Please", "Please_start", "HASHEDGE", 
-                  "Indirect_(btw)", 
-                  "Hedges", 
-                  "Factuality", "Deference", "Gratitude", "Apologizing", 
-                  "1st_person_pl.", "1st_person", "1st_person_start", 
-                  "2nd_person", "2nd_person_start",
-         					"Indirect_(greeting)", "Direct_question", "Direct_start", 
-                  "HASPOSITIVE", "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE",
-                  "length",
-                  "rounds", "shepherd_time"
                 ],
              ]
   return feature_set

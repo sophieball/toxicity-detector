@@ -239,7 +239,7 @@ class Suite:
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
     self.all_train_data = create_features.create_features(
-        train_collection, "training")
+        train_collection, "training", self.Google)
     logging.info(
         "Prepared training dataset, it took {} seconds".format(time.time() - \
                                                                self.last_time))
@@ -248,7 +248,7 @@ class Suite:
   def set_unlabeled_set(self, test_collection):
     self.test_collection = test_collection
     self.test_data = create_features.create_features(test_collection,
-                                                     "unlabeled")
+                                                     "unlabeled", self.Google)
     logging.info(
         "Prepared unlabeled dataset, it took {} seconds".format(time.time() - \
                                                               self.last_time))
@@ -318,22 +318,24 @@ class Suite:
       estimator = LogisticRegression()
 
     # split training and test
+    """
     if self.Google:
       X_train, X_test, y_train, y_test = train_test_split(
           self.all_train_data, self.all_train_data["label"], test_size=0.33,
           random_state=42)
     else:
-      # split thread_labels
-      thread_id_label = self.all_train_data[["thread_id", "thread_label"]]
-      thread_id_label = thread_id_label.drop_duplicates()
-      X_train_id, X_test_id, _, _ = train_test_split(
-          thread_id_label, thread_id_label["thread_label"], test_size=0.33,
-          random_state=42)
-      # split data into train and test
-      X_train_id = X_train_id["thread_id"]
-      X_test_id = X_test_id["thread_id"]
-      train_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_train_id)]
-      test_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_test_id)]
+    """
+    # split thread_labels
+    thread_id_label = self.all_train_data[["thread_id", "thread_label"]]
+    thread_id_label = thread_id_label.drop_duplicates()
+    X_train_id, X_test_id, _, _ = train_test_split(
+        thread_id_label, thread_id_label["thread_label"], test_size=0.33,
+        random_state=42)
+    # split data into train and test
+    X_train_id = X_train_id["thread_id"]
+    X_test_id = X_test_id["thread_id"]
+    train_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_train_id)]
+    test_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_test_id)]
 
     # feature importance
     X_train = self.all_train_data[self.features]
@@ -405,24 +407,24 @@ class Suite:
         len(test_data.loc[test_data["self_angry"] == "self"])))
 
     # THREAD level accuracy
-    if not self.Google:
-      # if any comment is predicted as 1(toxic) then the whole thread is consider
-      # toxic
-      label_data = test_data[["thread_id", "thread_label"]]
-      true_thread_label = label_data.groupby("thread_id").first()
-      true_thread_label = true_thread_label.reset_index()
-      true_thread_label = true_thread_label["thread_label"]
+    #if not self.Google:
+    # if any comment is predicted as 1(toxic) then the whole thread is consider
+    # toxic
+    label_data = test_data[["thread_id", "thread_label"]]
+    true_thread_label = label_data.groupby("thread_id").first()
+    true_thread_label = true_thread_label.reset_index()
+    true_thread_label = true_thread_label["thread_label"]
 
-      label_data = test_data[["thread_id", "prediction"]]
-      predicted_threads = label_data.groupby("thread_id")["prediction"].sum()
-      predicted_threads = predicted_threads.reset_index()
-      predicted_threads["thread_prediction"] = \
-              predicted_threads["prediction"].map(lambda x: int(x>0))
-      predicted_thread_label = predicted_threads["thread_prediction"]
+    label_data = test_data[["thread_id", "prediction"]]
+    predicted_threads = label_data.groupby("thread_id")["prediction"].sum()
+    predicted_threads = predicted_threads.reset_index()
+    predicted_threads["thread_prediction"] = \
+            predicted_threads["prediction"].map(lambda x: int(x>0))
+    predicted_thread_label = predicted_threads["thread_prediction"]
 
-      logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
-          classification_report(true_thread_label.tolist(),
-                                predicted_thread_label.tolist())))
+    logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
+        classification_report(true_thread_label.tolist(),
+                              predicted_thread_label.tolist())))
 
     
     model_out = open(

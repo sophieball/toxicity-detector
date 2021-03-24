@@ -50,6 +50,7 @@ def create_speakers(comments):
   count = 0
   for i, row in comments.iterrows():
     login = row["author"]
+    thread_id = row["thread_id"][0]
     if login in bots:
       continue
     if login not in speaker_meta:
@@ -65,11 +66,11 @@ def create_speakers(comments):
     try:
       # add tuple (owner/repo, association)
       speaker_meta[login]["associations"].add(
-          ("/".join(row["thread_id"].split("/")[:-1]),
+          ("/".join(thread_id.split("/")[:-1]),
            row["author_association"]))
     except:
       speaker_meta[login]["associations"].add(
-          (row["thread_id"], row["author_association"]))
+          (thread_id, row["author_association"]))
 
   corpus_speakers = {k: Speaker(id=k, meta=v) for k, v in speaker_meta.items()}
 
