@@ -170,17 +170,6 @@ def create_features(comments_df, training, G):
   comments_df = convo_politeness.get_politeness_score(
       comments_df)
 
-  
-  ## get sentimoji
-  # it's not working yet...
-  #comments_df = sentimoji_classify.sentimoji(
-  #                  comments_df, 
-  #                  "src/model",
-  #                  "SEntiMoji-G",
-  #                  64
-  #              )
-
-  #logging.info(comments_df.columns())
   # convert it to a list of dictionaries
   comments = comments_df.T.to_dict().values()
 
@@ -227,16 +216,7 @@ def create_features(comments_df, training, G):
         .format(
             training, features_df.loc[features_df["label"] == 0,
                                       "perspective_score"].describe()))
-    #logging.info(
-    #    "Some descriptive statistics of {} data label == 1 politeness scores:\n{}"
-    #    .format(
-    #        training, features_df.loc[features_df["label"] == 1,
-    #                                  "politeness"].describe()))
-    #logging.info(
-    #    "Some descriptive statistics of {} data label == 0 politeness scores:\n{}"
-    #    .format(
-    #        training, features_df.loc[features_df["label"] == 0,
-    #                                  "politeness"].describe()))
+
     logging.info(
         "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
         .format(
