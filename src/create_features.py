@@ -188,9 +188,12 @@ def create_features(comments_df, training, G):
         "1st_person", "1st_person_start", "2nd_person", "2nd_person_start",
         "Indirect_(greeting)", "Direct_question", "Direct_start", "HASPOSITIVE",
         "HASNEGATIVE", "SUBJUNCTIVE", "INDICATIVE", "num_words", "length",
+        "rounds", "shepherd_time", "review_time",
         "percent_uppercase", "num_reference", "num_url", "num_emoji",
         "num_mention", "num_plus_one", "perspective_score", "identity_attack"]
   for feature in features:
+    if feature not in features_df.columns:
+      continue
     max_f = max(features_df[feature].tolist())
     if max_f != 0:
       features_df[feature] = features_df[feature].map(lambda x: x/max_f)
