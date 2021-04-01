@@ -183,7 +183,7 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
 
     # after removing SE words, the model labels it as non-toxic
     new_features = pd.DataFrame([new_features])
-    if model.predict([new_features])[0] == 0:
+    if model.predict(new_features)[0] == 0:
       # it was labeled to be toxic because of SE words
       return 1
 
