@@ -112,7 +112,7 @@ if __name__ == "__main__":
   start_time = time.time()
   if len(sys.argv) > 1:
     what_data = sys.argv[1]
-    print(what_data)
+    logging.info("Training {}".format(what_data))
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data()
     trained_model = train_model(training, model_name="rf", what_data=what_data)

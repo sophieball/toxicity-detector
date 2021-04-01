@@ -166,8 +166,6 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
     return 0
 
   for word in set(words):
-    # NV: Maybe unkify?
-    # replace those SE words with "potato"
     new_sentence = re.sub(
         r"[^a-zA-Z0-9]" + re.escape(word.lower()) + r"[^a-zA-Z0-9]", " ",
         text.lower())
@@ -175,15 +173,16 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
     row["text"] = new_sentence
     new_features_dict = rescore(row, features, tf_idf_counter)
 
-    new_features = []
+    new_features = {}
     for f in features:
       max_f = max(features_df[f].tolist())
       if max_f != 0:
-        new_features.append(new_features_dict[f]/max_f)
+        new_features[f] = new_features_dict[f]/max_f
       else:
-        new_features.append(new_features_dict[f])
+        new_features[f] = new_features_dict[f]
 
     # after removing SE words, the model labels it as non-toxic
+    new_features = pd.DataFrame([new_features])
     if model.predict([new_features])[0] == 0:
       # it was labeled to be toxic because of SE words
       return 1
@@ -318,13 +317,6 @@ class Suite:
       estimator = LogisticRegression()
 
     # split training and test
-    """
-    if self.Google:
-      X_train, X_test, y_train, y_test = train_test_split(
-          self.all_train_data, self.all_train_data["label"], test_size=0.33,
-          random_state=42)
-    else:
-    """
     # split thread_labels
     thread_id_label = self.all_train_data[["thread_id", "thread_label"]]
     thread_id_label = thread_id_label.drop_duplicates()
@@ -338,17 +330,13 @@ class Suite:
     test_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_test_id)]
 
     # feature importance
-    X_train = self.all_train_data[self.features]
-    y_train = self.all_train_data["label"]
+    X_train = train_data[self.features]
+    y_train = train_data["label"]
     clf = ExtraTreesClassifier(n_estimators=50)
     clf = clf.fit(X_train, y_train)
     logging.info("Feature importance: {}\n".format(
             [(self.features[i], round(x, 3)) 
               for (i, x) in enumerate(clf.feature_importances_)]))
-
-    # train model
-    X_train = train_data[self.features]
-    y_train = train_data["label"]
 
     for i in range(num_trials):
       # find the best paramter combination

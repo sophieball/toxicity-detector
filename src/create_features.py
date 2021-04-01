@@ -126,7 +126,7 @@ def extract_features(total_comment_info):
 
   num_emoji = text_parser.count_emoji(text)
   text = text_parser.remove_emoji_marker(
-      text)  # emove the two semi-colons on two sides of emoji
+      text)  # remove the two semi-colons on two sides of emoji
   text = text_parser.remove_newline(text)
 
   num_mention = text_parser.count_mention(text)
@@ -221,32 +221,32 @@ def create_features(comments_df, training, G):
                                       "perspective_score"].describe()))
 
     logging.info(
-        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
+        "Some descriptive statistics of {} data label == 1 HASHEDGE scores:\n{}"
         .format(
             training, features_df.loc[features_df["label"] == 1,
                                       "HASHEDGE"].describe()))
     logging.info(
-        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
+        "Some descriptive statistics of {} data label == 0 HASHEDGE scores:\n{}"
         .format(
             training, features_df.loc[features_df["label"] == 0,
                                       "HASHEDGE"].describe()))
     logging.info(
-        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
+        "Some descriptive statistics of {} data label == 1 HASNEGATIVE scores:\n{}"
         .format(
             training, features_df.loc[features_df["label"] == 1,#
                                       "HASNEGATIVE"].describe()))
     logging.info(
-        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
+        "Some descriptive statistics of {} data label == 0 HASNEGATIVE scores:\n{}"
         .format(
             training, features_df.loc[features_df["label"] == 0,
                                       "HASNEGATIVE"].describe()))
     logging.info(
-        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
+        "Some descriptive statistics of {} data label == 1 2nd person scores:\n{}"
         .format(
             training, features_df.loc[features_df["label"] == 1,
                                       "2nd_person"].describe()))
     logging.info(
-        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
+        "Some descriptive statistics of {} data label == 0 2nd person scores:\n{}"
         .format(
             training, features_df.loc[features_df["label"] == 0,
                                       "2nd_person"].describe()))
