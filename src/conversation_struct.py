@@ -50,6 +50,7 @@ def create_speakers(comments):
   count = 0
   for i, row in comments.iterrows():
     login = row["author"]
+    thread_id = row["thread_id"][0]
     if login in bots:
       continue
     if login not in speaker_meta:
@@ -65,11 +66,11 @@ def create_speakers(comments):
     try:
       # add tuple (owner/repo, association)
       speaker_meta[login]["associations"].add(
-          ("/".join(row["thread_id"].split("/")[:-1]),
+          ("/".join(thread_id.split("/")[:-1]),
            row["author_association"]))
     except:
       speaker_meta[login]["associations"].add(
-          (row["thread_id"], row["author_association"]))
+          (thread_id, row["author_association"]))
 
   corpus_speakers = {k: Speaker(id=k, meta=v) for k, v in speaker_meta.items()}
 
@@ -234,7 +235,7 @@ def preprocess_text(cur_text):
 # input: pd.DataFrame, convokit.Speakers
 # output: convokit.Corpus
 def prepare_corpus(comments, corpus_speakers, google):
-  comments = comments.dropna()
+  comments["text"] = comments["text"].replace(np.nan, "-")
   comments = comments.sort_values(by=["thread_id", "created_at"])
   comments["reply_to"] = comments["reply_to"].map(lambda x: str(x))
   utterance_corpus = {}
@@ -313,7 +314,8 @@ def prepare_corpus(comments, corpus_speakers, google):
     convo_id = convo.get_id()
     if convo_id in conversation_label:
       convo.meta["label"] = conversation_label[convo_id]
-      convo.meat["thread_label"] = conversation_thread_label[convo_id]
+      convo.meta["thread_label"] = conversation_thread_label[convo_id]
+
       cur_conv_utts = convo.get_utterance_ids()
       rounds = len(cur_conv_utts)
       convo.meta["rounds"] = rounds
@@ -322,8 +324,6 @@ def prepare_corpus(comments, corpus_speakers, google):
       shepherd_time = convert(last_comment.timestamp) \
                     - convert(first_comment.timestamp)
       convo.meta["shepherd_time"] = seconds(shepherd_time)
-
-      print(shepherd_time)
 
   # print out the conversation structure of the first conversation
   first_conv = corpus.get_conversation(corpus.get_conversation_ids()[0])

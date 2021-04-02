@@ -8,7 +8,6 @@ logging.basicConfig(
 import download_data
 download_data.download_data()
 
-from cleantext import clean
 from collections import defaultdict, Counter
 from convokit import Corpus, Speaker, Utterance
 from convokit.fighting_words import fightingWords
@@ -34,32 +33,6 @@ from sklearn.feature_extraction.text import CountVectorizer
 from src import sep_ngram
 from src import plot_politeness
 
-se_file = open("src/data/SE_words_G.list")
-SE_words = [se_word.strip() for se_word in se_file.readlines()]
-print(len(SE_words))
-print(SE_words[:10])
-
-remove_SE_words = lambda x:" ".join([w for w in tokenize.word_tokenize(x) if not w in SE_words])
-clean_str = lambda s: clean(remove_SE_words(text_parser.remove_inline_code(s)),
-    fix_unicode=True,               # fix various unicode errors
-    to_ascii=True,                  # transliterate to closest ASCII representation
-    lower=True,                     # lowercase text
-    no_line_breaks=True,           # fully strip line breaks as opposed to only normalizing them
-    no_urls=True,                  # replace all URLs with a special token
-    no_emails=True,                # replace all email addresses with a special token
-    no_phone_numbers=True,         # replace all phone numbers with a special token
-    no_numbers=False,               # replace all numbers with a special token
-    no_digits=False,                # replace all digits with a special token
-    no_currency_symbols=True,      # replace all currency symbols with a special token
-    no_punct=False,                 # fully remove punctuation
-    replace_with_url="<URL>",
-    replace_with_email="<EMAIL>",
-    replace_with_phone_number="<PHONE>",
-    replace_with_number="<NUMBER>",
-    replace_with_digit="0",
-    replace_with_currency_symbol="<CUR>",
-    lang="en"
-    )
 
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 lemmatizer = WordNetLemmatizer()
@@ -71,8 +44,8 @@ NGRAM = 4
 def word_freq(corpus):
   # fighting words
   # extract text
-  toxic_comments_fn = lambda utt: utt.meta["label"] == 1.0
-  non_toxic_comments_fn = lambda utt: utt.meta["label"] == 0.0 and utt.meta["thread_label"] == 0.0
+  toxic_comments_fn = lambda utt: utt.meta["thread_label"] == 1.0
+  non_toxic_comments_fn = lambda utt: utt.meta["thread_label"] == 0.0
 
   toxic_comments, non_toxic_comments = [], []
   for uid in corpus.get_utterance_ids():
@@ -85,15 +58,15 @@ def word_freq(corpus):
       raise ValueError("class1_func returned 0 valid corpus components.")
   if len(non_toxic_comments) == 0:
       raise ValueError("class2_func returned 0 valid corpus components.")
-  #toxic_comments = [clean_str(obj.text) for obj in toxic_comments]
-  #non_toxic_comments = [clean_str(obj.text) for obj in non_toxic_comments]
 
   # find words
   fw = fighting_words_sq.FightingWords(ngram_range=(1,NGRAM))
   fw.fit(corpus, class1_func=toxic_comments_fn,
                class2_func=non_toxic_comments_fn,)
-  df = fw.summarize(corpus, plot=True, class1_name='pushback OSS code review comments',
-                class2_name='non-pushback OSS code review comments')
+  #df = fw.summarize(corpus, plot=True, class1_name='pushback code review comments',
+  #              class2_name='non-pushback code review comments')
+  df = fw.summarize(corpus, plot=True, class1_name='OSS issue comments',
+                class2_name='OSS code review comments')
 
 
   summary = fw.get_word_counts()
@@ -215,7 +188,6 @@ def politeness_hist(corpus):
 if __name__ == "__main__":
   [comments, _] = receive_data.receive_data()
   comments["text"] = comments["text"].replace(np.nan, "-")
-  comments["text"] = comments["text"].map(clean_str)
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
   politeness_hist(corpus)

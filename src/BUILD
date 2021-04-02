@@ -7,6 +7,8 @@ exports_files(
         "data/*.csv",
         "pickles/*.p",
         "pickles/pt_model_10K.files/*",
+        "model/*",
+        "vocabulary/*",
     ]),
     visibility = ["//visibility:public"],
 )
@@ -121,6 +123,7 @@ py_binary(
     deps = [
         ":download_data",
         ":receive_data",
+        ":text_parser",
         ":plot_politeness",
         ":sep_ngram",
         requirement("blis"),
@@ -269,6 +272,7 @@ py_binary(
     deps = [
         ":download_data",
         ":receive_data",
+        ":text_parser",
         requirement("blis"),
         requirement("catalogue"),
         requirement("convokit"),
@@ -299,22 +303,11 @@ py_library(
     deps = [
         ":config",
         ":convo_politeness",
-        ":text_cleaning",
         ":text_modifier",
         ":text_parser",
         ":util",
         requirement("pandas"),
         requirement("nltk"),
-    ],
-)
-
-py_library(
-    name = "text_cleaning",
-    srcs = ["text_cleaning.py"],
-    visibility = ["//visibility:public"],
-    deps = [
-        requirement("nltk"),
-        requirement("markdown"),
     ],
 )
 
@@ -356,6 +349,7 @@ py_library(
         ":create_features",
         ":cross_validate",
         ":text_modifier",
+        ":text_parser",
         ":util",
         requirement("gensim"),
         requirement("nltk"),
