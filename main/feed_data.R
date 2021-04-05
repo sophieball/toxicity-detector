@@ -15,6 +15,6 @@ system2("main/train_classifier_g",
 #system2("src/find_SE_words",
 #system2("main/politeness_logi",
 #system2("src/convo_word_freq_diff",
-        args = "GH",
+        args = "prs",
         stdout = "",
         input = format_csv(df))
