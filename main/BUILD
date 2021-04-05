@@ -11,7 +11,7 @@ py_binary(
     srcs = ["train_classifier_g.py"],
     visibility = ["//visibility:public"],
     deps = [
-        "//main:get_feature_set",
+        ":get_feature_set",
         "//src:classifiers",
         "//src:download_data",
         "//src:receive_data",
