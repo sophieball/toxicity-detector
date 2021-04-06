@@ -7,9 +7,9 @@ import sys
 
 def convert_name(x):
   if x == "class1":
-    return "pushback issue"
+    return "toxic OSS code review comments"
   else:
-    return "non-pushback issue"
+    return "non-toxic OSS code review comments"
 
 
 # input: pd.DataFrame, str, int
