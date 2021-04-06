@@ -211,7 +211,7 @@ def train_polite(comments):
 # output: a pandas dataframe: _id, text, politeness
 def get_politeness_score(comments):
   corpus = transform_politeness(prepare_corpus(comments))
-  scores = polite_score(corpus)
+  scores = transform_features(polite_score(corpus))
   if "thread_label" in scores:
     scores = scores.drop(["_id", "label", "thread_id", "thread_label"], axis=1)
   elif "label" in scores:
