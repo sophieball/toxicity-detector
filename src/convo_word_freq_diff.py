@@ -8,7 +8,6 @@ logging.basicConfig(
 import download_data
 download_data.download_data()
 
-from cleantext import clean
 from collections import defaultdict, Counter
 from convokit import Corpus, Speaker, Utterance
 from convokit.fighting_words import fightingWords
@@ -45,8 +44,8 @@ NGRAM = 4
 def word_freq(corpus):
   # fighting words
   # extract text
-  toxic_comments_fn = lambda utt: utt.meta["label"] == 1.0
-  non_toxic_comments_fn = lambda utt: utt.meta["label"] == 0.0
+  toxic_comments_fn = lambda utt: utt.meta["thread_label"] == 1.0
+  non_toxic_comments_fn = lambda utt: utt.meta["thread_label"] == 0.0
 
   toxic_comments, non_toxic_comments = [], []
   for uid in corpus.get_utterance_ids():
@@ -64,8 +63,9 @@ def word_freq(corpus):
   fw = fighting_words_sq.FightingWords(ngram_range=(1,NGRAM))
   fw.fit(corpus, class1_func=toxic_comments_fn,
                class2_func=non_toxic_comments_fn,)
-  df = fw.summarize(corpus, plot=True, class1_name='pushback code review comments',
-                class2_name='non-pushback code review comments')
+  #df = fw.summarize(corpus, plot=True, class1_name='pushback code review comments',
+  #              class2_name='non-pushback code review comments')
+  df = fw.summarize(corpus, plot=True, class1_name='OSS issue comments',
 
 
   summary = fw.get_word_counts()

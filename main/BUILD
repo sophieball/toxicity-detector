@@ -2,10 +2,16 @@ load("@rules_python//python:defs.bzl", "py_binary")
 load("@deps//:requirements.bzl", "requirement")
 
 py_binary(
+     name = "get_feature_set",
+     srcs = ["get_feature_set.py"],
+)
+
+py_binary(
     name = "train_classifier_g",
     srcs = ["train_classifier_g.py"],
     visibility = ["//visibility:public"],
     deps = [
+        "//main:get_feature_set",
         "//src:classifiers",
         "//src:download_data",
         "//src:receive_data",
