@@ -9,6 +9,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import RegexpTokenizer
 from nltk.tokenize import word_tokenize
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.inspection import permutation_importance
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, fbeta_score, roc_auc_score, roc_curve
 from sklearn.model_selection import StratifiedKFold, GridSearchCV, train_test_split, cross_val_score
@@ -78,13 +79,6 @@ def rescore(row, features, tf_idf_counter):
     persp_score = create_features.get_perspective_score(new_sentence, "en")
     new_features_dict["perspective_score"] = persp_score[0]
     new_features_dict["identity_attack"] = persp_score[1]
-  if "politeness" in features:
-    polite_df = convo_politeness.get_politeness_score(
-        pd.DataFrame([{
-            "_id": "1",
-            "text": new_sentence
-        }]))
-    new_features_dict["politeness"] = polite_df.iloc[0]["politeness"]
 
   if "word2vec_0" in features:
     # Calcualte word2vec
@@ -336,9 +330,12 @@ class Suite:
     train_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_train_id)]
     test_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_test_id)]
 
-    # feature importance
     X_train = train_data[self.features]
     y_train = train_data["label"]
+    y_test = test_data["label"]
+    X_test = test_data[self.features]
+
+    # feature importance
     clf = ExtraTreesClassifier(n_estimators=50)
     clf = clf.fit(X_train, y_train)
     logging.info("Feature importance: {}\n".format(
@@ -367,6 +364,16 @@ class Suite:
         best_score = nested_scores
         best_model = model
 
+    # permutation importance
+    logging.info("importance on train set\n")
+    r = permutation_importance(best_model, X_train, y_train,
+                                n_repeats=30,
+                                random_state=0)
+    for i in r.importances_mean.argsort()[::-1]:
+      logging.info(f"{X_test.columns[i]:<8}"
+              f" {r.importances_mean[i]:.3f}"
+              f" +/- {r.importances_std[i]:.3f}")
+
     # Find the optimal parameters
     logging.info("Trying all combinations of hyper parameters.")
     logging.info("Scores with {}-fold cross validation".format(n_splits))
@@ -375,8 +382,6 @@ class Suite:
     self.model = best_model
 
     # test
-    y_test = test_data["label"]
-    X_test = test_data[self.features]
     test_data["raw_prediction"] = model.predict(X_test)
     # without removing SE words and anger words, prediction == raw_pred
     test_data["prediction"] = test_data["raw_prediction"]
@@ -420,6 +425,7 @@ class Suite:
     logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
         classification_report(true_thread_label.tolist(),
                               predicted_thread_label.tolist())))
+
     
     model_out = open(
         "src/pickles/{}_model_{}.p".format(model_name.upper(), str(fid)),

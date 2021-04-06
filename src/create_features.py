@@ -53,7 +53,6 @@ clean_str = lambda s: clean(s,
               replace_with_currency_symbol="<CUR>",
               lang="en"
               )
->>>>>>> 81b410ad0a52f5bd791a71123b4b4a3a5eb7a121
 
 VERBOSITY = 10000
 
@@ -232,19 +231,11 @@ def get_prompt_types(comments):
 # output: pd.DataFrame
 def create_features(comments_df, training, G):
   # remove invalide toxicity scores or empty comments
-<<<<<<< HEAD
-  comments_df = comments_df.dropna()
-  comments_df = comments_df.replace(np.nan, "-")
-  comments_df["text"] = comments_df["text"].map(text_parser.remove_inline_code)
-  comments_df["text"] = comments_df["text"].map( \
-                    lambda x: "-" if (len(x.strip()) == 0) else x)
-=======
   comments_df["text"] = comments_df["text"].replace(np.nan, "-")
   comments_df["text"] = comments_df["text"].map(text_parser.remove_reference)
   comments_df["text"] = comments_df["text"].map(text_parser.remove_inline_code)
   comments_df["text"] = comments_df["text"].map( \
               lambda x: "-" if (len(x.strip()) == 0) else x)
->>>>>>> 81b410ad0a52f5bd791a71123b4b4a3a5eb7a121
 
   # get politeness scores for all comments
   comments_df = convo_politeness.get_politeness_score(
@@ -254,22 +245,6 @@ def create_features(comments_df, training, G):
   #comments_df = comments_df.join(prompt_types)
 
 
-<<<<<<< HEAD
-  # remove comments longer than 300 characters (perspective limit)
-  comments_df = util.remove_large_comments(comments_df)
-
-  ## get sentimoji
-  # it's not working yet...
-  #comments_df = sentimoji_classify.sentimoji(
-  #                  comments_df, 
-  #                  "src/model",
-  #                  "SEntiMoji-G",
-  #                  64
-  #              )
-
-  #logging.info(comments_df.columns())
-=======
->>>>>>> 81b410ad0a52f5bd791a71123b4b4a3a5eb7a121
   # convert it to a list of dictionaries
   comments = comments_df.T.to_dict().values()
 
@@ -279,14 +254,6 @@ def create_features(comments_df, training, G):
   pool.close()
   features_df = pd.DataFrame(features)
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
-<<<<<<< HEAD
-  features_df = features_df.dropna()
-
-  logging.info("Total number of {} data: {}.".format(training,
-                                                     len(features_df)))
-  logging.info("Total number of {} positive data: {}.".format(training,
-                                                     sum(features_df["label"])))
-=======
   logging.info("length {}".format(len(features_df)))
   features_df = features_df.replace(np.nan, 0)
 
@@ -315,91 +282,16 @@ def create_features(comments_df, training, G):
   except:
     pass
 
->>>>>>> 81b410ad0a52f5bd791a71123b4b4a3a5eb7a121
   comments_df["label"].to_csv("pos_labels.csv")
-  if training == "training":
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "perspective_score"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "perspective_score"].describe()))
-
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 HASHEDGE scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "HASHEDGE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 HASHEDGE scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "HASHEDGE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 HASNEGATIVE scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,#
-                                      "HASNEGATIVE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 HASNEGATIVE scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "HASNEGATIVE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 2nd person scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "2nd_person"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 2nd person scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-<<<<<<< HEAD
-                                      "politeness"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "HASHEDGE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "HASHEDGE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "HASNEGATIVE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "HASNEGATIVE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "2nd_person"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-=======
->>>>>>> 81b410ad0a52f5bd791a71123b4b4a3a5eb7a121
-                                      "2nd_person"].describe()))
-
-  else:
-    logging.info(
+  feature_stats = comments_df.loc[comments_df["thread_label"]==1].describe()
+  feature_stats.to_csv("pos_label_data_stats.csv")
+  feature_stats = comments_df.loc[comments_df["thread_label"]==0].describe()
+  feature_stats.to_csv("neg_label_data_stats.csv")
+  feature_stats = comments_df.describe()
+  feature_stats.to_csv("data_stats.csv")
+  logging.info(
         "Some descriptive statistics of {} data's perspective scores:\n{}"
         .format(training, features_df["perspective_score"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data's politeness scores:\n{}"
-        .format(training, features_df["politeness"].describe()))
 
   features_df.to_csv(training + "_data_label_cleaned.csv", index=False)
   return features_df
