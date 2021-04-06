@@ -2,10 +2,16 @@ load("@rules_python//python:defs.bzl", "py_binary")
 load("@deps//:requirements.bzl", "requirement")
 
 py_binary(
+     name = "get_feature_set",
+     srcs = ["get_feature_set.py"],
+)
+
+py_binary(
     name = "train_classifier_g",
     srcs = ["train_classifier_g.py"],
     visibility = ["//visibility:public"],
     deps = [
+        "//main:get_feature_set",
         "//src:classifiers",
         "//src:download_data",
         "//src:receive_data",
@@ -109,62 +115,9 @@ r_binary(
 )
 
 r_binary(
-    name = "factor_lan",
-    src = "factor_lan.R",
-    deps = [
-        "@R_caret",
-        "@R_foreach",
-        "@R_withr",
-        "@R_pROC",
-        "@R_iterators",
-        "@R_codetools",
-        "@R_recipes",
-        "@R_ggplot2",
-        "@R_ipred",
-        "@R_ModelMetrics",
-        "@R_reshape2",
-        "@R_scales",
-        "@R_stringr",
-        "@R_viridisLite",
-        "@R_isoband",
-        "@R_prodlim",
-        "@R_RColorBrewer",
-        "@R_labeling",
-        "@R_gtable",
-        "@R_farver",
-        "@R_testthat",
-        "@R_munsell",
-        "@R_evaluate",
-        "@R_lava",
-        "@R_colorspace",
-        "@R_survival",
-        "@R_praise",
-        "@R_SQUAREM",
-        "@R_class",
-        "@R_numDeriv",
-        "@R_pkgload",
-        "@R_pkgbuild",
-        "@R_rstudioapi",
-        "@R_rprojroot",
-        "@R_desc",
-        "@R_rpart",
-        "@R_backports",
-        "@R_callr",
-        "@R_processx",
-        "@R_ps",
-        "@R_tidyr",
-        "@R_gower",
-        "@R_lubridate",
-        "@R_timeDate",
-    ]
-)
-
-r_binary(
     name = "feed_data",
     src = "feed_data.R",
     data = [
-        "factor_lan.R",
-        ":factor_lan",
         ":train_classifier_g",
         ":train_polite_score",
         "//src:convo_word_freq_diff",

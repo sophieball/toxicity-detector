@@ -10,6 +10,7 @@ import os
 from src import receive_data
 from src import classifiers
 from src import suite
+import get_feature_set as fs
 import pandas as pd
 import pathlib
 import pickle
@@ -17,31 +18,37 @@ import numpy as np
 import sys
 import time
 
-feature_set = [["perspective_score", "politeness"],
-               ["perspective_score", "length", "politeness"],
-               ["perspective_score", "num_url", "politeness"],
-               ["perspective_score", "num_emoticons", "politeness"]]
-
-
 # train the classifier using the result of a SQL query
-def train_model(training_data, model_name="svm", pretrain=False):
+def train_model(training_data, model_name="svm", pretrain=False, what_data="issues"):
   s = suite.Suite()
+  if what_data == "G":
+    G = True
+    training_data["thread_label"] = training_data["label"]
+    training_data["thread_id"] = training_data["_id"]
+  else:
+    G = False
+  s.set_G(G)
+
+  feature_set = fs.get_feature_set(what_data)
 
   logging.info("Loading data.")
   # 4 columns: _id, text, label(0/1), training(1)
   # this will later be split into train/test data
   s.set_train_set(training_data)
+  logging.info(
+        "Prepared training dataset, it took {} seconds".format(time.time() - \
+                                                               start_time))
 
   # select model
   if model_name == "svm":
     s.set_model_function(classifiers.svm_model)
 
     # list the set of parameters you want to try out
-    s.set_ratios([1, 5, 10])
+    s.set_ratios([1, 2, 3, 5, 10])
     s.set_parameters({
-        "C": [0.05, 0.1, 0.5, 1, 10, 20],
-        "gamma": [1, 2, 2.5, 3],
-        "kernel": ["sigmoid"]
+        "C": [0.05, 0.1, 0.5, 1, 10, 20, 25, 30, 50],
+        "gamma": [1, 2, 2.5, 3, 5],
+        "kernel": ["sigmoid", "rbf"]
     })
   elif model_name == "rf":
     s.set_model_function(classifiers.random_forest_model)
@@ -53,8 +60,8 @@ def train_model(training_data, model_name="svm", pretrain=False):
   elif model_name == "lg":
     s.set_model_function(classifiers.logistic_model)
     # RF params
-    s.add_parameter("penalty", ["l1", "l2"])
-    s.add_parameter("C", np.logspace(-4, 4, 20))
+    s.add_parameter("penalty", ["l1", "l2", "13", "20", "5"])
+    s.add_parameter("C", np.logspace(-4, 4, 60))
 
   # select features
   for fid, features in enumerate(feature_set):
@@ -77,13 +84,6 @@ def train_model(training_data, model_name="svm", pretrain=False):
     model_out.close()
     logging.info("Model is stored at {}.".format(
         str(pathlib.Path(__file__).parent.name) + "/src/pickles/"))
-    result = s.all_train_data
-    logging.info("Number of 1's in raw prediction: {}.".format(
-        sum(result["raw_prediction"])))
-    logging.info("Number of data flipped due to SE: {}.".format(
-        len(result.loc[result["is_SE"] == 1])))
-    logging.info("Number of data flipped due to self angry: {}.".format(
-        len(result.loc[result["self_angry"] == "self"])))
   return model
 
 
@@ -111,34 +111,23 @@ def predict_unlabeled(unlabeled_data, trained_model, features, G_data=True):
 if __name__ == "__main__":
   start_time = time.time()
   if len(sys.argv) > 1:
-    if sys.argv[1] == "pretrain":
-      logging.info("Training on GH data.")
-      [training, _] = receive_data.receive_data()
-      train_model(training, pretrain=True)
-    if sys.argv[1] == "test":
-      logging.info("Applying pre-trained GH model.")
-      if len(sys.argv) >= 2:
-        # set model
-        model_file = open(sys.argv[2], "rb")
-        trained_model = pickle.load(model_file)
-        model_file.close()
-        [_, unlabeled] = receive_data.receive_data()
-        predict_unlabeled(unlabeled, trained_model)
-      else:
-        logging.info("Please povide the name of the model's pickle file.")
-        logging.info(
-            "The file should be among the data dependencies in the BUILD file.")
+    what_data = sys.argv[1]
+    logging.info("Training {}".format(what_data))
+    logging.info("Training the model and predicting labels.")
+    [training, unlabeled] = receive_data.receive_data()
+    trained_model = train_model(training, model_name="rf", what_data=what_data)
+    trained_model = train_model(training, what_data=what_data)
+    logging.info("Trained model saved in {}".format("`" + os.getcwd() +
+                                                    "/src/pickles/"))
   else:
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data()
-    trained_model = train_model(training)
-    trained_model = train_model(training, model_name="rf")
-    trained_model = train_model(training, model_name="lg")
+    training["thread_label"] = training["label"]
+    training["thread_id"] = training["_id"]
+    trained_model = train_model(training, what_data="G")
+    trained_model = train_model(training, model_name="rf", what_data="G")
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
-  logging.info(
-        "Prepared training dataset, it took {} seconds".format(time.time() - \
-                                                               start_time))
   print("Log saved in {}".format("`" + os.getcwd() + "/train_classifier.log`"))
   print("Prediction result saved in {}".format("`" + os.getcwd() +
                                                "/classification_results.csv`"))

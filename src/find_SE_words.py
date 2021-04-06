@@ -60,9 +60,7 @@ other_comments = [
 review_comments = [preprocess_text(x) for x in reviews["text"].to_list()]
 
 # compare ngram in comments and English
-results = []
-result = fighting.bayes_compare_language(review_comments, other_comments, NGRAM)
-results.extend(result)
+results = fighting.bayes_compare_language(review_comments, other_comments, NGRAM)
 
 results_df = pd.DataFrame(results, columns=["ngram", "z-score"])
 results_df = results_df.loc[results_df["z-score"] >= 1.96]

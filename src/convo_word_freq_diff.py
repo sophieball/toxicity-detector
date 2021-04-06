@@ -8,7 +8,6 @@ logging.basicConfig(
 import download_data
 download_data.download_data()
 
-from cleantext import clean
 from collections import defaultdict, Counter
 from convokit import Corpus, Speaker, Utterance
 from convokit.fighting_words import fightingWords
@@ -16,59 +15,38 @@ from convokit import PolitenessStrategies
 from convokit import TextParser
 from convokit import download
 from nltk import tokenize
-from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from pandas import DataFrame
 from typing import List, Dict, Set
 import convokit
 import convo_politeness
-import fighting_words_py3
+import fighting_words_sq
 import nltk
 import numpy as np
 import os
 import pandas as pd
 import receive_data
 import spacy
-import text_cleaning
+import text_parser
 from sklearn.feature_extraction.text import CountVectorizer
 
 from src import sep_ngram
 from src import plot_politeness
 
-clean_str = lambda s: clean(s,
-    fix_unicode=True,               # fix various unicode errors
-    to_ascii=True,                  # transliterate to closest ASCII representation
-    lower=True,                     # lowercase text
-    no_line_breaks=True,           # fully strip line breaks as opposed to only normalizing them
-    no_urls=True,                  # replace all URLs with a special token
-    no_emails=True,                # replace all email addresses with a special token
-    no_phone_numbers=True,         # replace all phone numbers with a special token
-    no_numbers=False,               # replace all numbers with a special token
-    no_digits=False,                # replace all digits with a special token
-    no_currency_symbols=True,      # replace all currency symbols with a special token
-    no_punct=False,                 # fully remove punctuation
-    replace_with_url="<URL>",
-    replace_with_email="<EMAIL>",
-    replace_with_phone_number="<PHONE>",
-    replace_with_number="<NUMBER>",
-    replace_with_digit="0",
-    replace_with_currency_symbol="<CUR>",
-    lang="en"
-    )
 
-nlp = spacy.load("en_core_web_md", disable=["parser", "ner"])
-stop_words = set(stopwords.words("english"))
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 lemmatizer = WordNetLemmatizer()
 tokenizer = nltk.RegexpTokenizer(r"\w+")
-NGRAM = 6
+NGRAM = 4
 
 
 # compare ngram in toxic and non-toxic comments
 def word_freq(corpus):
   # fighting words
   # extract text
-  toxic_comments_fn = lambda utt: utt.meta["label"] == 1.0
-  non_toxic_comments_fn = lambda utt: utt.meta["label"] == 0.0
+  toxic_comments_fn = lambda utt: utt.meta["thread_label"] == 1.0
+  non_toxic_comments_fn = lambda utt: utt.meta["thread_label"] == 0.0
+
   toxic_comments, non_toxic_comments = [], []
   for uid in corpus.get_utterance_ids():
     obj = corpus.get_utterance(uid)
@@ -80,15 +58,19 @@ def word_freq(corpus):
       raise ValueError("class1_func returned 0 valid corpus components.")
   if len(non_toxic_comments) == 0:
       raise ValueError("class2_func returned 0 valid corpus components.")
-  toxic_comments = [clean_str(obj.text) for obj in toxic_comments]
-  non_toxic_comments = [clean_str(obj.text) for obj in non_toxic_comments]
 
   # find words
-  summary = fighting_words_py3.bayes_compare_language(toxic_comments,
-                                                     non_toxic_comments,
-                                                     NGRAM)
-  summary["abs_z-score"] = abs(summary["z-score"])
-  summary = summary.sort_values(by="abs_z-score", ascending=False)
+  fw = fighting_words_sq.FightingWords(ngram_range=(1,NGRAM))
+  fw.fit(corpus, class1_func=toxic_comments_fn,
+               class2_func=non_toxic_comments_fn,)
+  #df = fw.summarize(corpus, plot=True, class1_name='pushback code review comments',
+  #              class2_name='non-pushback code review comments')
+  df = fw.summarize(corpus, plot=True, class1_name='OSS issue comments',
+                class2_name='OSS code review comments')
+
+
+  summary = fw.get_word_counts()
+  summary = summary.sort_values(by="z-score", ascending=False)
   summary = summary.round(3)
   out = open("fighting_words_freq.csv", "w")
   summary.to_csv("fighting_words_freq.csv", index=False)
@@ -153,7 +135,7 @@ def politeness_hist(corpus):
   count_df.to_csv("polite_strategies.csv")
 
   # plot the histogram
-  plot_politeness.save_plot(count_df, "label1_politeness.pdf", 0.2)
+  plot_politeness.save_plot(count_df, "politeness.pdf", 0.2)
 
   # individual politeness strategies
   out = open("politeness_words_marked_sorted.txt", "w")
@@ -192,20 +174,20 @@ def politeness_hist(corpus):
       out.write(str(each_word) + ",")
     out.write("\n")
   out.close()
-  print(
-      "politeness words counts are stored in the bazel binary's runfiles folder with the name `polite_strategies_label_x.csv`, x = {{0, 1}}\n"
+  logging.info("Log-odds ratio plot is saved in the bazel binary's runfiles folder with the name `log-odds_ratio.PNG`\n")
+  logging.info(
+      "politeness words counts are stored in the same folder with the name `polite_strategies_label_x.csv`, x = {{0, 1}}\n")
+  logging.info(
+      "politeness words lists are stored in the same folder with the name `politeness_words_marked_sorted.txt`\n"
   )
-  print(
-      "politeness words lists are stored in the bazel binary's runfiles folder with the name `politeness_words_marked_sorted.txt`\n"
-  )
-  print(
-      "politeness words plots are stored in the bazel binary's runfiles folder with the name `labelx_politeness.pdf`, x = {{0, 1}}\n"
+  logging.info(
+      "politeness words plots are stored in the same folder with the name `labelx_politeness.pdf`, x = {{0, 1}}\n"
   )
 
 
 if __name__ == "__main__":
   [comments, _] = receive_data.receive_data()
-  comments = comments.dropna()
+  comments["text"] = comments["text"].replace(np.nan, "-")
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
   politeness_hist(corpus)

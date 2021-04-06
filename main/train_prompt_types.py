@@ -76,6 +76,7 @@ N_TYPES = 6
 
 
 def prepare_corpus(comments, f_name, google):
+  logging.info(comments.columns)
   # construct corpus and preprocess text
   speakers = conversation_struct.create_speakers(comments)
   corpus = conversation_struct.prepare_corpus(comments, speakers, google)
@@ -115,5 +116,6 @@ if __name__ == "__main__":
     google = False
 
   comments = receive_data.receive_single_data()
+  comments = comments.dropna()
   corpus = prepare_corpus(comments, "10K_PRs.corpus", google)
   train_prompt(corpus, "pt_model_10K.files")

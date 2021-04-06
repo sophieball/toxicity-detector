@@ -8,16 +8,18 @@ from nltk.corpus import wordnet
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import RegexpTokenizer
 from nltk.tokenize import word_tokenize
-from sklearn import model_selection
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, fbeta_score, roc_auc_score, roc_curve
-from sklearn.model_selection import StratifiedKFold, GridSearchCV
+from sklearn.model_selection import StratifiedKFold, GridSearchCV, train_test_split, cross_val_score
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.feature_selection import SelectFromModel
 from sklearn.svm import SVC
 from src import classifiers
 from src import convo_politeness
 from src import create_features
 from src import text_modifier
+from src import text_parser
 from src import util
 from wordfreq import word_frequency
 import itertools
@@ -26,6 +28,7 @@ import numpy as np
 import operator
 import pandas as pd
 import pickle
+import random
 import re
 import textblob
 import time
@@ -71,20 +74,10 @@ def rescore(row, features, tf_idf_counter):
   for f in features:
     new_features_dict[f] = row[f]
 
-  if "length" in features:
-    new_features_dict["length"] = len(new_sentence)
-
   if "perspective_score" in features:
     persp_score = create_features.get_perspective_score(new_sentence, "en")
-    new_features_dict["perspective_score"] = persp_score
-
-  if "politeness" in features:
-    polite_df = convo_politeness.get_politeness_score(
-        pd.DataFrame([{
-            "_id": "1",
-            "text": new_sentence
-        }]))
-    new_features_dict["politeness"] = polite_df.iloc[0]["politeness"]
+    new_features_dict["perspective_score"] = persp_score[0]
+    new_features_dict["identity_attack"] = persp_score[1]
 
   if "word2vec_0" in features:
     # Calcualte word2vec
@@ -123,12 +116,7 @@ def rescore(row, features, tf_idf_counter):
       if "tf_idf_" in f:
         new_features_dict[f] = df[f]
 
-  new_features = []
-  for f in features:
-    new_features.append(new_features_dict[f])
-
-  return new_features
-
+  return new_features_dict
 
 # postprocessing (usually only done for toxic comments)
 # returns list of clean text variants
@@ -153,15 +141,15 @@ def clean_text(text):
   all_words = tokenizer.tokenize(text)
 
   result += [text]
-  return emoticon_n, result
+  return result
 
 
 # input: comment, trained model, features used, ?
 # output: 0 if the comment was labeled to be toxic NOT due to SE words (it IS toxic)
 #         1 if the comment was labeled to be toxic due to SE words (it shouldn't
 #         be toxic)
-def remove_SE_comment(row, model, features, tf_idf_counter):
-  text = row["original_text"]
+def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
+  text = row["text"]
   t = time.time()
   words = text.split(" ")
   words = [a.strip(",.!?:; ") for a in words]
@@ -178,30 +166,30 @@ def remove_SE_comment(row, model, features, tf_idf_counter):
     return 0
 
   for word in set(words):
-    # NV: Maybe unkify?
-    # replace those SE words with "potato"
     new_sentence = re.sub(
-        r"[^a-zA-Z0-9]" + re.escape(word.lower()) + r"[^a-zA-Z0-9]", " potato ",
+        r"[^a-zA-Z0-9]" + re.escape(word.lower()) + r"[^a-zA-Z0-9]", " ",
         text.lower())
     # re-compute features
     row["text"] = new_sentence
-    new_features = rescore(row, features, tf_idf_counter)
+    new_features_dict = rescore(row, features, tf_idf_counter)
+
+    new_features = {}
+    for f in features:
+      max_f = max(features_df[f].tolist())
+      if max_f != 0:
+        new_features[f] = new_features_dict[f]/max_f
+      else:
+        new_features[f] = new_features_dict[f]
 
     # after removing SE words, the model labels it as non-toxic
-    if model.predict([new_features])[0] == 0:
+    new_features = pd.DataFrame([new_features])
+    if model.predict(new_features)[0] == 0:
       # it was labeled to be toxic because of SE words
       return 1
-
-  tokenizer = RegexpTokenizer(r"\w+")
-  all_words = tokenizer.tokenize(text)
-
-  if model.predict([new_features])[0] == 0:
-    return 1
 
   # after removing SE words and unknown words, still the classifier labels it
   # toxic
   return 0
-
 
 class Suite:
 
@@ -229,6 +217,10 @@ class Suite:
     self.train_data = None
     self.model_function = None
     self.model = None
+    self.Google = False
+
+  def set_G(self, G):
+    self.Google = G
 
   def set_model_function(self, model_function):
     self.model_function = model_function
@@ -246,7 +238,7 @@ class Suite:
   def set_train_set(self, train_collection):
     self.train_collection = train_collection
     self.all_train_data = create_features.create_features(
-        train_collection, "training")
+        train_collection, "training", self.Google)
     logging.info(
         "Prepared training dataset, it took {} seconds".format(time.time() - \
                                                                self.last_time))
@@ -255,7 +247,7 @@ class Suite:
   def set_unlabeled_set(self, test_collection):
     self.test_collection = test_collection
     self.test_data = create_features.create_features(test_collection,
-                                                     "unlabeled")
+                                                     "unlabeled", self.Google)
     logging.info(
         "Prepared unlabeled dataset, it took {} seconds".format(time.time() - \
                                                               self.last_time))
@@ -265,16 +257,10 @@ class Suite:
   def convert(self, test_sentence):
     ret = copy(self.all_false)
 
-    for word in word_tokenize(test_sentence.lower()):
+    for word in word_tokenize(str(test_sentence).lower()):
       ret[word] = True
 
     return ret
-
-  def remove_emo(self, test_issues):
-    for i, row in test_issues.iterrows():
-      if row["num_emoticons"] > 0:
-        test_issues.loc[i, "prediction"] = 0
-    return test_issues
 
   def remove_I(self, test_issues):
     test_issues["self_angry"] = 0
@@ -296,7 +282,7 @@ class Suite:
     p = Pool(num_subproc)
     data["is_SE"] = 0
     new_pred = p.starmap(remove_SE_comment, [
-        (x, self.model, features, tf_idf_counter)
+        (data, x, self.model, features, tf_idf_counter)
         for x in data.loc[data["prediction"] == 1].T.to_dict().values()
     ])  #original_text])
     data.loc[data.prediction == 1, "is_SE"] = new_pred
@@ -320,7 +306,7 @@ class Suite:
     # n-fold nested cross validation
     # https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html
     num_trials = 5
-    n_splits = 10
+    n_splits = 5
     best_model = None
     best_score = 0
     if model_name == "svm":
@@ -330,22 +316,41 @@ class Suite:
     elif model_name == "lg":
       estimator = LogisticRegression()
 
+    # split training and test
+    # split thread_labels
+    thread_id_label = self.all_train_data[["thread_id", "thread_label"]]
+    thread_id_label = thread_id_label.drop_duplicates()
+    X_train_id, X_test_id, _, _ = train_test_split(
+        thread_id_label, thread_id_label["thread_label"], test_size=0.33,
+        random_state=42)
+    # split data into train and test
+    X_train_id = X_train_id["thread_id"]
+    X_test_id = X_test_id["thread_id"]
+    train_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_train_id)]
+    test_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_test_id)]
+
+    # feature importance
+    X_train = train_data[self.features]
+    y_train = train_data["label"]
+    clf = ExtraTreesClassifier(n_estimators=50)
+    clf = clf.fit(X_train, y_train)
+    logging.info("Feature importance: {}\n".format(
+            [(self.features[i], round(x, 3)) 
+              for (i, x) in enumerate(clf.feature_importances_)]))
+
     for i in range(num_trials):
       # find the best paramter combination
-      train_data = self.all_train_data
-      y_train = train_data["label"]
-      X_train = train_data[self.features]
       model = GridSearchCV(
           estimator=estimator,
           param_grid=self.param_grid,
           scoring="f1_weighted",
-          n_jobs=14,  # parallel
+          n_jobs=num_subproc,  # parallel
           cv=StratifiedKFold(n_splits=n_splits, shuffle=True),
           verbose=0)
       model.fit(X_train, y_train)
 
       # nested cross validation with paramter optimization
-      nested_score = model_selection.cross_val_score(
+      nested_score = cross_val_score(
           model,
           X_train,
           y_train,
@@ -362,41 +367,59 @@ class Suite:
     logging.info("Best score: {}.".format(best_model.best_score_))
     self.model = best_model
 
-    logging.info("Removing angry words towards oneself and SE words.")
-    y_train = self.all_train_data["label"]
-    X_train = self.all_train_data[self.features]
-    self.all_train_data["raw_prediction"] = model.predict(X_train)
-    self.all_train_data["prediction"] = self.all_train_data["raw_prediction"]
+    # test
+    y_test = test_data["label"]
+    X_test = test_data[self.features]
+    test_data["raw_prediction"] = model.predict(X_test)
+    # without removing SE words and anger words, prediction == raw_pred
+    test_data["prediction"] = test_data["raw_prediction"]
 
-    self.all_train_data = self.remove_I(self.all_train_data)
-    self.all_train_data = self.remove_SE(self.all_train_data)
     logging.info("Features: {}".format(self.features))
-    logging.info("Crossvalidation score after adjustment is\n{}".format(
-        classification_report(self.all_train_data["label"].tolist(),
-                              self.all_train_data["prediction"].tolist())))
-    logging.info("Area under the curve is\n{}".format(
-        roc_auc_score(self.all_train_data["label"].tolist(),
-                      self.all_train_data["prediction"].tolist())))
-    logging.info("The curve is\n{}".format(
-        roc_curve(self.all_train_data["label"].tolist(),
-                  self.all_train_data["prediction"].tolist())))
+    logging.info("Crossvalidation score for comments before adjustment is\n{}".format(
+        classification_report(test_data["label"].tolist(),
+                              test_data["prediction"].tolist())))
+
+    # adjust SE words and anger words
+    logging.info("Removing angry words towards oneself and SE words.")
+    test_data = self.remove_I(test_data)
+    test_data = self.remove_SE(test_data)
+    logging.info("Crossvalidation score for comments after adjustment is\n{}".format(
+        classification_report(test_data["label"].tolist(),
+                              test_data["prediction"].tolist())))
+
+    logging.info("Number of 1's in raw prediction: {}.".format(
+        sum(test_data["raw_prediction"])))
+    logging.info("Number of data flipped due to SE: {}.".format(
+        len(test_data.loc[test_data["is_SE"] == 1])))
+    logging.info("Number of data flipped due to self angry: {}.".format(
+        len(test_data.loc[test_data["self_angry"] == "self"])))
+
+    # THREAD level accuracy
+    #if not self.Google:
+    # if any comment is predicted as 1(toxic) then the whole thread is consider
+    # toxic
+    label_data = test_data[["thread_id", "thread_label"]]
+    true_thread_label = label_data.groupby("thread_id").first()
+    true_thread_label = true_thread_label.reset_index()
+    true_thread_label = true_thread_label["thread_label"]
+
+    label_data = test_data[["thread_id", "prediction"]]
+    predicted_threads = label_data.groupby("thread_id")["prediction"].sum()
+    predicted_threads = predicted_threads.reset_index()
+    predicted_threads["thread_prediction"] = \
+            predicted_threads["prediction"].map(lambda x: int(x>0))
+    predicted_thread_label = predicted_threads["thread_prediction"]
+
+    logging.info("Crossvalidation score for thread after adjustment is\n{}".format(
+        classification_report(true_thread_label.tolist(),
+                              predicted_thread_label.tolist())))
+
+    
     model_out = open(
-        "src/pickles/{}_model_{}_keep_emoticon.p".format(model_name.upper(), str(fid)),
+        "src/pickles/{}_model_{}.p".format(model_name.upper(), str(fid)),
         "wb")
     pickle.dump(self.model, model_out)
-    # remove emoticon
-    self.all_train_data = self.remove_emo(self.all_train_data)
-    logging.info("Negate prediction if it has emoticons")
-    logging.info("Features: {}".format(self.features))
-    logging.info("Crossvalidation score after adjustment is\n{}".format(
-        classification_report(self.all_train_data["label"].tolist(),
-                              self.all_train_data["prediction"].tolist())))
-    logging.info("Area under the curve is\n{}".format(
-        roc_auc_score(self.all_train_data["label"].tolist(),
-                      self.all_train_data["prediction"].tolist())))
-    logging.info("The curve is\n{}".format(
-        roc_curve(self.all_train_data["label"].tolist(),
-                  self.all_train_data["prediction"].tolist())))
+
     return model
 
   # applying the model to the test data
