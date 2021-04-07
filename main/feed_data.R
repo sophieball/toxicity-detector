@@ -5,16 +5,23 @@ library(readr)
 # https://cmustrudel.github.io/papers/raman20toxicity.pdf
 
 # Load data
-#df <- read.csv("src/data/both_t_data_thread.csv")
-df <- read.csv("src/data/pr_body_comments.csv")
+#df <- read.csv("src/data/issues_matched_by_length.csv")
+#df <- read.csv("src/data/prs_matched_by_length.csv")
+#df <- read.csv("src/data/pr_body_comments.csv")
+#df <- read.csv("src/data/fake_G_pushback.csv")
+df <- read.csv("src/data/pushback_survey_prs.csv")
+#df <- read.csv("src/data/issues_prs.csv")
 
 df <- rename(df, c("X_id" = "id"))
 
 # I leave them as comment here so I can easily switch
+#system2("main/train_prompt_types",
+#system2("main/train_polite_prompt_classifier",
 system2("main/train_classifier_g",
 #system2("src/find_SE_words",
+#system2("src/convo_politeness",
 #system2("main/politeness_logi",
 #system2("src/convo_word_freq_diff",
-        args = "GH",
+        args = "prs",
         stdout = "",
         input = format_csv(df))
