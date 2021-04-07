@@ -63,9 +63,8 @@ def word_freq(corpus):
   fw = fighting_words_sq.FightingWords(ngram_range=(1,NGRAM))
   fw.fit(corpus, class1_func=toxic_comments_fn,
                class2_func=non_toxic_comments_fn,)
-  #df = fw.summarize(corpus, plot=True, class1_name='pushback code review comments',
-  #              class2_name='non-pushback code review comments')
-  df = fw.summarize(corpus, plot=True, class1_name='OSS issue comments',
+  df = fw.summarize(corpus, plot=True, class1_name='pushback code review comments',
+                class2_name='non-pushback code review comments')
 
 
   summary = fw.get_word_counts()
