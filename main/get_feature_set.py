@@ -31,11 +31,11 @@ def get_feature_set(dat):
     ]
   else: # code review comments in OSS and G share the same set of features
     feature_set = [
-              logs_based,
-              logs_based + length,
               text_based,
-              text_based + logs_based + length,
-              text_based + length,
+              logs_based,
               text_based + logs_based, 
+              text_based + length,
+              logs_based + length,
+              text_based + logs_based + length,
      ]
   return feature_set
