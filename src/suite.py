@@ -369,10 +369,14 @@ class Suite:
     r = permutation_importance(best_model, X_train, y_train,
                                 n_repeats=30,
                                 random_state=0)
-    for i in r.importances_mean.argsort()[::-1]:
-      logging.info(f"{X_test.columns[i]:<8}"
-              f" {r.importances_mean[i]:.3f}"
-              f" +/- {r.importances_std[i]:.3f}")
+    logging.info("For ploting feature importance")
+    logging.info(X_test.columns)
+    logging.info(r.importances_mean:.3f)
+    logging.info(r.importances_std:.3f)
+    #for i in r.importances_mean.argsort()[::-1]:
+    #  logging.info(f"{X_test.columns[i]:<8}"
+    #          f" {r.importances_mean[i]:.3f}"
+    #          f" +/- {r.importances_std[i]:.3f}")
 
     # Find the optimal parameters
     logging.info("Trying all combinations of hyper parameters.")
