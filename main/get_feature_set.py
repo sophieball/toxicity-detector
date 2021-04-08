@@ -12,6 +12,11 @@ text_based = ["perspective_score", "identity_attack",
 G_logs_based = ["rounds", "shepherd_time", "review_time"]
 OSS_logs_based = ["rounds", "shepherd_time"]
 
+drop_cols = ["Indirect_(btw)", "Indirect_(greeting)",
+  "Apologizing", "Deference",
+  "SUBJUNCTIVE", "INDICATIVE"]
+text_based = list(set(text_based) - set(drop_cols))
+
 length = ["length"]
 
 def get_feature_set(dat):
@@ -29,8 +34,8 @@ def get_feature_set(dat):
               logs_based,
               logs_based + length,
               text_based,
+              text_based + logs_based + length,
               text_based + length,
               text_based + logs_based, 
-              text_based + logs_based + length
      ]
   return feature_set

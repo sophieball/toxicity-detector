@@ -165,7 +165,7 @@ def transform_features(X):
 def pick_features(X):
   X = transform_features(X)
   return X.drop(columns=["Indirect_(btw)", "Indirect_(greeting)",
-  "Direct_start", "Gratitude", "Apologizing", "Direct_start",
+  "Apologizing", "Deference",
   "SUBJUNCTIVE", "INDICATIVE"])
 
 
