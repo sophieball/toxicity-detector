@@ -26,7 +26,7 @@ import numpy as np
 import os
 import pandas as pd
 import receive_data
-import spacy
+import sys
 import text_parser
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -181,8 +181,10 @@ def politeness_hist(corpus):
 
 
 if __name__ == "__main__":
-  [comments, _] = receive_data.receive_data()
-  comments["text"] = comments["text"].replace(np.nan, "-")
+  what_data = "G"
+  if len(sys.argv) > 1: # OSS data, Sophie passes an arg
+    what_data = sys.argv[1]
+  [comments, _] = receive_data.receive_data(what_data)
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
   politeness_hist(corpus)

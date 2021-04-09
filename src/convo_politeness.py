@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import sklearn
+import sys
 
 test_size = 0.2
 
@@ -223,8 +224,11 @@ def get_politeness_score(comments):
 
 
 if __name__ == "__main__":
-  [comments, _] = receive_data.receive_data()
-  comments["text"] = comments["text"].replace(np.nan, "-")
+  if len(sys.argv) > 1:
+    what_data = sys.argv[1]
+  else:
+    what_data = ""
+  [comments, _] = receive_data.receive_data(what_data)
   corpus = transform_politeness(prepare_corpus(comments))
   scores = polite_score(corpus)
   scores_thread = scores.groupby("thread_id").sum().reset_index()

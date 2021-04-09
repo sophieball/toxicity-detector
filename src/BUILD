@@ -303,7 +303,6 @@ py_library(
     deps = [
         ":config",
         ":convo_politeness",
-        ":text_modifier",
         ":text_parser",
         ":util",
         requirement("pandas"),

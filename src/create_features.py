@@ -15,7 +15,6 @@ from src import receive_data
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from src import convo_politeness
-from src import text_modifier
 from src import text_parser
 from src import util
 from src import config
@@ -26,7 +25,6 @@ import numpy as np
 import pandas as pd
 import re
 import requests
-import spacy
 import sys
 import time
 
