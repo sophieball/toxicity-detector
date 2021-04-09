@@ -29,8 +29,6 @@ import requests
 import spacy
 import sys
 import time
-wordnet_lemmatizer = WordNetLemmatizer()
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
 clean_str = lambda s: clean(s,
               fix_unicode=True,         # fix various unicode errors
