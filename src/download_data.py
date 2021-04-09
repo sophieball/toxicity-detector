@@ -29,5 +29,5 @@ def download_data():
 
   try:
     spacy.load("en")
-  except IOError:
+  except:
     spacy.cli.download("en")
