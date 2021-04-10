@@ -39,7 +39,7 @@ r_repository_list(
     name = "r_repositories_bzl",
     package_list = "//:r_packages.csv",
     remote_repos = {
-        "CREAB": "https://cloud.r-project.org",
+        "CRAN": "https://cloud.r-project.org",
     },
 )
 
