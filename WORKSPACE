@@ -1,6 +1,7 @@
 ############
 # For python
 ############
+
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "rules_python",
@@ -39,7 +40,7 @@ r_repository_list(
     name = "r_repositories_bzl",
     package_list = "//:r_packages.csv",
     remote_repos = {
-        "CRAN": "https://cloud.r-project.org",
+        "CREAB": "https://cloud.r-project.org",
     },
 )
 
