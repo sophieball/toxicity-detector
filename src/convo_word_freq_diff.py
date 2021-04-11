@@ -5,8 +5,8 @@ import logging
 logging.basicConfig(
     filename="fighting_words.log", filemode="w", level=logging.INFO)
 
-import download_data
-download_data.download_data()
+#import download_data
+#download_data.download_data()
 
 from collections import defaultdict, Counter
 from convokit import Corpus, Speaker, Utterance
