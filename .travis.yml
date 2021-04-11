@@ -17,8 +17,8 @@ addons:
         sourceline: "ppa:marutter/rrutter"
 script:
   - "R --version"
-  - "bazel build //src:convo_word_freq_diff"
-  - "bazel run //main:feed_data --sandbox_debug --verbose_failures"
+  - "bazel build //src:convo_word_freq_diff --discard_analysis_cache"
+  - "bazel run //main:feed_data --discard_analysis_cache --sandbox_debug --verbose_failures"
 
 after_failure:
   - cat /home/travis/.cache/bazel/_bazel_travis/b780598bdbf255f7df0b39f918df3247/execroot/__main__/bazel-out/k8-fastbuild/testlogs/tests/main_test/test.log
