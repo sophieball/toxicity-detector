@@ -16,7 +16,6 @@ from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from src import convo_politeness
 from src import text_parser
-from src import util
 from src import config
 import json
 import logging

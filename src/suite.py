@@ -21,7 +21,6 @@ from src import convo_politeness
 from src import create_features
 from src import text_modifier
 from src import text_parser
-from src import util
 from wordfreq import word_frequency
 import itertools
 import logging
