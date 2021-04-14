@@ -38,7 +38,7 @@ clean_str = lambda s: clean(s,
               no_numbers=False,         # replace all numbers with a special token
               no_digits=False,        # replace all digits with a special token
               no_currency_symbols=True,    # replace all currency symbols with a special token
-              no_punct=False,         # fully remove punctuation
+              no_punct=True,         # fully remove punctuation
               replace_with_url="<URL>",
               replace_with_email="<EMAIL>",
               replace_with_phone_number="<PHONE>",
@@ -175,7 +175,7 @@ def create_features(comments_df, training, G):
   logging.info("length {}".format(len(features_df)))
   features_df = features_df.replace(np.nan, 0)
 
-  features = [
+  features_name = [
         "Please", "Please_start", "HASHEDGE", "Indirect_(btw)", "Hedges",
         "Factuality", "Deference", "Gratitude", "Apologizing", "1st_person_pl.",
         "1st_person", "1st_person_start", "2nd_person", "2nd_person_start",
@@ -184,7 +184,7 @@ def create_features(comments_df, training, G):
         "rounds", "shepherd_time", "review_time",
         "percent_uppercase", "num_reference", "num_url", "num_emoji",
         "num_mention", "num_plus_one", "perspective_score", "identity_attack"]
-  for feature in features:
+  for feature in features_name:
     if feature not in features_df.columns:
       continue
     max_f = max(features_df[feature].tolist())

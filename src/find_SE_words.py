@@ -63,7 +63,7 @@ review_comments = [preprocess_text(x) for x in reviews["text"].to_list()]
 results = fighting.bayes_compare_language(review_comments, other_comments, NGRAM)
 
 results_df = pd.DataFrame(results, columns=["ngram", "z-score"])
-results_df = results_df.loc[results_df["z-score"] >= 1.96]
+results_df = results_df.loc[results_df["z-score"] >= 2.576] # 99%
 results_df = results_df.sort_values("z-score", ascending=False)
 results_df.to_csv("SE_words_G_zscores.csv", index=False)
 words = list(set(results_df["ngram"].to_list()))

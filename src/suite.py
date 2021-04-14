@@ -39,6 +39,24 @@ import sys
 sys.path.insert(0, "politeness3")
 #import politeness3.model
 
+# stop words: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
+stop_words = ["ourselves", "hers", "between", "yourself", "but", "again", "there", "about",
+"once", "during", "out", "very", "having", "with", "they", "own", "an", "be",
+"some", "for", "do", "its", "yours", "such", "into", "of", "most", "itself",
+"other", "off", "is", "s", "am", "or", "who", "as", "from", "him", "each",
+"the", "themselves", "until", "below", "are", "we", "these", "your", "his",
+"through", "don", "nor", "me", "were", "her", "more", "himself", "this", "down",
+"should", "our", "their", "while", "above", "both", "up", "to", "ours", "had",
+"she", "all", "no", "when", "at", "any", "before", "them", "same", "and",
+"been", "have", "in", "will", "on", "does", "yourselves", "then", "that",
+"because", "what", "over", "why", "so", "can", "did", "not", "now", "under",
+"he", "you", "herself", "has", "just", "where", "too", "only", "myself",
+"which", "those", "i", "after", "few", "whom", "t", "being", "if", "theirs",
+"my", "against", "a", "by", "doing", "it", "how", "further", "was", "here",
+"than"]
+# flip due to the removal of SE words
+FLIP = 1
+
 
 def isascii(s):
   return all(ord(c) < 128 for c in s)
@@ -148,7 +166,7 @@ def clean_text(text):
 # output: 0 if the comment was labeled to be toxic NOT due to SE words (it IS toxic)
 #         1 if the comment was labeled to be toxic due to SE words (it shouldn't
 #         be toxic)
-def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
+def remove_SE_comment(features_df, row, model, features, max_values, tf_idf_counter):
   text = row["text"]
   t = time.time()
   words = text.split(" ")
@@ -166,6 +184,10 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
     return 0
 
   for word in set(words):
+    # if word is a stop word
+    if word in stop_words or word.isdigit():
+      continue
+
     new_sentence = re.sub(
         r"[^a-zA-Z0-9]" + re.escape(word.lower()) + r"[^a-zA-Z0-9]", " ",
         text.lower())
@@ -175,7 +197,7 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
 
     new_features = {}
     for f in features:
-      max_f = max(features_df[f].tolist())
+      max_f = max_values[f]
       if max_f != 0:
         new_features[f] = new_features_dict[f]/max_f
       else:
@@ -185,7 +207,14 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
     new_features = pd.DataFrame([new_features])
     if model.predict(new_features)[0] == 0:
       # it was labeled to be toxic because of SE words
-      return 1
+      if not self.Google and row["label"]:
+        logging.info("going to be flipped:{}, {}: {}".format(row["thread_id"],
+                row["label"], text))
+        logging.info("old values: {}".format(row))
+        logging.info("new values: {}".format(new_features.iloc[0]))
+        logging.info("after being flipped: word:{},  new sentence: {}".format(word, 
+                new_sentence))
+      return FLIP
 
   # after removing SE words and unknown words, still the classifier labels it
   # toxic
@@ -197,6 +226,7 @@ class Suite:
     global counter
 
     self.features = []
+    self.max_feature_values = {}
     self.nice_features = []
     self.parameter_names = []
     self.hyper_parameters_lists = []
@@ -239,6 +269,13 @@ class Suite:
     self.train_collection = train_collection
     self.all_train_data = create_features.create_features(
         train_collection, "training", self.Google)
+    for f in self.all_train_data.columns:
+      if f in ["text", "author", "author_association", "url", "html_url"]: 
+        continue
+      try:
+        self.max_feature_values[f] = max(self.all_train_data[f].tolist())
+      except:
+        print(f)
     logging.info(
         "Prepared training dataset, it took {} seconds".format(time.time() - \
                                                                self.last_time))
@@ -282,7 +319,7 @@ class Suite:
     p = Pool(num_subproc)
     data["is_SE"] = 0
     new_pred = p.starmap(remove_SE_comment, [
-        (data, x, self.model, features, tf_idf_counter)
+        (data, x, self.model, features, self.max_feature_values, tf_idf_counter)
         for x in data.loc[data["prediction"] == 1].T.to_dict().values()
     ])  #original_text])
     data.loc[data.prediction == 1, "is_SE"] = new_pred
@@ -425,6 +462,17 @@ class Suite:
         classification_report(true_thread_label.tolist(),
                               predicted_thread_label.tolist())))
 
+    if not self.Google:
+      logging.info("\n")
+      incidentally_toxic = test_data.loc[(test_data["prediction"]==1) &
+                                         (test_data["label"]==0) &
+                                         (test_data["thread_label"]==1)]
+      logging.info("comments in a toxic thread predicted as 1 but with label 0:{}".format(len(incidentally_toxic)))
+      if len(incidentally_toxic) > 0:
+        for i in range(10):
+          if i > len(incidentally_toxic):
+            break
+          logging.info(incidentally_toxic.iloc[i])
     
     model_out = open(
         "src/pickles/{}_model_{}.p".format(model_name.upper(), str(fid)),
