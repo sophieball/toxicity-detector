@@ -166,7 +166,7 @@ def clean_text(text):
 # output: 0 if the comment was labeled to be toxic NOT due to SE words (it IS toxic)
 #         1 if the comment was labeled to be toxic due to SE words (it shouldn't
 #         be toxic)
-def remove_SE_comment(features_df, row, model, features, max_values, tf_idf_counter):
+def remove_SE_comment(features_df, Google, row, model, features, max_values, tf_idf_counter):
   text = row["text"]
   t = time.time()
   words = text.split(" ")
@@ -185,7 +185,7 @@ def remove_SE_comment(features_df, row, model, features, max_values, tf_idf_coun
 
   for word in set(words):
     # if word is a stop word
-    if word in stop_words or word.isdigit():
+    if word in stop_words or (not word.isalpha()):
       continue
 
     new_sentence = re.sub(
@@ -207,7 +207,7 @@ def remove_SE_comment(features_df, row, model, features, max_values, tf_idf_coun
     new_features = pd.DataFrame([new_features])
     if model.predict(new_features)[0] == 0:
       # it was labeled to be toxic because of SE words
-      if not self.Google and row["label"]:
+      if not Google and row["label"]:
         logging.info("going to be flipped:{}, {}: {}".format(row["thread_id"],
                 row["label"], text))
         logging.info("old values: {}".format(row))
@@ -319,7 +319,7 @@ class Suite:
     p = Pool(num_subproc)
     data["is_SE"] = 0
     new_pred = p.starmap(remove_SE_comment, [
-        (data, x, self.model, features, self.max_feature_values, tf_idf_counter)
+        (data, self.Google, x, self.model, features, self.max_feature_values, tf_idf_counter)
         for x in data.loc[data["prediction"] == 1].T.to_dict().values()
     ])  #original_text])
     data.loc[data.prediction == 1, "is_SE"] = new_pred
