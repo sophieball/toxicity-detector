@@ -343,7 +343,7 @@ class Suite:
     # n-fold nested cross validation
     # https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html
     num_trials = 5
-    n_splits = 5
+    n_splits = 10
     best_model = None
     best_score = 0
     if model_name == "svm":
