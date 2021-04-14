@@ -25,3 +25,8 @@ def download_data():
     nltk.data.find("corpora/stopwords")
   except LookupError:
     nltk.download("stopwords")
+
+  try:
+    spacy.load("en")
+  except IOError:
+    spacy.cli.download("en")

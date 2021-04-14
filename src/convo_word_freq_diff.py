@@ -5,9 +5,6 @@ import logging
 logging.basicConfig(
     filename="fighting_words.log", filemode="w", level=logging.INFO)
 
-#import download_data
-#download_data.download_data()
-
 from collections import defaultdict, Counter
 from convokit import Corpus, Speaker, Utterance
 from convokit.fighting_words import fightingWords
@@ -187,4 +184,4 @@ if __name__ == "__main__":
   [comments, _] = receive_data.receive_data(what_data)
   corpus = convo_politeness.prepare_corpus(comments)
   word_freq(corpus)
-  politeness_hist(corpus)
+  #politeness_hist(corpus)
