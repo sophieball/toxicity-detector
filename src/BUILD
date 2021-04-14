@@ -9,6 +9,7 @@ exports_files(
         "pickles/pt_model_10K.files/*",
         "model/*",
         "vocabulary/*",
+        "Senti4SD-fast.jar",
     ]),
     visibility = ["//visibility:public"],
 )
@@ -94,7 +95,6 @@ py_library(
         requirement("sklearn"),
         requirement("nltk"),
         requirement("pandas"),
-        requirement("spacy"),
         requirement("numpy"),
     ],
 )

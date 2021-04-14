@@ -3,7 +3,6 @@
 """
 
 import nltk
-import spacy
 
 
 def download_data():
@@ -26,8 +25,3 @@ def download_data():
     nltk.data.find("corpora/stopwords")
   except LookupError:
     nltk.download("stopwords")
-
-  try:
-    spacy.load("en")
-  except:
-    spacy.cli.download("en")
