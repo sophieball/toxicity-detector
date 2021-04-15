@@ -3,6 +3,7 @@
 """
 
 import nltk
+import spacy
 
 
 def download_data():
