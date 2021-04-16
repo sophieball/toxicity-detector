@@ -117,13 +117,11 @@ if __name__ == "__main__":
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data(what_data)
     trained_model = train_model(training, model_name="rf", what_data=what_data)
-    trained_model = train_model(training, what_data=what_data)
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
   else: # Google
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data(what_data)
-    trained_model = train_model(training, what_data=what_data)
     trained_model = train_model(training, model_name="rf", what_data=what_data)
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
