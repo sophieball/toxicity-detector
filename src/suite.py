@@ -56,6 +56,7 @@ stop_words = ["ourselves", "hers", "between", "yourself", "but", "again", "there
 "than"]
 # flip due to the removal of SE words
 FLIP = 1
+DONT_FLIP = 0
 
 
 def isascii(s):
@@ -208,6 +209,7 @@ def remove_SE_comment(features_df, Google, row, model, features, max_values, tf_
     if model.predict(new_features)[0] == 0:
       # it was labeled to be toxic because of SE words
       if not Google and row["label"]:
+        # print out some quotes for debugging
         logging.info("going to be flipped:{}, {}: {}".format(row["thread_id"],
                 row["label"], text))
         logging.info("old values: {}".format(row))
@@ -218,7 +220,7 @@ def remove_SE_comment(features_df, Google, row, model, features, max_values, tf_
 
   # after removing SE words and unknown words, still the classifier labels it
   # toxic
-  return 0
+  return DONT_FLIP 
 
 class Suite:
 
@@ -275,7 +277,7 @@ class Suite:
       try:
         self.max_feature_values[f] = max(self.all_train_data[f].tolist())
       except:
-        print(f)
+        pass
     logging.info(
         "Prepared training dataset, it took {} seconds".format(time.time() - \
                                                                self.last_time))
@@ -429,18 +431,22 @@ class Suite:
 
     # adjust SE words and anger words
     logging.info("Removing angry words towards oneself and SE words.")
-    test_data = self.remove_I(test_data)
-    test_data = self.remove_SE(test_data)
+    if "perspective_score" in self.features:
+      test_data = self.remove_I(test_data)
+      test_data = self.remove_SE(test_data)
     logging.info("Crossvalidation score for comments after adjustment is\n{}".format(
         classification_report(test_data["label"].tolist(),
                               test_data["prediction"].tolist())))
 
     logging.info("Number of 1's in raw prediction: {}.".format(
         sum(test_data["raw_prediction"])))
-    logging.info("Number of data flipped due to SE: {}.".format(
-        len(test_data.loc[test_data["is_SE"] == 1])))
-    logging.info("Number of data flipped due to self angry: {}.".format(
-        len(test_data.loc[test_data["self_angry"] == "self"])))
+    try:
+      logging.info("Number of data flipped due to SE: {}.".format(
+          len(test_data.loc[test_data["is_SE"] == 1])))
+      logging.info("Number of data flipped due to self angry: {}.".format(
+          len(test_data.loc[test_data["self_angry"] == "self"])))
+    except:
+      pass
 
     # THREAD level accuracy
     #if not self.Google:
@@ -450,6 +456,7 @@ class Suite:
     true_thread_label = label_data.groupby("thread_id").first()
     true_thread_label = true_thread_label.reset_index()
     true_thread_label = true_thread_label["thread_label"]
+    test_data.to_csv("reported_pb_oss_pred.csv", index=False)
 
     label_data = test_data[["thread_id", "prediction"]]
     predicted_threads = label_data.groupby("thread_id")["prediction"].sum()
@@ -462,6 +469,7 @@ class Suite:
         classification_report(true_thread_label.tolist(),
                               predicted_thread_label.tolist())))
 
+    """
     if not self.Google:
       logging.info("\n")
       incidentally_toxic = test_data.loc[(test_data["prediction"]==1) &
@@ -473,6 +481,7 @@ class Suite:
           if i > len(incidentally_toxic):
             break
           logging.info(incidentally_toxic.iloc[i])
+    """
     
     model_out = open(
         "src/pickles/{}_model_{}.p".format(model_name.upper(), str(fid)),
@@ -487,6 +496,7 @@ class Suite:
 
     self.test_data["raw_prediction"] = self.model.predict(X_test)
     self.test_data["prediction"] = self.test_data["raw_prediction"]
-    self.test_data = self.remove_I(self.test_data)
-    self.test_data = self.remove_SE(self.test_data)
+    if "perspective_score" in self.features:
+      self.test_data = self.remove_I(self.test_data)
+      self.test_data = self.remove_SE(self.test_data)
     return self.test_data

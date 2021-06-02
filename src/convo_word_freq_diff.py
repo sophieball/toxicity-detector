@@ -32,6 +32,12 @@ from src import sep_ngram
 NGRAM = 4
 
 
+# load bot list
+f = open("src/data/speakers_bots_full.list")
+bots = [l.strip() for l in f.readlines()]
+f.close()
+
+
 # Creating corpus from the list of utterances
 def prepare_corpus(comments):
   speaker_meta = {}
