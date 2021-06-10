@@ -2,6 +2,7 @@ Keras
 Pillow
 catalogue
 convokit
+click
 cycler
 cymem
 emoji
