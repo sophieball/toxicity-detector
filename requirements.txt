@@ -2,7 +2,7 @@ Keras
 Pillow
 catalogue
 convokit
-click
+click<8.0.0
 cycler
 cymem
 emoji
@@ -38,8 +38,9 @@ srsly
 statsmodels
 text_unidecode
 textblob
-thinc==7.4.0
+thinc>=8.0.3,<8.1.0
 threadpoolctl
+typer>=0.3.0,<0.4.0
 wasabi
 wordfreq
 smart-open
