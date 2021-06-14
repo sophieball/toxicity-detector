@@ -12,6 +12,8 @@ text_based = ["perspective_score", "identity_attack",
 G_logs_based = ["rounds", "shepherd_time", "review_time"]
 OSS_logs_based = ["rounds", "shepherd_time"]
 
+# drop the features with very low importance (< 0.01)
+# and the results are better
 drop_cols = ["Indirect_(btw)", "Indirect_(greeting)",
   "Apologizing", "Deference",
   "SUBJUNCTIVE", "INDICATIVE"]
@@ -34,8 +36,8 @@ def get_feature_set(dat):
               text_based,
               logs_based,
               text_based + logs_based, 
-              text_based + length,
-              logs_based + length,
-              text_based + logs_based + length,
+              #text_based + length,
+              #logs_based + length,
+              #text_based + logs_based + length,
      ]
   return feature_set

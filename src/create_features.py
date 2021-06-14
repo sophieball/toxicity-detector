@@ -164,11 +164,6 @@ def create_features(comments_df, training, G):
   comments_df = convo_politeness.get_politeness_score(
       comments_df)
 
-  # try sentiment
-  #temp = sentiment_classification.classify(comments_df["text"])
-  #print(temp)
-
-
   # convert it to a list of dictionaries
   comments = comments_df.T.to_dict().values()
 

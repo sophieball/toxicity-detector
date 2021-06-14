@@ -162,7 +162,7 @@ def transform_features(X):
   return X
 
 
-# These features are picked based on a logistic regression
+# drop features with importance < 0.01 to achieve higher results
 def pick_features(X):
   X = transform_features(X)
   return X.drop(columns=["Indirect_(btw)", "Indirect_(greeting)",

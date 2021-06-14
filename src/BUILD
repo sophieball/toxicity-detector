@@ -16,17 +16,6 @@ exports_files(
     visibility = ["//visibility:public"],
 )
 
-#py_library(
-#    name = "sentiment_classification",
-#    srcs = ["sentiment_classification.py"],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        "//src/senti_core:classification",
-#        "//src/senti_core/utils:csv_utils",
-#        "//src/senti_core/utils:core_utils",
-#    ],
-#)
-
 py_library(
     name = "receive_data",
     srcs = ["receive_data.py"],
@@ -311,7 +300,6 @@ py_library(
     deps = [
         ":config",
         ":convo_politeness",
-        #":sentiment_classification",
         ":text_parser",
         requirement("pandas"),
         requirement("nltk"),
