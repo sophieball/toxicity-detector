@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import sklearn
+import sys
 
 test_size = 0.2
 
@@ -161,11 +162,11 @@ def transform_features(X):
   return X
 
 
-# These features are picked based on a logistic regression
+# drop features with importance < 0.01 to achieve higher results
 def pick_features(X):
   X = transform_features(X)
   return X.drop(columns=["Indirect_(btw)", "Indirect_(greeting)",
-  "Direct_start", "Gratitude", "Apologizing", "Direct_start",
+  "Apologizing", "Deference",
   "SUBJUNCTIVE", "INDICATIVE"])
 
 
@@ -223,8 +224,11 @@ def get_politeness_score(comments):
 
 
 if __name__ == "__main__":
-  [comments, _] = receive_data.receive_data()
-  comments["text"] = comments["text"].replace(np.nan, "-")
+  if len(sys.argv) > 1:
+    what_data = sys.argv[1]
+  else:
+    what_data = ""
+  [comments, _] = receive_data.receive_data(what_data)
   corpus = transform_politeness(prepare_corpus(comments))
   scores = polite_score(corpus)
   scores_thread = scores.groupby("thread_id").sum().reset_index()

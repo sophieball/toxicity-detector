@@ -6,10 +6,8 @@ import nltk
 import numpy as np
 import pandas as pd
 import re
-import spacy
 import time
 
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 ps = PorterStemmer()
 words = set(nltk.corpus.words.words())
 
@@ -88,26 +86,6 @@ def get_counts(counter, df):
 
   counts = counter.transform(df["total_text"].tolist())
   return counts
-
-
-def add_word2vec(df):
-  """ Add word2vec to a dataframe """
-
-  word_list = [nlp(i) for i in df["text"]]
-
-  vector_representation = []
-  for i in range(len(word_list)):
-    vector_representation.append(list(word_list[i].vector))
-
-  column_names = [
-      "word2vec_" + str(i) for i in range(len(vector_representation[0]))
-  ]
-  return pd.concat([
-      df.reset_index(drop=True),
-      pd.DataFrame(vector_representation,
-                   columns=column_names).reset_index(drop=True)
-  ],
-                   axis=1)
 
 
 def add_linguistic_scores_suite(s):

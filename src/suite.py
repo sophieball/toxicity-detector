@@ -9,6 +9,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.tokenize import RegexpTokenizer
 from nltk.tokenize import word_tokenize
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.inspection import permutation_importance
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, fbeta_score, roc_auc_score, roc_curve
 from sklearn.model_selection import StratifiedKFold, GridSearchCV, train_test_split, cross_val_score
@@ -20,7 +21,6 @@ from src import convo_politeness
 from src import create_features
 from src import text_modifier
 from src import text_parser
-from src import util
 from wordfreq import word_frequency
 import itertools
 import logging
@@ -38,6 +38,25 @@ warnings.filterwarnings("ignore")
 import sys
 sys.path.insert(0, "politeness3")
 #import politeness3.model
+
+# stop words: https://www.geeksforgeeks.org/removing-stop-words-nltk-python/
+stop_words = ["ourselves", "hers", "between", "yourself", "but", "again", "there", "about",
+"once", "during", "out", "very", "having", "with", "they", "own", "an", "be",
+"some", "for", "do", "its", "yours", "such", "into", "of", "most", "itself",
+"other", "off", "is", "s", "am", "or", "who", "as", "from", "him", "each",
+"the", "themselves", "until", "below", "are", "we", "these", "your", "his",
+"through", "don", "nor", "me", "were", "her", "more", "himself", "this", "down",
+"should", "our", "their", "while", "above", "both", "up", "to", "ours", "had",
+"she", "all", "no", "when", "at", "any", "before", "them", "same", "and",
+"been", "have", "in", "will", "on", "does", "yourselves", "then", "that",
+"because", "what", "over", "why", "so", "can", "did", "not", "now", "under",
+"he", "you", "herself", "has", "just", "where", "too", "only", "myself",
+"which", "those", "i", "after", "few", "whom", "t", "being", "if", "theirs",
+"my", "against", "a", "by", "doing", "it", "how", "further", "was", "here",
+"than"]
+# flip due to the removal of SE words
+FLIP = 1
+DONT_FLIP = 0
 
 
 def isascii(s):
@@ -148,7 +167,7 @@ def clean_text(text):
 # output: 0 if the comment was labeled to be toxic NOT due to SE words (it IS toxic)
 #         1 if the comment was labeled to be toxic due to SE words (it shouldn't
 #         be toxic)
-def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
+def remove_SE_comment(features_df, Google, row, model, features, max_values, tf_idf_counter):
   text = row["text"]
   t = time.time()
   words = text.split(" ")
@@ -166,6 +185,10 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
     return 0
 
   for word in set(words):
+    # if word is a stop word
+    if word in stop_words or (not word.isalpha()):
+      continue
+
     new_sentence = re.sub(
         r"[^a-zA-Z0-9]" + re.escape(word.lower()) + r"[^a-zA-Z0-9]", " ",
         text.lower())
@@ -175,7 +198,7 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
 
     new_features = {}
     for f in features:
-      max_f = max(features_df[f].tolist())
+      max_f = max_values[f]
       if max_f != 0:
         new_features[f] = new_features_dict[f]/max_f
       else:
@@ -185,11 +208,19 @@ def remove_SE_comment(features_df, row, model, features, tf_idf_counter):
     new_features = pd.DataFrame([new_features])
     if model.predict(new_features)[0] == 0:
       # it was labeled to be toxic because of SE words
-      return 1
+      if not Google and row["label"]:
+        # print out some quotes for debugging
+        logging.info("going to be flipped:{}, {}: {}".format(row["thread_id"],
+                row["label"], text))
+        logging.info("old values: {}".format(row))
+        logging.info("new values: {}".format(new_features.iloc[0]))
+        logging.info("after being flipped: word:{},  new sentence: {}".format(word, 
+                new_sentence))
+      return FLIP
 
   # after removing SE words and unknown words, still the classifier labels it
   # toxic
-  return 0
+  return DONT_FLIP 
 
 class Suite:
 
@@ -197,6 +228,7 @@ class Suite:
     global counter
 
     self.features = []
+    self.max_feature_values = {}
     self.nice_features = []
     self.parameter_names = []
     self.hyper_parameters_lists = []
@@ -239,6 +271,13 @@ class Suite:
     self.train_collection = train_collection
     self.all_train_data = create_features.create_features(
         train_collection, "training", self.Google)
+    for f in self.all_train_data.columns:
+      if f in ["text", "author", "author_association", "url", "html_url"]: 
+        continue
+      try:
+        self.max_feature_values[f] = max(self.all_train_data[f].tolist())
+      except:
+        pass
     logging.info(
         "Prepared training dataset, it took {} seconds".format(time.time() - \
                                                                self.last_time))
@@ -282,7 +321,7 @@ class Suite:
     p = Pool(num_subproc)
     data["is_SE"] = 0
     new_pred = p.starmap(remove_SE_comment, [
-        (data, x, self.model, features, tf_idf_counter)
+        (data, self.Google, x, self.model, features, self.max_feature_values, tf_idf_counter)
         for x in data.loc[data["prediction"] == 1].T.to_dict().values()
     ])  #original_text])
     data.loc[data.prediction == 1, "is_SE"] = new_pred
@@ -306,7 +345,7 @@ class Suite:
     # n-fold nested cross validation
     # https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html
     num_trials = 5
-    n_splits = 5
+    n_splits = 10
     best_model = None
     best_score = 0
     if model_name == "svm":
@@ -329,9 +368,12 @@ class Suite:
     train_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_train_id)]
     test_data = self.all_train_data.loc[self.all_train_data["thread_id"].isin(X_test_id)]
 
-    # feature importance
     X_train = train_data[self.features]
     y_train = train_data["label"]
+    y_test = test_data["label"]
+    X_test = test_data[self.features]
+
+    # feature importance
     clf = ExtraTreesClassifier(n_estimators=50)
     clf = clf.fit(X_train, y_train)
     logging.info("Feature importance: {}\n".format(
@@ -360,6 +402,16 @@ class Suite:
         best_score = nested_scores
         best_model = model
 
+    # permutation importance
+    logging.info("importance on train set\n")
+    r = permutation_importance(best_model, X_train, y_train,
+                                n_repeats=30,
+                                random_state=0)
+    logging.info("For ploting feature importance")
+    logging.info(X_test.columns)
+    logging.info(",".join([str(round(x, 3)) for x in r.importances_mean]))
+    logging.info(",".join([str(round(x, 3)) for x in r.importances_std]))
+
     # Find the optimal parameters
     logging.info("Trying all combinations of hyper parameters.")
     logging.info("Scores with {}-fold cross validation".format(n_splits))
@@ -368,8 +420,6 @@ class Suite:
     self.model = best_model
 
     # test
-    y_test = test_data["label"]
-    X_test = test_data[self.features]
     test_data["raw_prediction"] = model.predict(X_test)
     # without removing SE words and anger words, prediction == raw_pred
     test_data["prediction"] = test_data["raw_prediction"]
@@ -381,18 +431,22 @@ class Suite:
 
     # adjust SE words and anger words
     logging.info("Removing angry words towards oneself and SE words.")
-    test_data = self.remove_I(test_data)
-    test_data = self.remove_SE(test_data)
+    if "perspective_score" in self.features:
+      test_data = self.remove_I(test_data)
+      test_data = self.remove_SE(test_data)
     logging.info("Crossvalidation score for comments after adjustment is\n{}".format(
         classification_report(test_data["label"].tolist(),
                               test_data["prediction"].tolist())))
 
     logging.info("Number of 1's in raw prediction: {}.".format(
         sum(test_data["raw_prediction"])))
-    logging.info("Number of data flipped due to SE: {}.".format(
-        len(test_data.loc[test_data["is_SE"] == 1])))
-    logging.info("Number of data flipped due to self angry: {}.".format(
-        len(test_data.loc[test_data["self_angry"] == "self"])))
+    try:
+      logging.info("Number of data flipped due to SE: {}.".format(
+          len(test_data.loc[test_data["is_SE"] == 1])))
+      logging.info("Number of data flipped due to self angry: {}.".format(
+          len(test_data.loc[test_data["self_angry"] == "self"])))
+    except:
+      pass
 
     # THREAD level accuracy
     #if not self.Google:
@@ -402,6 +456,7 @@ class Suite:
     true_thread_label = label_data.groupby("thread_id").first()
     true_thread_label = true_thread_label.reset_index()
     true_thread_label = true_thread_label["thread_label"]
+    test_data.to_csv("reported_pb_oss_pred.csv", index=False)
 
     label_data = test_data[["thread_id", "prediction"]]
     predicted_threads = label_data.groupby("thread_id")["prediction"].sum()
@@ -414,6 +469,19 @@ class Suite:
         classification_report(true_thread_label.tolist(),
                               predicted_thread_label.tolist())))
 
+    """
+    if not self.Google:
+      logging.info("\n")
+      incidentally_toxic = test_data.loc[(test_data["prediction"]==1) &
+                                         (test_data["label"]==0) &
+                                         (test_data["thread_label"]==1)]
+      logging.info("comments in a toxic thread predicted as 1 but with label 0:{}".format(len(incidentally_toxic)))
+      if len(incidentally_toxic) > 0:
+        for i in range(10):
+          if i > len(incidentally_toxic):
+            break
+          logging.info(incidentally_toxic.iloc[i])
+    """
     
     model_out = open(
         "src/pickles/{}_model_{}.p".format(model_name.upper(), str(fid)),
@@ -428,6 +496,7 @@ class Suite:
 
     self.test_data["raw_prediction"] = self.model.predict(X_test)
     self.test_data["prediction"] = self.test_data["raw_prediction"]
-    self.test_data = self.remove_I(self.test_data)
-    self.test_data = self.remove_SE(self.test_data)
+    if "perspective_score" in self.features:
+      self.test_data = self.remove_I(self.test_data)
+      self.test_data = self.remove_SE(self.test_data)
     return self.test_data

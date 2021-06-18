@@ -92,6 +92,7 @@ r_repository_list(
     name = "r_repositories_bzl",
     package_list = "//:r_packages.csv",
     remote_repos = {
+        "BioCsoft": "https://bioconductor.org/packages/3.11/bioc",
         "CREAB": "https://cloud.r-project.org",
     },
 )

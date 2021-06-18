@@ -8,17 +8,15 @@ from convokit import download
 from convokit.convokitPipeline import ConvokitPipeline
 from convokit.phrasing_motifs import CensorNouns, QuestionSentences
 from convokit.phrasing_motifs import PhrasingMotifs
-from convokit.prompt_types import PromptTypeWrapper, PromptTypes
 from convokit.text_processing import TextParser
 from convokit.text_processing import TextToArcs
 
 from src import receive_data
+#from src import sentiment_classification
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from src import convo_politeness
-from src import text_modifier
 from src import text_parser
-from src import util
 from src import config
 import json
 import logging
@@ -27,11 +25,8 @@ import numpy as np
 import pandas as pd
 import re
 import requests
-import spacy
 import sys
 import time
-wordnet_lemmatizer = WordNetLemmatizer()
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
 clean_str = lambda s: clean(s,
               fix_unicode=True,         # fix various unicode errors
@@ -44,7 +39,7 @@ clean_str = lambda s: clean(s,
               no_numbers=False,         # replace all numbers with a special token
               no_digits=False,        # replace all digits with a special token
               no_currency_symbols=True,    # replace all currency symbols with a special token
-              no_punct=False,         # fully remove punctuation
+              no_punct=True,         # fully remove punctuation
               replace_with_url="<URL>",
               replace_with_email="<EMAIL>",
               replace_with_phone_number="<PHONE>",
@@ -106,7 +101,6 @@ def get_perspective_score(text, det_lang):
       return [toxicity, identity_attack]
     except:
       return [-1, -1]
-
 
 # input: pd.DataFrame (comment)
 # output: dict (features)
@@ -182,7 +176,7 @@ def create_features(comments_df, training, G):
   logging.info("length {}".format(len(features_df)))
   features_df = features_df.replace(np.nan, 0)
 
-  features = [
+  features_name = [
         "Please", "Please_start", "HASHEDGE", "Indirect_(btw)", "Hedges",
         "Factuality", "Deference", "Gratitude", "Apologizing", "1st_person_pl.",
         "1st_person", "1st_person_start", "2nd_person", "2nd_person_start",
@@ -191,13 +185,12 @@ def create_features(comments_df, training, G):
         "rounds", "shepherd_time", "review_time",
         "percent_uppercase", "num_reference", "num_url", "num_emoji",
         "num_mention", "num_plus_one", "perspective_score", "identity_attack"]
-  for feature in features:
+  for feature in features_name:
     if feature not in features_df.columns:
       continue
     max_f = max(features_df[feature].tolist())
     if max_f != 0:
       features_df[feature] = features_df[feature].map(lambda x: x/max_f)
-
 
   logging.info("Total number of {} data: {}.".format(training,
                                                      len(features_df)))
@@ -208,56 +201,15 @@ def create_features(comments_df, training, G):
     pass
 
   comments_df["label"].to_csv("pos_labels.csv")
-  if training == "training":
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "perspective_score"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 perspective scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "perspective_score"].describe()))
-
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 HASHEDGE scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "HASHEDGE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 HASHEDGE scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "HASHEDGE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 HASNEGATIVE scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,#
-                                      "HASNEGATIVE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 HASNEGATIVE scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "HASNEGATIVE"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 1 2nd person scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 1,
-                                      "2nd_person"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data label == 0 2nd person scores:\n{}"
-        .format(
-            training, features_df.loc[features_df["label"] == 0,
-                                      "2nd_person"].describe()))
-
-  else:
-    logging.info(
+  feature_stats = comments_df.loc[comments_df["thread_label"]==1].describe()
+  feature_stats.to_csv("pos_label_data_stats.csv")
+  feature_stats = comments_df.loc[comments_df["thread_label"]==0].describe()
+  feature_stats.to_csv("neg_label_data_stats.csv")
+  feature_stats = comments_df.describe()
+  feature_stats.to_csv("data_stats.csv")
+  logging.info(
         "Some descriptive statistics of {} data's perspective scores:\n{}"
         .format(training, features_df["perspective_score"].describe()))
-    logging.info(
-        "Some descriptive statistics of {} data's politeness scores:\n{}"
-        .format(training, features_df["politeness"].describe()))
 
   features_df.to_csv(training + "_data_label_cleaned.csv", index=False)
   return features_df
