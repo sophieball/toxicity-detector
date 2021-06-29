@@ -16,16 +16,16 @@ exports_files(
     visibility = ["//visibility:public"],
 )
 
-#py_library(
-#    name = "sentiment_classification",
-#    srcs = ["sentiment_classification.py"],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        "//src/senti_core:classification",
-#        "//src/senti_core/utils:csv_utils",
-#        "//src/senti_core/utils:core_utils",
-#    ],
-#)
+py_library(
+    name = "sentiment_classification",
+    srcs = ["sentiment_classification.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/senti_core:classification",
+        "//src/senti_core/utils:csv_utils",
+        "//src/senti_core/utils:core_utils",
+    ],
+)
 
 py_library(
     name = "receive_data",
@@ -308,10 +308,13 @@ py_library(
     name = "create_features",
     srcs = ["create_features.py"],
     visibility = ["//visibility:public"],
+    data = [
+        ":Senti4SD-fast.jar",
+    ],
     deps = [
         ":config",
         ":convo_politeness",
-        #":sentiment_classification",
+        ":sentiment_classification",
         ":text_parser",
         requirement("pandas"),
         requirement("nltk"),
