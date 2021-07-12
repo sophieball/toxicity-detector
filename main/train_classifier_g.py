@@ -2,9 +2,11 @@
 from src import download_data
 download_data.download_data()
 
+import time
+now = str(int(time.time())) 
 import logging
 logging.basicConfig(
-    filename="train_classifier.log", filemode="w", level=logging.INFO)
+    filename="train_classifier_"+now+".log", filemode="w", level=logging.INFO)
 import os
 
 from src import receive_data
@@ -87,22 +89,32 @@ def train_model(training_data, model_name="svm", pretrain=False, what_data="issu
   return model
 
 
-def predict_unlabeled(unlabeled_data, trained_model, features, G_data=True):
+def predict_unlabeled(unlabeled_data, trained_model, what_data):
   s = suite.Suite()
+  if what_data == "G":
+    G = True
+    training_data["thread_label"] = training_data["label"]
+    training_data["thread_id"] = training_data["_id"]
+  else:
+    G = False
+  s.set_G(G)
+
   # 3 columns: _id, text, training(0)
   s.set_unlabeled_set(unlabeled_data)
 
-  s.set_trained_model(trained_model)
   # select features
-  s.features = features
-  s.nice_features = features
-  logging.info("Features: {}".format(", ".join(features)))
+  feature_set = fs.get_feature_set(what_data)
+  s.features = feature_set[0]
+  s.nice_features = feature_set[0]
+  logging.info("Features: {}".format(", ".join(feature_set[0])))
+
+  s.set_trained_model(trained_model)
 
   # fit the model on test data
   result = s.test_issue_classifications_from_comments_all()
 
   # remove text from the output
-  if G_data:
+  if G:
     result = result.rename(columns={"_id": "id"})
   result = result.drop(["text", "original_text"], axis=1)
   result.to_csv("classification_results.csv", index=False)
@@ -112,6 +124,7 @@ if __name__ == "__main__":
   start_time = time.time()
   what_data = "G"
   if len(sys.argv) > 1: # OSS data, Sophie passes an arg
+    logging.info("File name: {}".format(sys.argv[2]))
     what_data = sys.argv[1]
     logging.info("Training {}".format(what_data))
     logging.info("Training the model and predicting labels.")
@@ -120,11 +133,10 @@ if __name__ == "__main__":
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
   else: # Google
+    logging.info("File name: Google")
     logging.info("Training the model and predicting labels.")
     [training, unlabeled] = receive_data.receive_data(what_data)
     trained_model = train_model(training, model_name="rf", what_data=what_data)
     logging.info("Trained model saved in {}".format("`" + os.getcwd() +
                                                     "/src/pickles/"))
   print("Log saved in {}".format("`" + os.getcwd() + "/train_classifier.log`"))
-  print("Prediction result saved in {}".format("`" + os.getcwd() +
-                                               "/classification_results.csv`"))

@@ -139,6 +139,7 @@ def rescore(row, features, tf_idf_counter):
 
 # postprocessing (usually only done for toxic comments)
 # returns list of clean text variants
+# Sophie: Jun 17: not used?
 def clean_text(text):
   result = []
   words = text.split(" ")
@@ -199,6 +200,7 @@ def remove_SE_comment(features_df, Google, row, model, features, max_values, tf_
     new_features = {}
     for f in features:
       max_f = max_values[f]
+      
       if max_f != 0:
         new_features[f] = new_features_dict[f]/max_f
       else:
@@ -216,6 +218,7 @@ def remove_SE_comment(features_df, Google, row, model, features, max_values, tf_
         logging.info("new values: {}".format(new_features.iloc[0]))
         logging.info("after being flipped: word:{},  new sentence: {}".format(word, 
                 new_sentence))
+        logging.info("\n")
       return FLIP
 
   # after removing SE words and unknown words, still the classifier labels it
@@ -271,6 +274,8 @@ class Suite:
     self.train_collection = train_collection
     self.all_train_data = create_features.create_features(
         train_collection, "training", self.Google)
+
+    # we need to normalize features for SVM
     for f in self.all_train_data.columns:
       if f in ["text", "author", "author_association", "url", "html_url"]: 
         continue
@@ -287,6 +292,13 @@ class Suite:
     self.test_collection = test_collection
     self.test_data = create_features.create_features(test_collection,
                                                      "unlabeled", self.Google)
+    for f in self.test_data.columns:
+      if f in ["text", "author", "author_association", "url", "html_url"]: 
+        continue
+      try:
+        self.max_feature_values[f] = max(self.test_data[f].tolist())
+      except:
+        pass
     logging.info(
         "Prepared unlabeled dataset, it took {} seconds".format(time.time() - \
                                                               self.last_time))
@@ -313,7 +325,7 @@ class Suite:
     return test_issues
 
   def remove_SE(self, data):
-
+    logging.info("Removing SE words")
     features = self.features
     tf_idf_counter = self.tf_idf_counter
     model = self.model
@@ -421,6 +433,7 @@ class Suite:
 
     # test
     test_data["raw_prediction"] = model.predict(X_test)
+    print(set(test_data["raw_prediction"]))
     # without removing SE words and anger words, prediction == raw_pred
     test_data["prediction"] = test_data["raw_prediction"]
 
@@ -495,6 +508,7 @@ class Suite:
     X_test = self.test_data[self.features]
 
     self.test_data["raw_prediction"] = self.model.predict(X_test)
+    print(set(self.test_data["raw_prediction"]))
     self.test_data["prediction"] = self.test_data["raw_prediction"]
     if "perspective_score" in self.features:
       self.test_data = self.remove_I(self.test_data)
