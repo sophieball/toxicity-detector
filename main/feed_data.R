@@ -7,10 +7,14 @@ library(readr)
 # Load data
 #df <- read.csv("src/data/issues_matched_by_length.csv")
 #df <- read.csv("src/data/prs_matched_by_length.csv")
+#df <- read.csv("src/data/too_heated_prs_matched_by_length.csv")
 #df <- read.csv("src/data/pr_body_comments.csv")
 #df <- read.csv("src/data/fake_G_pushback.csv")
-df <- read.csv("src/data/pushback_survey_prs.csv")
+#df <- read.csv("src/data/pushback_survey_prs_apr_8.csv")
+#df <- read.csv("src/data/pushback_survey_prs_sampled.csv")
+df <- read.csv("src/data/pushback_reported_prs_w_neg.csv")
 #df <- read.csv("src/data/issues_prs.csv")
+#df <- read.csv("src/data/random_sample_10000_prs_body_comments.csv")
 
 df <- rename(df, c("X_id" = "id"))
 
@@ -23,5 +27,6 @@ system2("main/train_classifier_g",
 #system2("main/politeness_logi",
 #system2("src/convo_word_freq_diff",
         args = "prs",
+        #args = "issues",
         stdout = "",
         input = format_csv(df))

@@ -12,7 +12,6 @@ from convokit.text_processing import TextParser
 from convokit.text_processing import TextToArcs
 
 from src import receive_data
-#from src import sentiment_classification
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from src import convo_politeness
@@ -168,10 +167,12 @@ def create_features(comments_df, training, G):
   comments = comments_df.T.to_dict().values()
 
   # iterate through my collection to preprocess
+  logging.info("length {}".format(len(comments_df)))
   pool = mp.Pool(processes=num_proc)
   features = pool.map(extract_features, comments)
   pool.close()
   features_df = pd.DataFrame(features)
+  logging.info("length {}".format(len(features_df)))
   features_df = features_df.loc[features_df["perspective_score"] >= 0]
   logging.info("length {}".format(len(features_df)))
   features_df = features_df.replace(np.nan, 0)
@@ -209,7 +210,9 @@ def create_features(comments_df, training, G):
   feature_stats.to_csv("data_stats.csv")
   logging.info(
         "Some descriptive statistics of {} data's perspective scores:\n{}"
-        .format(training, features_df["perspective_score"].describe()))
+        .format("POSITIVE", features_df.loc[features_df["label"]==1]["perspective_score"].describe()))
+  logging.info(
+        "Some descriptive statistics of {} data's perspective scores:\n{}"
+        .format("NEGATIVE", features_df.loc[features_df["label"]==1]["perspective_score"].describe()))
 
-  features_df.to_csv(training + "_data_label_cleaned.csv", index=False)
   return features_df
